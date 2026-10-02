@@ -2386,6 +2386,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
+const APP_VERSION='2026.10.02.4';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2494,7 +2495,7 @@ function appSetHtml(){
   h+=`<div class="card"><h2>Chronos de référence</h2><div class="sf2">${fSel('Perf de référence','refDist')}${fText('Temps','refTime')}</div>${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`+
     `<div class="sf2">${fSel('Distance 2 (facultatif)','ref2Dist')}${fText('Temps 2','ref2Time')}</div><p class="lbl" id="setProfileHint"></p>`+
     info('Estimation',['Estimation empirique : écart de vitesse constant par palier entre distances, selon le profil.','Avec une deuxième perf, l\'appli calcule ton écart réel et propose un profil ; le profil « Mesuré » l\'utilise directement.'])+'</div>';
-  h+=`<div class="card"><h2>Outils</h2><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button>`+
+  h+=`<div class="card"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button>`+
     `<button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
