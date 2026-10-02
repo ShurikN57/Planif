@@ -1,4 +1,4 @@
-const CACHE = 'planif-v1';
+const CACHE = 'planif-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,4 +28,9 @@ self.addEventListener('fetch', event => {
       return response;
     }).catch(() => caches.match(event.request).then(r => r || caches.match('./index.html')))
   );
+});
+
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
