@@ -1664,7 +1664,12 @@ function buildWeek(B,st,o){
     // garde-fous
     sessions.forEach(s=>s.variants.forEach((x,i)=>{if(x.capFail.length)warns.push({code:'cap_exceeded',params:{option:i+1,session:sessionKey(s),caps:x.capFail.slice()}});}));
     // minutes par zone, qualité, charge
-    const z={z1:0,z2:0,z3:0,z4:0};sessions.forEach(s=>{z[s.zone]+=s.work;});z.z2+=slS1;
+    const z={z1:0,z2:0,z3:0,z4:0};sessions.forEach(sess=>{
+      if(sess.fam==='mixed'){
+        /* une séance mixte conserve les minutes de chaque qualité dans leur vraie zone */
+        (sess.variants[0].parts||[]).forEach(([m,v])=>{z[loadZone(v,st)]+=m;});
+      }else z[sess.zone]+=sess.work;
+    });z.z2+=slS1;
     const volume=qTot+sl+foot.reduce((a,x)=>a+x.min,0);
     const qWork=z.z2+z.z3+z.z4;z.z1=Math.max(0,volume-qWork);
     const pct=qWork/volume*100;
