@@ -2513,27 +2513,34 @@ $('scr-set').addEventListener('change',e=>{const el=e.target.closest('[data-bind
 async function updateApp(btn){
   const status=$('updateStatus');
   const setStatus=t=>{if(status)status.textContent=t;};
-  if(!('serviceWorker' in navigator)){setStatus('Mise à jour automatique indisponible sur ce navigateur.');return;}
   btn.disabled=true;btn.textContent='Vérification…';setStatus('');
-  let changed=false,reloading=false;
-  const reload=()=>{if(reloading)return;reloading=true;setStatus('Nouvelle version installée…');location.reload();};
-  const onController=()=>{changed=true;reload();};
-  navigator.serviceWorker.addEventListener('controllerchange',onController,{once:true});
   try{
-    const reg=await navigator.serviceWorker.getRegistration('./')||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
-    if(reg.waiting){changed=true;reg.waiting.postMessage({type:'SKIP_WAITING'});}
-    const onFound=()=>{
-      const w=reg.installing;if(!w)return;
-      changed=true;
-      w.addEventListener('statechange',()=>{if(w.state==='installed'&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});});
-    };
-    reg.addEventListener('updatefound',onFound,{once:true});
-    await reg.update();
-    if(reg.installing)onFound();
-    if(reg.waiting){changed=true;reg.waiting.postMessage({type:'SKIP_WAITING'});}
-    await new Promise(r=>setTimeout(r,1400));
-    if(!changed){setStatus('Déjà à jour.');btn.disabled=false;btn.textContent='MAJ';}
-    else if(!reloading){setStatus('Nouvelle version détectée…');setTimeout(reload,500);}
+    /* Force la récupération du document le plus récent, indépendamment d'un changement de sw.js. */
+    const url=new URL('./index.html',location.href);
+    url.searchParams.set('_maj',Date.now());
+    const res=await fetch(url.toString(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    if(!res.ok)throw new Error('index fetch failed');
+    const html=await res.text();
+
+    /* Met aussi à jour le cache applicatif actif pour que Safari/PWA ne ressorte pas l'ancien index. */
+    if('caches' in window){
+      const keys=await caches.keys();
+      const planifKeys=keys.filter(k=>k.startsWith('planif-'));
+      await Promise.all(planifKeys.map(async k=>{
+        const c=await caches.open(k);
+        await c.put('./index.html',new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8'}}));
+        await c.put('./',new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8'}}));
+      }));
+    }
+
+    if('serviceWorker' in navigator){
+      const reg=await navigator.serviceWorker.getRegistration('./')||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+      await reg.update();
+      if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+    }
+
+    setStatus('Mise à jour chargée…');
+    setTimeout(()=>location.replace('./index.html?updated='+Date.now()),300);
   }catch(err){
     setStatus('Vérification impossible. Réessaie avec une connexion internet.');
     btn.disabled=false;btn.textContent='MAJ';
