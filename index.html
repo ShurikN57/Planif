@@ -2451,7 +2451,7 @@ function appSetHtml(){
   h+=`<div class="card"><h2>Chronos de référence</h2><div class="sf2">${fSel('Perf de référence','refDist')}${fText('Temps','refTime')}</div>${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`+
     `<div class="sf2">${fSel('Distance 2 (facultatif)','ref2Dist')}${fText('Temps 2','ref2Time')}</div><p class="lbl" id="setProfileHint"></p>`+
     info('Estimation',['Estimation empirique : écart de vitesse constant par palier entre distances, selon le profil.','Avec une deuxième perf, l\'appli calcule ton écart réel et propose un profil ; le profil « Mesuré » l\'utilise directement.'])+'</div>';
-  h+=`<div class="card"><h2>Outils</h2><button type="button" class="cta" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button>`+
+  h+=`<div class="card"><h2>Outils</h2><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button>`+
     `<button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
@@ -2467,9 +2467,39 @@ $('scr-set').addEventListener('input',e=>{const el=e.target.closest('[data-bind]
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));});
 $('scr-set').addEventListener('change',e=>{const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));});
+async function updateApp(btn){
+  const status=$('updateStatus');
+  const setStatus=t=>{if(status)status.textContent=t;};
+  if(!('serviceWorker' in navigator)){setStatus('Mise à jour automatique indisponible sur ce navigateur.');return;}
+  btn.disabled=true;btn.textContent='Vérification…';setStatus('');
+  let changed=false,reloading=false;
+  const reload=()=>{if(reloading)return;reloading=true;setStatus('Nouvelle version installée…');location.reload();};
+  const onController=()=>{changed=true;reload();};
+  navigator.serviceWorker.addEventListener('controllerchange',onController,{once:true});
+  try{
+    const reg=await navigator.serviceWorker.getRegistration('./')||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+    if(reg.waiting){changed=true;reg.waiting.postMessage({type:'SKIP_WAITING'});}
+    const onFound=()=>{
+      const w=reg.installing;if(!w)return;
+      changed=true;
+      w.addEventListener('statechange',()=>{if(w.state==='installed'&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});});
+    };
+    reg.addEventListener('updatefound',onFound,{once:true});
+    await reg.update();
+    if(reg.installing)onFound();
+    if(reg.waiting){changed=true;reg.waiting.postMessage({type:'SKIP_WAITING'});}
+    await new Promise(r=>setTimeout(r,1400));
+    if(!changed){setStatus('Déjà à jour.');btn.disabled=false;btn.textContent='MAJ';}
+    else if(!reloading){setStatus('Nouvelle version détectée…');setTimeout(reload,500);}
+  }catch(err){
+    setStatus('Vérification impossible. Réessaie avec une connexion internet.');
+    btn.disabled=false;btn.textContent='MAJ';
+  }
+}
 $('scr-set').addEventListener('click',e=>{
   const m=e.target.closest('[data-mode]');if(m){$(m.dataset.mode==='cal'?'modeCal':'modeBloc').checked=true;$('f').dispatchEvent(new Event('input'));return;}
   const a=e.target.closest('[data-act]');if(!a)return;
+  if(a.dataset.act==='update'){updateApp(a);return;}
   if(a.dataset.act==='copy')$('copyBtn').click(),a.textContent='Plan copié',setTimeout(()=>{a.textContent='Copier le plan';},1800);
   if(a.dataset.act==='reset'){$('resetBtn').click();setBuilt=false;calOpen=null;renderApp();}
   if(a.dataset.act==='audit'){setUi('expert');if($('auditSec').hidden)$('auditBtn').click();$('auditSec').scrollIntoView();}
@@ -2605,7 +2635,7 @@ load();syncQualityPrereqs();render();renderApp();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(() => {});
   });
 }
 </script>
