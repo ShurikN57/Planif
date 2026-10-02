@@ -1,4 +1,4 @@
-const CACHE = 'planif-v3';
+const CACHE = 'planif-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -21,12 +21,35 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  const req = event.request;
+  const isNavigation = req.mode === 'navigate' ||
+    req.destination === 'document' ||
+    new URL(req.url).pathname.endsWith('/Planif/') ||
+    new URL(req.url).pathname.endsWith('/Planif/index.html');
+
+  if (isNavigation) {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req, { cache: 'no-store' });
+        const copy = fresh.clone();
+        const cache = await caches.open(CACHE);
+        await cache.put('./index.html', copy.clone());
+        await cache.put('./', copy);
+        return fresh;
+      } catch (_) {
+        return (await caches.match('./index.html')) || (await caches.match('./'));
+      }
+    })());
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request).then(response => {
+    fetch(req).then(response => {
       const copy = response.clone();
-      caches.open(CACHE).then(cache => cache.put(event.request, copy));
+      caches.open(CACHE).then(cache => cache.put(req, copy));
       return response;
-    }).catch(() => caches.match(event.request).then(r => r || caches.match('./index.html')))
+    }).catch(() => caches.match(req))
   );
 });
 
