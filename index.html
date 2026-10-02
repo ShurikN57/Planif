@@ -385,6 +385,7 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
             <label>Jour qualité 2<select id="q2Day"></select></label>
           </div>
           <div class="row">
+            <label>Jour qualité 3<select id="q3Day"></select></label>
             <label>Jour sortie longue<select id="slDay"></select></label>
             <label>&nbsp;<span></span></label>
           </div>
@@ -442,8 +443,9 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
           </div>
           <div class="row">
             <label>Sorties / semaine<select id="runs"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option></select></label>
-            <label>&nbsp;<span></span></label>
+            <label>Qualités / semaine<select id="qualityCount"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
           </div>
+          <p class="hint" id="qualityHint">2 qualités sont recommandées à partir de 5 sorties ; possibles avec 4 sorties.</p>
           <label class="check"><input type="checkbox" id="assimQ2"> 2 séances de qualité en assimilation</label>
           <p class="hint" id="blocHint">Le volume moyen inclut la semaine d'assimilation (environ −22 % par rapport à la dernière semaine de charge).</p>
         </fieldset>
@@ -645,6 +647,11 @@ const RULES={
     secondRecoveryFootingWhenHeavy:2
   },
   organization:{
+    qualityFrequency:{
+      minRuns:{1:3,2:4,3:6},
+      recommendedRuns:{1:3,2:5,3:6},
+      thirdQualityFactor:0.6
+    },
     warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
     longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,105,130,160]}}
   },
@@ -892,6 +899,7 @@ const RULE_META=(()=>{
   'load.sessionZone':m('Q_LOAD_WEIGHTING','physiological'),
   'load.zones':m('Q_LOAD_WEIGHTING','physiological'),
   'organization.longRun':m('Q_LONG_RUN','organizational'),
+  'organization.qualityFrequency':m('Q_MIXED_SESSIONS','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Le nombre de qualités reste choisi par l’athlète. Deux qualités sont possibles dès 4 sorties mais plutôt recommandées à partir de 5 ; trois qualités nécessitent au moins 6 sorties. La troisième est allégée.'}),
   'organization.warmup':m('Q_WARMUP','organizational'),
   'prediction.marathonPenalty':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
@@ -1030,10 +1038,10 @@ function fmtMin(x){const m=Math.floor(x),s=Math.round((x-m)*60);return s?`${m}'$
 const fmtKm=k=>(Math.round(k*10)/10).toString().replace('.',',');
 
 /* ---------- état ---------- */
-const IDS=['vma','s2','s1lo','s1hi','refDist','refTime','profile','penalty','ref2Dist','ref2Time','block','specDist','specGoal','weeks','vol','runs','assimQ2','modeBloc','modeCal','calStart','calRace','calDist','calGoal','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','slDay'];
+const IDS=['vma','s2','s1lo','s1hi','refDist','refTime','profile','penalty','ref2Dist','ref2Time','block','specDist','specGoal','weeks','vol','runs','qualityCount','assimQ2','modeBloc','modeCal','calStart','calRace','calDist','calGoal','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','q3Day','slDay'];
 const isCheck=el=>el.type==='checkbox'||el.type==='radio';
 /* jours (sélecteurs) et dates par défaut : début aujourd'hui, course un dimanche environ 12 semaines plus tard */
-['q1Day','q2Day','slDay'].forEach(id=>{const sel=$(id);[['','Auto'],...['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map((x,i)=>[String(i),x])].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});});
+['q1Day','q2Day','q3Day','slDay'].forEach(id=>{const sel=$(id);[['','Auto'],...['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map((x,i)=>[String(i),x])].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});});
 {const t=new Date(),iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const r=new Date(t.getFullYear(),t.getMonth(),t.getDate()+83);while(r.getDay()!==0)r.setDate(r.getDate()+1);$('calStart').value=iso(t);$('calRace').value=iso(r);}
 const KEY='calc-allures-v7';
@@ -1043,13 +1051,26 @@ function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d)I
 function save(){try{const d={};IDS.forEach(id=>{const el=$(id);d[id]=isCheck(el)?el.checked:el.value;});localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
 function readState(){
   return{mode:$('modeCal').checked?'cal':'bloc',calStart:$('calStart').value,calRace:$('calRace').value,calDist:+$('calDist').value,calGoal:parseTime($('calGoal').value),
-    avail:[0,1,2,3,4,5,6].map(i=>$('av'+i).checked),q1Day:$('q1Day').value,q2Day:$('q2Day').value,slDay:$('slDay').value,vma:num($('vma').value),s2:num($('s2').value),s1lo:num($('s1lo').value),s1hi:num($('s1hi').value),
+    avail:[0,1,2,3,4,5,6].map(i=>$('av'+i).checked),q1Day:$('q1Day').value,q2Day:$('q2Day').value,q3Day:$('q3Day').value,slDay:$('slDay').value,vma:num($('vma').value),s2:num($('s2').value),s1lo:num($('s1lo').value),s1hi:num($('s1hi').value),
     refDist:+$('refDist').value,refTime:parseTime($('refTime').value),profile:+$('profile').value,penalty:$('penalty').checked,
     ref2Dist:+$('ref2Dist').value,ref2Time:parseTime($('ref2Time').value),
     block:$('block').value,specDist:+$('specDist').value,specGoal:parseTime($('specGoal').value),
-    N:+$('weeks').value,vol:parseHM($('vol').value),runs:+$('runs').value,assimQ2:$('assimQ2').checked};
+    N:+$('weeks').value,vol:parseHM($('vol').value),runs:+$('runs').value,qualityCount:+$('qualityCount').value,assimQ2:$('assimQ2').checked};
 }
 
+function maxQualityForRuns(runs){const M=RULES.organization.qualityFrequency.minRuns;return runs>=M[3]?3:runs>=M[2]?2:1;}
+function qualityAdvice(runs,q){
+  const R=RULES.organization.qualityFrequency;
+  if(q===3)return runs>=R.recommendedRuns[3]?'3 qualités : possible avec 6 sorties ou plus ; la 3e reste allégée.':'3 qualités nécessitent au moins 6 sorties par semaine.';
+  if(q===2)return runs>=R.recommendedRuns[2]?'2 qualités : format recommandé à ce niveau de fréquence.':runs>=R.minRuns[2]?'2 qualités : possible avec 4 sorties, mais plus exigeant.':'2 qualités nécessitent au moins 4 sorties par semaine.';
+  return'1 qualité : compatible avec 3 sorties ou plus.';
+}
+function syncQualityPrereqs(){
+  const runs=+$('#runs').value,sel=$('qualityCount'),max=maxQualityForRuns(runs);
+  [...sel.options].forEach(o=>{o.disabled=+o.value>max;});
+  if(+sel.value>max)sel.value=String(max);
+  const h=$('qualityHint');if(h)h.textContent=qualityAdvice(runs,+sel.value);
+}
 /* ---------- prédiction ---------- */
 function predict(st){
   if(!st.refTime)return null;
@@ -1595,20 +1616,25 @@ function buildWeek(B,st,o){
   const LR=RULES.organization.longRun,slCap=o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default;
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation;let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=assim?(st.assimQ2?2:1):st.qualityCount;
+    let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
-    let bW=assim?(st.assimQ2?bDef.W[0]*AS.secondOfFirstWeek:0):lerp(bDef.W);
+    const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
+    let bW=qN>=2?(assim?bDef.W[0]*AS.secondOfFirstWeek:lerp(bDef.W)):0;
+    let cW=!assim&&qN>=3?lerp(cDef.W)*QF.thirdQualityFactor:0;
     /* volume de base × facteur volume hebdo × progression du bloc, puis plafond du secteur (le budget qualité suit) */
-    const fA=volumeFactor(B.A.fam==='spec'&&B.dist===1?'spec10k':B.A.fam,st.vol),fB=volumeFactor(bDef.fam,st.vol);
-    aW=Math.min(aW*fA,capFor(B.A.fam));if(bW)bW=Math.min(bW*fB,capFor(bDef.fam));
-    // budget qualité
-    const max=B.budget[1]/100*vol;let qa=toMin(B.A.fam,aW),qb=bW;
-    if(qa+qb>max){
-      const over=qa+qb-max,bmin=bW?bDef.min:0;qb-=Math.max(0,Math.min(over,qb-bmin));
-      const rem=qa+qb-max;if(rem>0)qa=Math.max(toMin(B.A.fam,B.A.min),qa-rem);
-      if(qa+qb>max+1)warns.push({code:'budget_too_small'});
+    const fA=volumeFactor(B.A.fam==='spec'&&B.dist===1?'spec10k':B.A.fam,st.vol),fB=volumeFactor(bDef.fam,st.vol),fC=volumeFactor(cDef.fam,st.vol);
+    aW=Math.min(aW*fA,capFor(B.A.fam));if(bW)bW=Math.min(bW*fB,capFor(bDef.fam));if(cW)cW=Math.min(cW*fC,capFor(cDef.fam));
+    // budget qualité : la 3e séance est la première réduite si le budget hebdomadaire est dépassé
+    const max=B.budget[1]/100*vol;let qa=toMin(B.A.fam,aW),qb=bW,qc=cW;
+    if(qa+qb+qc>max){
+      let over=qa+qb+qc-max;
+      if(qc){const cut=Math.min(over,qc);qc-=cut;over-=cut;}
+      if(over>0&&qb){const bmin=bDef.min,cut=Math.max(0,Math.min(over,qb-bmin));qb-=cut;over-=cut;}
+      if(over>0)qa=Math.max(toMin(B.A.fam,B.A.min),qa-over);
+      if(qa+qb+qc>max+1)warns.push({code:'budget_too_small'});
     }
-    aW=roundW(B.A.fam,fromMin(B.A.fam,qa));bW=bW?roundW(bDef.fam,qb):0;
+    aW=roundW(B.A.fam,fromMin(B.A.fam,qa));bW=bW?roundW(bDef.fam,qb):0;cW=qc?roundW(cDef.fam,qc):0;
     const ctx={v:B.v,dist:B.dist,vol,assim,memory,calendar:!!o.calendar};
     let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
     /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
@@ -1640,12 +1666,14 @@ function buildWeek(B,st,o){
     }
     if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     else if(bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
+    if(cW>0&&sessions.length<3)sessions.push(makeSession(cDef.fam,cW,k+2,t,st,{...ctx,memory:null}));
     /* règles de bloc et de volume qui ont fixé le volume de travail de chaque séance */
     const addRefs=(x,refs)=>{x.ruleRefs=[...new Set(x.ruleRefs.concat(refs.filter(Boolean)))];};
     const bp=B.id==='spec'?`blocks.spec.${B.dist}`:`blocks.${B.id}`;
     const blockRefs=[`${bp}.budget`,'volume.weeklyFactor',assim?'blocks.assimilation':null];
     addRefs(sessions[0],[B.id==='spec'?`${bp}.K`:`${bp}.A`,mixedRole?'mixed.allowedContexts':null,mixedRole?'mixed.combinations':null,...blockRefs]);
     if(sessions[1])addRefs(sessions[1],[B.seq?`${bp}.sequence`:`${bp}.B`,sessions[1].fam==='mixed'?'mixed.allowedContexts':null,sessions[1].fam==='mixed'?'mixed.combinations':null,...blockRefs]);
+    if(sessions[2])addRefs(sessions[2],[`${bp}.B`,'organization.qualityFrequency',...blockRefs]);
     // sortie longue
     let sl=isMara?0:clamp(r5(vol*LR.share),LR.minMinutes,slCap);
     const qTot=sessions.reduce((s,x)=>s+x.total,0);
@@ -1821,12 +1849,12 @@ function placeWeek(wk,win,st){
     let slD=null;
     if(wk.sl||long){slD=(st.slDay!==''&&byWd(st.slDay))||avail[avail.length-1];if(slD)put(slD,long?{kind:'q',s:long}:{kind:'sl'});}
     const qDays=[];
-    qs.forEach((x,i)=>{const pref=i===0?st.q1Day:st.q2Day;let d=pref!==''?byWd(pref):null;if(d&&!isFree(d))d=null;
+    qs.forEach((x,i)=>{const pref=i===0?st.q1Day:i===1?st.q2Day:st.q3Day;let d=pref!==''?byWd(pref):null;if(d&&!isFree(d))d=null;
       if(!d){const gap=c=>{const o=[...qDays.map(q=>q.d),slD].filter(Boolean).map(y=>Math.abs(idx(y)-idx(c)));return o.length?Math.min(...o):9;};
         const cands=free(),good=cands.filter(c=>gap(c)>=PL.minDaysBetweenQualities&&!(i===0&&idx(c)===0&&cands.length>PL.firstDayFreeIfMoreThan));const pool=good.length?good:cands;
         d=i===0?pool[0]:pool.slice().sort((a,b)=>gap(b)-gap(a))[0];}
       if(d){put(d,{kind:'q',s:x});qDays.push({d,s:x});}else warns.push({code:'no_day_session',params:{session:sessionKey(x)}});});
-    if(qDays.length===2&&Math.abs(idx(qDays[0].d)-idx(qDays[1].d))<PL.minDaysBetweenQualities)warns.push({code:'qualities_consecutive'});
+    if(qDays.some((a,i)=>qDays.some((b,j)=>j>i&&Math.abs(idx(a.d)-idx(b.d))<PL.minDaysBetweenQualities)))warns.push({code:'qualities_consecutive'});
     if(slD&&qDays.some(q=>Math.abs(idx(q.d)-idx(slD))<PL.minDaysBetweenQualities))warns.push({code:'quality_next_to_long_run'});
     const afterQ=qDays.slice().sort((a,b)=>b.s.loadMax-a.s.loadMax).map(q=>addDays(q.d,1));
     wk.foot.forEach(f=>{let d=null;
@@ -1970,7 +1998,7 @@ const WARN_TEXT={
   no_day_taper_reminder:()=>'Aucun jour disponible 2 à 4 jours avant la course pour le rappel d\'allure.',
   no_day_footing:()=>'Pas assez de jours disponibles : un footing n\'a pas de place.',
   no_day_session:p=>`Aucun jour disponible pour « ${sessionTitle(p.session)} ».`,
-  qualities_consecutive:()=>'Les deux qualités tombent sur deux jours consécutifs : garde au moins 48 h entre elles si possible.',
+  qualities_consecutive:()=>'Deux séances de qualité sont trop rapprochées : garde au moins 48 h entre elles si possible.',
   quality_next_to_long_run:()=>'Une qualité est collée à la sortie longue : décale-la si tu peux, ou garde la sortie longue très facile.',
   no_day_footing_reduce:()=>'Pas assez de jours disponibles : un footing n\'a pas de place, réduis le nombre de sorties.',
   dates_missing:()=>'Renseigne la date de début et la date de la course.',
@@ -2279,7 +2307,7 @@ $('copyBtn').addEventListener('click',async()=>{
 });
 $('resetBtn').addEventListener('click',()=>{IDS.forEach(id=>{const el=$(id);if(isCheck(el))el.checked=DEFAULTS[id];else el.value=DEFAULTS[id];});render();});
 $('f').addEventListener('input',render);$('f').addEventListener('change',render);
-$('f').addEventListener('input',()=>{if(!$('auditSec').hidden)renderAudit();});
+$('f').addEventListener('input',()=>{syncQualityPrereqs();if(!$('auditSec').hidden)renderAudit();});
 
 /* ---------- audit des règles (interne, v8.2) : lecture seule du socle scientifique ---------- */
 const STATE_LAB={not_evaluated:'non évaluée'};
@@ -2414,9 +2442,9 @@ function appSetHtml(){
     info('Calendrier',['Le calendrier se construit à rebours depuis la course : la dernière semaine se termine le jour J.','Seul le spécifique 10 km utilise la bibliothèque de séances ; les autres distances gardent leur générateur actuel.'])+`</div>`;
   h+=`<div data-when="bloc">${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div>`+
     `<div class="sf2">${fSel('Semaines de charge','weeks')}<span></span></div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div></div>`;
-  h+=`<div class="card"><h2>Semaine</h2><div class="sf2">${fText('Volume moyen','vol')}${fSel('Sorties par semaine','runs')}</div>`;
+  h+=`<div class="card"><h2>Semaine</h2><div class="sf2">${fText('Volume moyen','vol')}${fSel('Sorties par semaine','runs')}</div><div class="sf2">${fSel('Qualités par semaine','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
   h+=`<div data-when="cal"><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div>`+
-    `<div class="sf2">${fSel('Jour qualité 1','q1Day')}${fSel('Jour qualité 2','q2Day')}</div><div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div></div>`;
+    `<div class="sf2">${fSel('Jour qualité 1','q1Day')}${fSel('Jour qualité 2','q2Day')}</div><div class="sf2">${fSel('Jour qualité 3','q3Day')}${fSel('Jour sortie longue','slDay')}</div></div>`;
   h+=info('Volume',['Saisis le volume sous la forme 5h00. Il vaut pour toute la préparation, semaines d\'assimilation et de course comprises, et module légèrement le volume des séances de qualité.','Les footings restent dans leurs plages plutôt que de tomber à la minute près : la moyenne réelle peut s\'écarter un peu de la cible.'])+'</div>';
   h+=`<div class="card"><h2>Repères (km/h)</h2><div class="sf2">${fText('VMA','vma','decimal')}${fText('Second seuil (1 h)','s2','decimal')}</div><div class="sf2">${fText('Premier seuil bas','s1lo','decimal')}${fText('Premier seuil haut','s1hi','decimal')}</div>`+
     info('Repères',['VMA, premier et second seuil sont des repères indépendants : le moteur ne déduit aucun seuil de la VMA.','Le second seuil correspond à l\'allure tenable environ une heure.'])+'</div>';
@@ -2433,6 +2461,7 @@ function updateSet(){
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
   const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
+  const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('#runs').value,+$('#qualityCount').value);
 }
 $('scr-set').addEventListener('input',e=>{const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));});
@@ -2571,7 +2600,7 @@ $('toExpert').addEventListener('click',()=>setUi('expert'));
 $('appBack').addEventListener('click',()=>{if(appSession){const fromLib=!!appSession.lib;appSession=null;if(!fromLib)appLib=false;}else appLib=false;renderApp();window.scrollTo(0,0);});
 $('toApp').addEventListener('click',()=>setUi('app'));
 $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEventListener('change',()=>renderApp());
-load();render();renderApp();
+load();syncQualityPrereqs();render();renderApp();
 })();
 
 if ('serviceWorker' in navigator) {
