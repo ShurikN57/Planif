@@ -597,6 +597,23 @@ const RULES={
       mixedBetweenSets:3
     }
   },
+  progression:{
+    /* Surcharge progressive : faire progresser d'abord le volume ciblé ; intensité ou densité ensuite, sans cumuler les leviers. */
+    priority:['volume','intensity','density'],
+    maxSimultaneousLevers:1
+  },
+  mixed:{
+    /* Une séance mixte n'est jamais une séance par défaut : uniquement transition, rappel ou assimilation. */
+    allowedContexts:['transition','reminder','assimilation'],
+    maxQualities:2,
+    allowTripleStandard:false,
+    betweenBlocks:[1.5,2.5],
+    combinations:{
+      's1>s2':{contexts:['transition','assimilation'],transitionPrimaryFactor:0.75,transitionSecondaryMin:[8,12],assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
+      's2>vo2':{contexts:['reminder','assimilation'],reminderPrimaryMin:[10,14],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
+      's1>vo2':{contexts:['reminder','assimilation'],reminderPrimaryMin:[12,16],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55}
+    }
+  },
   load:{
     /* coefficients d'intensité (S2 = 1,00) */
     intensity:{recovery:0.30,activeRec:0.35,easy:0.40,easyHigh:0.50,s1:0.65,between:0.80,s2:1.00,pace10k:1.10,pace5k:1.20,pace3k:1.30,vma100:1.40,vma105:1.60,vma110:1.80,max:2.00},
@@ -628,7 +645,7 @@ const RULES={
     secondRecoveryFootingWhenHeavy:2
   },
   organization:{
-    warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],spec:[20,10],hills:[25,10]},
+    warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
     longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,105,130,160]}}
   },
   library:{
@@ -743,6 +760,8 @@ const QUESTIONS={
   Q_VO2_INTENSITY:{theme:'vo2',text:'Quelle intensité selon la durée des fractions pour solliciter VO₂max ?'},
   Q_VO2_STRUCTURE:{theme:'vo2',text:'Quels formats et quels volumes de travail pour développer VO₂max et la puissance aérobie ?'},
   Q_VO2_RECOVERY:{theme:'vo2',text:'Quelle récupération entre fractions et entre séries pour un travail orienté VO₂max ?'},
+  Q_PROGRESSIVE_OVERLOAD:{theme:'progression',text:'Comment faire progresser la charge au cours d’un bloc sans augmenter simultanément volume, intensité et densité ?'},
+  Q_MIXED_SESSIONS:{theme:'mixed',text:'Dans quels contextes utiliser une séance combinant plusieurs qualités, et comment limiter le volume de chaque composante ?'},
   Q_SPEC10K_INTENSITY:{theme:'spec10k',text:'Faut-il moduler l\'intensité autour de l\'allure 10 km selon la durée des fractions ?'},
   Q_SPEC10K_STRUCTURE:{theme:'spec10k',text:'Quels formats de travail à allure 10 km pour préparer une course de 10 km ?'},
   Q_SPEC10K_RECOVERY:{theme:'spec10k',text:'Quelle récupération entre fractions à allure 10 km ?'},
@@ -878,6 +897,13 @@ const RULE_META=(()=>{
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredStepClamp':m('Q_PERF_PREDICTION','estimation'),
   'prediction.profileSteps':m('Q_PERF_PREDICTION','estimation'),
+  'progression.priority':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'La progression porte d’abord sur le volume ciblé ; intensité ou densité peuvent ensuite évoluer, sans augmenter fortement plusieurs leviers en même temps.'}),
+  'progression.maxSimultaneousLevers':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Garde-fou de programmation : un seul levier majeur de surcharge est augmenté à la fois.'}),
+  'mixed.allowedContexts':m('Q_MIXED_SESSIONS','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Les séances mixtes restent occasionnelles et sont réservées à la transition, au rappel ou à l’assimilation.'}),
+  'mixed.maxQualities':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Deux qualités maximum dans une séance mixte standard afin de ne pas additionner plusieurs séances complètes.'}),
+  'mixed.allowTripleStandard':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'S1 + S2 + VO₂ n’est pas généré comme format standard.'}),
+  'mixed.betweenBlocks':m('Q_MIXED_SESSIONS','physiological',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'La coupure entre deux composantes reste libre et courte ; la valeur exacte est un choix de programmation.'}),
+  'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'Les rapports de volumes par combinaison sont des heuristiques prudentes dérivées des volumes dédiés et des usages transition/rappel/assimilation.'}),
   'recovery.footing':m('Q_EASY_RUNS','organizational'),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
@@ -1457,6 +1483,41 @@ function withLoad(s,st){
 const sessionKey=x=>({fam:x.fam,dist:x.dist,isLong:!!x.isLong});
 function makeSession(fam,W,k,t,st,ctx){return withLoad(makeSessionCore(fam,W,k,t,st,ctx),st);}
 
+/* ---------- séances mixtes : uniquement transition / rappel / assimilation ---------- */
+const mixedSector=fam=>fam==='vma'||fam==='vmaShort'?'vo2':fam;
+const mixedKey=(a,b)=>`${mixedSector(a)}>${mixedSector(b)}`;
+const mixedCfg=(a,b,role)=>{
+  const c=RULES.mixed.combinations[mixedKey(a,b)];
+  return c&&c.contexts.includes(role)?c:null;
+};
+function mixedCandidates(fam,W,st,ctx,shortOnly){
+  const sec=mixedSector(fam);
+  return generateSession(sec,W,st,{...ctx,shortOnly:!!shortOnly,memory:null});
+}
+function mixedComponentLabel(fam){return fam==='s1'?'S1':fam==='s2'?'S2':'VO₂';}
+function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,st,ctx){
+  const cfg=mixedCfg(primaryFam,secondaryFam,role);if(!cfg)return null;
+  const p=mixedCandidates(primaryFam,primaryW,st,{...ctx,k,t},false);
+  const q=mixedCandidates(secondaryFam,secondaryW,st,{...ctx,k:k+1,t},mixedSector(secondaryFam)==='vo2'&&role!=='transition');
+  const br=RULES.mixed.betweenBlocks,bm=rangeMid(br);
+  const variants=[0,1].map(i=>{
+    const a=p[Math.min(i,p.length-1)],b=q[Math.min(i,q.length-1)];
+    const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations'];
+    return cand({
+      sector:'mixed',fam:`mixed.${mixedKey(primaryFam,secondaryFam)}`,kind:'mixed',key:`mixed:${role}:${a.key}>${b.key}`,size:'mixed',
+      structure:{type:'mixed_zones',role,recoveryType:'free',recoveryBetweenBlocksMin:bm,recoveryBetweenBlocksRangeMin:br,
+        components:[{fam:mixedSector(primaryFam),variant:a},{fam:mixedSector(secondaryFam),variant:b}]},
+      intensity:{type:'mixed_progressive',from:mixedSector(primaryFam),to:mixedSector(secondaryFam)},
+      parts:[...(a.parts||[]),...(b.parts||[])],rec:(a.rec||0)+(b.rec||0)+bm,recEach:Math.min(a.recEach??bm,b.recEach??bm),
+      work:a.work+b.work,total:a.total+b.total+bm,ruleRefs:[...new Set(refs)]
+    });
+  });
+  const [wu,cd]=RULES.organization.warmup.mixed,core=Math.max(...variants.map(x=>x.total));
+  const hi=mixedSector(secondaryFam)==='vo2'?'z4':mixedSector(secondaryFam)==='s2'?'z3':'z2';
+  return withLoad({fam:'mixed',mixedRole:role,mixedFrom:mixedSector(primaryFam),mixedTo:mixedSector(secondaryFam),zone:hi,variants,
+    work:variants[0].work,gap:Math.abs(variants[1].work-variants[0].work),total:r5(wu+core+cd),wu,cd},st);
+}
+
 /* ---------- footings : catégories et volume cible à ±2,5 % ---------- */
 const FOOT={rec:{lab:'Footing récupération',r:RULES.recovery.footing.rec.range,d:RULES.recovery.footing.rec.default},std:{lab:'Footing',r:RULES.recovery.footing.std.range,d:RULES.recovery.footing.std.default},pro:{lab:'Footing prolongé',r:RULES.recovery.footing.pro.range}};
 function planFootings(o){
@@ -1549,14 +1610,42 @@ function buildWeek(B,st,o){
     }
     aW=roundW(B.A.fam,fromMin(B.A.fam,qa));bW=bW?roundW(bDef.fam,qb):0;
     const ctx={v:B.v,dist:B.dist,vol,assim,memory,calendar:!!o.calendar};
-    const sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)];
-    if(bW>0)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
+    let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
+    /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
+    if(assim&&bW>0){
+      const C=mixedCfg(B.A.fam,bDef.fam,'assimilation');
+      if(C){
+        const m=makeMixedSession(B.A.fam,bDef.fam,Math.max(B.A.min,aW*C.assimPrimaryFactor),Math.max(3,bW*C.assimSecondaryFactor),'assimilation',k,t,st,ctx);
+        if(m){sessions=[m];mixedRole='assimilation';}
+      }
+    }
+    /* Transition : dernière semaine de charge, le stimulus principal prépare la qualité du bloc suivant. */
+    if(!assim&&o.nextBlock&&k===N-1&&!mixedRole){
+      const nextFam=o.nextBlock==='vma'?'vma':o.nextBlock;
+      const C=mixedCfg(B.A.fam,nextFam,'transition');
+      if(C){
+        const sec=(C.transitionSecondaryMin[0]+C.transitionSecondaryMin[1])/2;
+        const m=makeMixedSession(B.A.fam,nextFam,Math.max(B.A.min,aW*C.transitionPrimaryFactor),sec,'transition',k,t,st,ctx);
+        if(m){sessions[0]=m;mixedRole='transition';}
+      }
+    }
+    /* Rappel : ponctuel, en fin de bloc seulement ; on garde la qualité principale et on remplace le rappel VO₂ isolé. */
+    if(!assim&&!mixedRole&&bW>0&&bDef.fam==='vmaShort'&&k===N-1){
+      const C=mixedCfg(B.A.fam,bDef.fam,'reminder');
+      if(C){
+        const prim=(C.reminderPrimaryMin[0]+C.reminderPrimaryMin[1])/2,sec=Math.max(3,bW*C.reminderSecondaryFactor);
+        const m=makeMixedSession(B.A.fam,bDef.fam,prim,sec,'reminder',k+1,t,st,ctx);
+        if(m){sessions.push(m);mixedRole='reminder';}
+      }
+    }
+    if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
+    else if(bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     /* règles de bloc et de volume qui ont fixé le volume de travail de chaque séance */
     const addRefs=(x,refs)=>{x.ruleRefs=[...new Set(x.ruleRefs.concat(refs.filter(Boolean)))];};
     const bp=B.id==='spec'?`blocks.spec.${B.dist}`:`blocks.${B.id}`;
     const blockRefs=[`${bp}.budget`,'volume.weeklyFactor',assim?'blocks.assimilation':null];
-    addRefs(sessions[0],[B.id==='spec'?`${bp}.K`:`${bp}.A`,...blockRefs]);
-    if(sessions[1])addRefs(sessions[1],[B.seq?`${bp}.sequence`:`${bp}.B`,...blockRefs]);
+    addRefs(sessions[0],[B.id==='spec'?`${bp}.K`:`${bp}.A`,mixedRole?'mixed.allowedContexts':null,mixedRole?'mixed.combinations':null,...blockRefs]);
+    if(sessions[1])addRefs(sessions[1],[B.seq?`${bp}.sequence`:`${bp}.B`,sessions[1].fam==='mixed'?'mixed.allowedContexts':null,sessions[1].fam==='mixed'?'mixed.combinations':null,...blockRefs]);
     // sortie longue
     let sl=isMara?0:clamp(r5(vol*LR.share),LR.minMinutes,slCap);
     const qTot=sessions.reduce((s,x)=>s+x.total,0);
@@ -1595,7 +1684,7 @@ function buildPlan(st,pred){
   const BR=RULES.volume.blockRamp,ramp=Math.min(BR.base+BR.perWeek*(N-2),BR.max)+(B.ramp||0);
   const vols=volumes(st.vol,N,ramp);
   const weeks=[],memory={};
-  for(let k=0;k<=N;k++){const w=buildWeek(B,st,{k,N,t:N>1?k/(N-1):1,assim:k===N,vol:vols[k],memory,block:st.block,specDist:st.specDist});
+  for(let k=0;k<=N;k++){const w=buildWeek(B,st,{k,N,t:N>1?k/(N-1):1,assim:k===N,vol:vols[k],memory,block:st.block,specDist:st.specDist,nextBlock:null});
     w.ruleRefs=w.ruleRefs.concat(['volume.blockRamp','volume.assimilationFactor']);weeks.push(w);}
   return{B,weeks,vols};
 }
@@ -1761,7 +1850,8 @@ function buildCalendar(st,pred){
   plan.forEach((p,i)=>{const win=wins[i],vol=vols[i];let wk;
     if(p.kind==='charge'||p.kind==='assim'){
       const bst={...st,block:p.block,specDist:st.calDist,specGoal:st.calGoal},B=getBlock(bst,pred);
-      wk=buildWeek(B,bst,{k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true});
+      const nextCharge=plan.slice(i+1).find(x=>x.kind==='charge'),nextBlock=nextCharge?nextCharge.block:null;
+      wk=buildWeek(B,bst,{k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock});
       if(p.kind==='assim')wk.reminders=[{code:'strides_optional_week'}];
     }else if(p.kind==='taper')wk=buildTaperWeek(st,pred,vol);
     else wk=buildIntroWeek(st,vol,win);
@@ -1828,6 +1918,13 @@ function presentVariantRaw(v){
       return{text:S.sets?`${S.sets} × (${S.perSet} × ${S.distanceM} m), récup libre ${fmtRec(rr[0])}–${fmtRec(rr[1])}, ${fmtRec(rs[0])}–${fmtRec(rs[1])} entre séries`:`${S.reps} × ${S.distanceM} m${rec}`,chips:pct().concat([repChip()])};}
     return{text:`${S.reps} × ${fmtMin(S.durationMin)}${rec}`,chips:pct().concat([meters()])};
   }
+  if(sec==='mixed'){
+    const role={transition:'Transition',reminder:'Rappel',assimilation:'Assimilation'}[S.role]||'Mixte';
+    const parts=S.components.map(c=>`${mixedComponentLabel(c.fam)} : ${presentVariantRaw(c.variant).text}`);
+    const rb=S.recoveryBetweenBlocksRangeMin;
+    return{text:`${role} — ${parts.join(' puis ')}, ${fmtRec(rb[0])}–${fmtRec(rb[1])} libre entre blocs`,
+      chips:[`${mixedComponentLabel(S.components[0].fam)} → ${mixedComponentLabel(S.components[1].fam)}`]};
+  }
   if(sec==='p10'){
     if(f==='p10.mix'){const[a,b]=S.segments;return{text:`${S.sets} × (${fmtM(a.distanceM)} à S2 enchaînés avec ${fmtM(b.distanceM)} à allure 10 km), ${fmtRec(S.recoveryBetweenSetsMin)} trot entre séries`,
       chips:[`S2 : ${fmtPace(I.s2Kmh)}/km`,`10 km : ${fmtPace(I.raceKmh)}/km`].concat(cues)};}
@@ -1839,7 +1936,7 @@ function presentVariantRaw(v){
   }
   return{text:'',chips:[]};
 }
-const SESSION_TITLE={vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',hills:'Côtes et économie'};
+const SESSION_TITLE={vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',mixed:'Séance mixte',hills:'Côtes et économie'};
 function sessionTitle(x){
   if(x.fam==='spec')return x.isLong?'Sortie longue spécifique marathon':`Allure spécifique ${DIST[x.dist].lab}`;
   if(x.fam==='taper')return`Rappel d'allure ${DIST[x.dist].lab}`;
@@ -1851,6 +1948,7 @@ const PURPOSE={
   vmaShort:'Rappel VO₂ en intermittent court, sans grosse fatigue.',
   s2:'Endurance à haute fraction aérobie. La fourchette d\'allure dépend de la durée des fractions et du volume total.',
   s1:'Capacité aérobie : travailler légèrement au-dessus du LT1 pour développer ce secteur par le haut, avec une récupération courte et libre.',
+  mixed:'Combiner deux qualités à volume réduit pour une transition, un rappel ou une semaine d’assimilation.',
   spec:'Rythme, économie et confiance à l\'allure de course.',
   hills:'Force spécifique et économie de course.',
   taper:'Garder le rythme sans créer de fatigue, 2 à 4 jours avant la course.'
