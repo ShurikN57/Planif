@@ -394,11 +394,11 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
           <legend>Repères (km/h)</legend>
           <div class="row">
             <label>VMA<input id="vma" inputmode="decimal" value="17"></label>
-            <label>Second seuil (1 h)<input id="s2" inputmode="decimal" value="14"></label>
+            <label>S2 / second seuil — repère<input id="s2" inputmode="decimal" value="14"></label>
           </div>
           <div class="row">
-            <label>Premier seuil bas<input id="s1lo" inputmode="decimal" value="11.5"></label>
-            <label>Premier seuil haut<input id="s1hi" inputmode="decimal" value="12"></label>
+            <label>LT1 estimé bas<input id="s1lo" inputmode="decimal" value="11.5"></label>
+            <label>LT1 estimé haut<input id="s1hi" inputmode="decimal" value="12"></label>
           </div>
         </fieldset>
 
@@ -475,8 +475,19 @@ const $=id=>document.getElementById(id);
    ===================================================================================== */
 const RULES={
   s1:{
-    /* position dans la plage S1 selon le volume de travail : haut de plage à workAtTop, bas à workAtBottom */
-    band:{workAtTop:25,workAtBottom:60},
+    /* LT1 = repère physiologique estimé ; le travail S1 est prescrit légèrement au-dessus.
+       La marge dépend de la durée de fraction puis du volume total (25' haut de plage, 60' bas). */
+    band:{
+      workAtTop:25,workAtBottom:60,
+      durationMargins:[
+        {max:6,r:[0.3,0.6]},
+        {max:12,r:[0.2,0.5]},
+        {max:20,r:[0.1,0.4]},
+        {max:30,r:[0.0,0.3]},
+        {max:999,r:[0.0,0.2]}
+      ],
+      activeEnduranceBelowLt1:[0.2,0.5]
+    },
     formats:{
       distances:{1000:[8,14],1200:[6,10],1500:[5,8],1600:[4,8],2000:[3,6]},
       times:{4:[6,8],5:[5,7],6:[4,6],8:[4,5],10:[3,4],12:[3,4]},
@@ -489,9 +500,19 @@ const RULES={
       progressiveContinuous:{min:25,max:50}
     },
     recovery:{
-      byFractionDuration:[{max:3,v:0.5},{max:6,v:0.75},{max:12,v:1},{max:20,v:1.5},{max:999,v:2}],
-      denseDistance:[{max:4.5,v:0.5},{max:999,v:0.75}],
-      mixed:{betweenFractions:0.5,betweenSets:2}
+      /* fourchettes de 15 s ; ratio décroissant d'environ 15 % (court) vers 10 % (30') */
+      byFractionDuration:[
+        {max:5,r:[0.5,0.75]},
+        {max:6,r:[0.75,1]},
+        {max:8,r:[1,1.25]},
+        {max:10,r:[1.25,1.5]},
+        {max:12,r:[1.5,1.75]},
+        {max:15,r:[1.75,2]},
+        {max:20,r:[2.25,2.5]},
+        {max:25,r:[2.5,2.75]},
+        {max:999,r:[2.75,3]}
+      ],
+      mixed:{betweenFractions:[0.5,0.75],betweenSets:[1.5,2]}
     }
   },
   s2:{
@@ -512,16 +533,27 @@ const RULES={
       blocs:[[2,6,4],[2,7,5],[2,8,4],[2,8,6],[3,6,4],[3,5,5],[2,10,6],[3,7,4]]
     },
     recovery:{
-      byFractionDuration:[{max:5,v:1},{max:7,v:1.5},{max:8,v:2},{max:999,v:2.5}],
-      byDistanceDuration:[{lt:2.75,v:0.75},{max:5.5,v:1},{max:7,v:1.5},{max:999,v:2}],
+      /* une seule logique selon la durée réelle de fraction, qu'elle soit exprimée en temps ou en distance */
+      byFractionDuration:[
+        {max:3,r:[0.5,0.75]},
+        {max:5,r:[0.75,1]},
+        {max:6,r:[1,1.25]},
+        {max:8,r:[1.25,1.5]},
+        {max:9,r:[1.5,1.75]},
+        {max:999,r:[1.75,2]}
+      ],
       denseByDistance:[{max:300,v:0.5},{max:400,v:2/3},{max:99999,v:0.75}],
-      blocs:{betweenFractions:1,betweenSets:3}
+      blocs:{betweenFractions:[0.75,1.25],betweenSets:[2,3]}
     }
   },
   vo2:{
     /* plage en % VMA selon la durée de fraction (minutes) : [durée, bas, haut], interpolée */
-    pctByDuration:[[0.5,100,105],[1,98,101],[2,95,98],[3,93,96],[4,91,94]],
-    band:{workAtTop:10,workAtBottom:18,widthShort:2,widthLong:1,shortBelow:0.75},
+    pctByDuration:[[0.5,100,110],[0.75,99,106],[1,98,104],[1.5,96,101],[2,94,98],[3,92,96],[4,90,94]],
+    /* volume de travail rapide selon la durée de fraction ; haut d'intensité => bas de volume */
+    band:{
+      workByDuration:[[0.5,8,15],[0.75,9,15],[1,10,16],[1.5,10,17],[2,10,18],[3,12,18],[4,12,20]],
+      widthShort:3,widthLong:2,shortBelow:1
+    },
     formats:{
       intermittent:{0.5:{n:[16,30],set:10,lab:'30"/30"'},0.75:{n:[10,20],set:8,lab:'45"/45"'},1:{n:[8,18],set:8,lab:"1'/1'"}},
       distances:{short:{200:[12,30],300:[10,20],400:[8,14]},medium:{500:[6,10],600:[5,9]},long:{800:[4,7],1000:[3,6],1200:[3,5]}},
@@ -530,8 +562,16 @@ const RULES={
       shortDistanceSeries:{maxDistance:300,perSet:10}
     },
     recovery:{
-      byFractionDuration:[{max:1,v:'effort'},{max:1.5,v:1.25},{max:2,v:1.5},{max:3,v:2},{max:999,v:2.5}],
-      betweenSets:3
+      byFractionDuration:[
+        {max:0.5,r:[0.25,0.5]},
+        {max:0.75,r:[0.5,0.75]},
+        {max:1,r:[0.5,0.75]},
+        {max:1.5,r:[0.75,1]},
+        {max:2,r:[1.25,1.5]},
+        {max:3,r:[1.5,2]},
+        {max:999,r:[2,2.5]}
+      ],
+      betweenSets:[2,3]
     }
   },
   spec10k:{
@@ -738,7 +778,7 @@ const SOURCES=[];
      directness:{population, outcome} } */
 const FINDINGS=[];
 const RULE_META=(()=>{
-  const m=(questionId,kind)=>({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null});
+  const m=(questionId,kind,meta={})=>Object.assign({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null,reviewSummary:null},meta);
   return{
   'blocks.aero.A':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.aero.B':m('Q_SESSION_COMBINATION','organizational'),
@@ -841,35 +881,33 @@ const RULE_META=(()=>{
   'recovery.footing':m('Q_EASY_RUNS','organizational'),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
-  's1.band':m('Q_S1_INTENSITY','physiological'),
+  's1.band':m('Q_S1_INTENSITY','physiological',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'LT1 est un repère ; S1 travaille légèrement au-dessus, avec une marge qui diminue quand durée de fraction et volume augmentent.'}),
   's1.formats.continuous':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.descending':m('Q_S1_STRUCTURE','physiological'),
+  's1.formats.descending':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's1.formats.distances':m('Q_S1_STRUCTURE','physiological'),
   's1.formats.long':m('Q_S1_STRUCTURE','physiological'),
   's1.formats.mixed':m('Q_S1_STRUCTURE','physiological'),
   's1.formats.progressive':m('Q_S1_STRUCTURE','physiological'),
   's1.formats.progressiveContinuous':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.pyramids':m('Q_S1_STRUCTURE','physiological'),
+  's1.formats.pyramids':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's1.formats.times':m('Q_S1_STRUCTURE','physiological'),
-  's1.recovery.byFractionDuration':m('Q_S1_RECOVERY','physiological'),
-  's1.recovery.denseDistance':m('Q_S1_RECOVERY','physiological'),
+  's1.recovery.byFractionDuration':m('Q_S1_RECOVERY','physiological',{origin:'consensus',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Récupération courte et incomplète ; ratio pratique décroissant d’environ 15 % vers 10 %, fourchettes de 15 s, mode libre.'}),
   's1.recovery.mixed':m('Q_S1_RECOVERY','physiological'),
   's2.band':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
   's2.densePaceBand':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
   's2.densePaceOffsetForDuration':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
   's2.formats.blocs':m('Q_S2_STRUCTURE','physiological'),
   's2.formats.dense':m('Q_S2_STRUCTURE','physiological'),
-  's2.formats.descending':m('Q_S2_STRUCTURE','physiological'),
+  's2.formats.descending':m('Q_S2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's2.formats.distances':m('Q_S2_STRUCTURE','physiological'),
   's2.formats.longDistances':m('Q_S2_STRUCTURE','physiological'),
   's2.formats.longTimes':m('Q_S2_STRUCTURE','physiological'),
-  's2.formats.progressive':m('Q_S2_STRUCTURE','physiological'),
-  's2.formats.pyramids':m('Q_S2_STRUCTURE','physiological'),
+  's2.formats.progressive':m('Q_S2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
+  's2.formats.pyramids':m('Q_S2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's2.formats.times':m('Q_S2_STRUCTURE','physiological'),
-  's2.paceBands':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
+  's2.paceBands':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological',{origin:'partial_science',confidence:'moderate',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'Le principe court plus vite / long plus proche ou sous S2 est soutenu ; les dixièmes exacts restent heuristiques.'}),
   's2.recovery.blocs':m('Q_S2_RECOVERY','physiological'),
-  's2.recovery.byDistanceDuration':m('Q_S2_RECOVERY','physiological'),
-  's2.recovery.byFractionDuration':m('Q_S2_RECOVERY','physiological'),
+  's2.recovery.byFractionDuration':m('Q_S2_RECOVERY','physiological',{origin:'consensus',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Récupération courte liée à la durée réelle de fraction ; même logique pour temps et distance ; actif/passif laissé libre.'}),
   's2.recovery.denseByDistance':m('Q_S2_RECOVERY','physiological'),
   'safeguards.above105OfVma':m('Q_SESSION_MAX_WORK','physiological'),
   'safeguards.caps.above105':m('Q_SESSION_MAX_WORK','physiological'),
@@ -895,15 +933,15 @@ const RULE_META=(()=>{
   'specOther.marathonLongRun':m('Q_SPEC_OTHER','physiological'),
   'specOther.minReps':m('Q_SPEC_OTHER','physiological'),
   'specOther.recoveryByDistance':m('Q_SPEC_OTHER','physiological'),
-  'vo2.band':m('Q_VO2_INTENSITY','physiological'),
+  'vo2.band':m('Q_VO2_INTENSITY','physiological',{origin:'partial_science',confidence:'high',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Le volume pertinent dépend de la durée des fractions et doit être couplé à l’intensité.'}),
   'vo2.formats.distances':m('Q_VO2_STRUCTURE','physiological'),
   'vo2.formats.intermittent':m('Q_VO2_STRUCTURE','physiological'),
-  'vo2.formats.pyramids':m('Q_VO2_STRUCTURE','physiological'),
+  'vo2.formats.pyramids':m('Q_VO2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation utile pour la variété ; aucune supériorité physiologique démontrée sur un format régulier équivalent.'}),
   'vo2.formats.shortDistanceSeries':m('Q_VO2_STRUCTURE','physiological'),
   'vo2.formats.times':m('Q_VO2_STRUCTURE','physiological'),
-  'vo2.pctByDuration':m('Q_VO2_INTENSITY','physiological'),
+  'vo2.pctByDuration':m('Q_VO2_INTENSITY','physiological',{origin:'partial_science',confidence:'high',decision:'modify',lastReview:'2026-10-02',reviewSummary:'L’intensité maximale diminue avec la durée ; plages élargies sur 30 s à 1 min, formats 2–4 min au cœur du développement VO₂.'}),
   'vo2.recovery.betweenSets':m('Q_VO2_RECOVERY','physiological'),
-  'vo2.recovery.byFractionDuration':m('Q_VO2_RECOVERY','physiological'),
+  'vo2.recovery.byFractionDuration':m('Q_VO2_RECOVERY','physiological',{origin:'partial_science',confidence:'high',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Récupérations en fourchettes selon la durée ; mode actif/passif libre ; le haut d’intensité appelle plutôt le haut de récupération.'}),
   'volume.assimilationFactor':m('Q_ASSIMILATION','organizational'),
   'volume.blockRamp':m('Q_LOAD_PROGRESSION','organizational'),
   'volume.weeklyFactor':m('Q_VOLUME_MODULATION','organizational')
@@ -924,7 +962,8 @@ function auditIntegrity(usedRefs){
   const P=[];const ids=Object.keys(RULE_META).concat(Object.keys(TECHNICAL_RULES));
   ids.forEach(i=>{if(!refPathExists(i))P.push(`identifiant absent de RULES : ${i}`);});
   Object.entries(RULE_META).forEach(([i,m])=>{if(!QUESTIONS[m.questionId])P.push(`question inconnue pour ${i}`);
-    if(m.origin!=='not_evaluated'||m.confidence!=='not_evaluated'||m.decision!=='not_evaluated')P.push(`qualification présente sans revue : ${i}`);
+    const reviewed=m.origin!=='not_evaluated'||m.confidence!=='not_evaluated'||m.decision!=='not_evaluated';
+    if(reviewed&&(!m.lastReview||!m.reviewSummary))P.push(`qualification sans trace de revue : ${i}`);
     m.findings.forEach(f=>{if(!FINDINGS.find(x=>x.id===f))P.push(`finding inconnu ${f} pour ${i}`);});});
   (usedRefs||[]).forEach(r=>{if(!RULE_META[r]&&!TECHNICAL_RULES[r])P.push(`ruleRef sans fiche ni statut technique : ${r}`);});
   Object.entries(RULES).forEach(([d,o])=>Object.keys(o).forEach(k=>{const base=`${d}.${k}`;
@@ -1043,24 +1082,40 @@ function s2Range(rng,work,st){
   const lo=Math.round((rng[0]+pos*(rng[1]-rng[0]-w))*10)/10,hi=Math.round((lo+w)*10)/10;
   return[st.s2+lo,st.s2+hi];
 }
-/* S1 : moitié basse ou haute de la plage S1 selon le volume (25' haut, 60' bas) */
-function s1Band(work,st){const B=RULES.s1.band,pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1),w=(st.s1hi-st.s1lo)/2,lo=st.s1lo+pos*w;return[lo,lo+w];}
+/* S1 : marge au-dessus du LT1 estimé selon durée de fraction + volume total.
+   Les deux entrées LT1 représentent une incertitude ; le centre sert d'ancre de prescription. */
+const lt1Ref=st=>(st.s1lo+st.s1hi)/2;
+function s1Margin(repMin){return RULES.s1.band.durationMargins.find(x=>repMin<=x.max).r;}
+function s1Band(repMin,work,st){
+  const B=RULES.s1.band,r=s1Margin(repMin),pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1);
+  const w=(r[1]-r[0])/2,loOff=r[0]+pos*(r[1]-r[0]-w),base=lt1Ref(st);
+  return[Math.round((base+loOff)*20)/20,Math.round((base+loOff+w)*20)/20];
+}
 /* VO₂ : plage %VMA selon la durée de fraction (interpolée), position selon le volume (10' haut, 18' bas) */
 function vo2Pct(d){
   const T=RULES.vo2.pctByDuration;if(d<=T[0][0])return[T[0][1],T[0][2]];if(d>=T[T.length-1][0])return[T[T.length-1][1],T[T.length-1][2]];
   for(let i=1;i<T.length;i++)if(d<=T[i][0]){const f=(d-T[i-1][0])/(T[i][0]-T[i-1][0]);return[T[i-1][1]+f*(T[i][1]-T[i-1][1]),T[i-1][2]+f*(T[i][2]-T[i-1][2])];}
 }
+function vo2WorkRange(d){
+  const T=RULES.vo2.band.workByDuration;if(d<=T[0][0])return[T[0][1],T[0][2]];if(d>=T[T.length-1][0])return[T[T.length-1][1],T[T.length-1][2]];
+  for(let i=1;i<T.length;i++)if(d<=T[i][0]){const f=(d-T[i-1][0])/(T[i][0]-T[i-1][0]);return[T[i-1][1]+f*(T[i][1]-T[i-1][1]),T[i-1][2]+f*(T[i][2]-T[i-1][2])];}
+}
 function vo2Band(repMin,work,st){
-  const B=RULES.vo2.band,[l,h]=vo2Pct(repMin),w=repMin<B.shortBelow?B.widthShort:B.widthLong,pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1);
-  const lo=Math.round((l+pos*(h-l-w))*2)/2,hi=lo+w;return[st.vma*lo/100,st.vma*hi/100,lo,hi];
+  const B=RULES.vo2.band,[l,h]=vo2Pct(repMin),[wMin,wMax]=vo2WorkRange(repMin);
+  const width=repMin<B.shortBelow?B.widthShort:B.widthLong,pos=clamp((wMax-work)/(wMax-wMin),0,1);
+  const usable=Math.max(0,h-l-width),lo=Math.round((l+pos*usable)*2)/2,hi=Math.min(h,lo+width);
+  return[st.vma*lo/100,st.vma*hi/100,lo,hi];
 }
 
-/* ----- Récupérations : S1 très courte, S2 courte à modérée, VO₂ plus large ; la durée de fraction compte aussi ----- */
-const recS1=d=>stepLookup(RULES.s1.recovery.byFractionDuration,d);
-const recS1dense=d=>stepLookup(RULES.s1.recovery.denseDistance,d);
-const recS2=d=>stepLookup(RULES.s2.recovery.byFractionDuration,d);
-const recS2dist=d=>stepLookup(RULES.s2.recovery.byDistanceDuration,d);
-const recVO2=d=>stepLookup(RULES.vo2.recovery.byFractionDuration,d);
+/* ----- Récupérations : fourchettes affichées, milieu utilisé pour les calculs de durée/charge ----- */
+const rangeLookup=(T,d)=>T.find(x=>d<=x.max).r;
+const rangeMid=r=>(r[0]+r[1])/2;
+const recS1Range=d=>rangeLookup(RULES.s1.recovery.byFractionDuration,d);
+const recS1=d=>rangeMid(recS1Range(d));
+const recS2Range=d=>rangeLookup(RULES.s2.recovery.byFractionDuration,d);
+const recS2=d=>rangeMid(recS2Range(d));
+const recVO2Range=d=>rangeLookup(RULES.vo2.recovery.byFractionDuration,d);
+const recVO2=d=>rangeMid(recVO2Range(d));
 
 /* ----- Construction d'un candidat à fractions ----- */
 function seriesSplit(n,setMax){if(!setMax||n<=setMax)return null;const sets=Math.ceil(n/setMax),per=Math.round(n/sets);return{sets,per};}
@@ -1072,43 +1127,47 @@ function cand(o){
 /* ======== Familles S1 ======== */
 /* S1 : fraction minimale 1000 m en distance, 4' en durée (le S1 reste un travail suffisamment continu) */
 function s1Dist(W,st){return Object.entries(RULES.s1.formats.distances).map(([d,[a,b]])=>{d=+d;
-  let[lo,hi]=s1Band(W,st),rm=d/1000/((lo+hi)/2)*60;const n=clamp(Math.round(W/rm),a,b);
-  [lo,hi]=s1Band(n*rm,st);const v=(lo+hi)/2;rm=d/1000/v*60;const rec=recS1dense(rm),work=n*rm;
-  return cand({sector:'s1',fam:'s1.dist',kind:'dist',key:`s1:dist:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryType:'trot'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,v]],rec:(n-1)*rec,recEach:rec,work});});}
+  let rm=d/1000/(lt1Ref(st)+0.3)*60,n=clamp(Math.round(W/rm),a,b),work=n*rm,[lo,hi]=s1Band(rm,work,st),v=(lo+hi)/2;
+  rm=d/1000/v*60;work=n*rm;[lo,hi]=s1Band(rm,work,st);v=(lo+hi)/2;rm=d/1000/v*60;work=n*rm;
+  const rr=recS1Range(rm),rec=rangeMid(rr);
+  return cand({sector:'s1',fam:'s1.dist',kind:'dist',key:`s1:dist:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,v]],rec:(n-1)*rec,recEach:rec,work});});}
 function s1Time(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
-  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s1Band(work,st),rec=recS1(d);
-  return cand({sector:'s1',fam,kind:'time',key:`s1:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryType:'trot'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
-function s1Cont(W,st){const work=clamp(r5(W),RULES.s1.formats.continuous.min,RULES.s1.formats.continuous.max),[lo,hi]=s1Band(work,st);
+  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s1Band(d,work,st),rr=recS1Range(d),rec=rangeMid(rr);
+  return cand({sector:'s1',fam,kind:'time',key:`s1:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
+function s1Cont(W,st){const work=clamp(r5(W),RULES.s1.formats.continuous.min,RULES.s1.formats.continuous.max),[lo,hi]=s1Band(work,work,st);
   return[cand({sector:'s1',fam:'s1.cont',kind:'cont',key:`s1:cont`,size:'cont',structure:{type:'continuous',durationMin:work},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:0,work})];}
-function s1ProgCont(W,st){const work=clamp(r5(W),RULES.s1.formats.progressiveContinuous.min,RULES.s1.formats.progressiveContinuous.max);
-  return[cand({sector:'s1',fam:'s1.progCont',kind:'cont',key:`s1:progCont`,size:'cont',structure:{type:'continuous',durationMin:work,progression:'thirds'},intensity:{type:'progression',speedsKmh:[st.s1lo,(st.s1lo+st.s1hi)/2,st.s1hi]},parts:[[work/3,st.s1lo],[work/3,(st.s1lo+st.s1hi)/2],[work/3,st.s1hi]],rec:0,work})];}
-function s1ProgFrac(W,st){return Object.entries(RULES.s1.formats.progressive).map(([d,[a,b]])=>{d=+d;const n=clamp(Math.round(W/d),a,b),rec=recS1(d);
-  const parts=[];for(let i=0;i<n;i++)parts.push([d,st.s1lo+(st.s1hi-st.s1lo)*i/Math.max(1,n-1)]);
-  return cand({sector:'s1',fam:'s1.progFrac',kind:'shape',key:`s1:progFrac:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryType:'trot',progression:'increasing'},intensity:{type:'progression_range',fromKmh:st.s1lo,toKmh:st.s1hi},parts,rec:(n-1)*rec,recEach:rec,work:n*d});});}
-function s1Shape(list,fam,name,accel){return(W,st)=>list.map(L=>{const work=L.reduce((x,y)=>x+y,0),[lo,hi]=s1Band(work,st);
+function s1ProgCont(W,st){const work=clamp(r5(W),RULES.s1.formats.progressiveContinuous.min,RULES.s1.formats.progressiveContinuous.max),[lo,hi]=s1Band(work,work,st),mid=(lo+hi)/2;
+  return[cand({sector:'s1',fam:'s1.progCont',kind:'cont',key:`s1:progCont`,size:'cont',structure:{type:'continuous',durationMin:work,progression:'thirds'},intensity:{type:'progression',speedsKmh:[lo,mid,hi]},parts:[[work/3,lo],[work/3,mid],[work/3,hi]],rec:0,work})];}
+function s1ProgFrac(W,st){return Object.entries(RULES.s1.formats.progressive).map(([d,[a,b]])=>{d=+d;const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s1Band(d,work,st),rr=recS1Range(d),rec=rangeMid(rr);
+  const parts=[];for(let i=0;i<n;i++)parts.push([d,lo+(hi-lo)*i/Math.max(1,n-1)]);
+  return cand({sector:'s1',fam:'s1.progFrac',kind:'shape',key:`s1:progFrac:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free',progression:'increasing'},intensity:{type:'progression_range',fromKmh:lo,toKmh:hi},parts,rec:(n-1)*rec,recEach:rec,work});});}
+function s1Shape(list,fam,name,accel){return(W,st)=>list.map(L=>{const work=L.reduce((x,y)=>x+y,0),bands=L.map(d=>s1Band(d,work,st));
   let rec=0;for(let i=0;i<L.length-1;i++)rec+=recS1(L[i]);
-  const parts=L.map((d,i)=>[d,accel?lo+(hi-lo)*i/Math.max(1,L.length-1):(lo+hi)/2]);
-  return cand({sector:'s1',fam,kind:'shape',key:`s1:${fam}:${L.join('-')}`,size:fam,structure:{type:'ladder',shape:fam==='s1.pyr'?'pyramid':'descending',durationsMin:L,recoveryType:'trot',recoveryRangeMin:[0.5,1.5]},intensity:accel?{type:'progression_range',fromKmh:lo,toKmh:hi,when:'shortening'}:{type:'speed_range',minKmh:lo,maxKmh:hi},parts,rec,recEach:rec/Math.max(1,L.length-1),work});});}
-function s1Mix(W,st){const R=RULES.s1.recovery.mixed;return RULES.s1.formats.mixed.map(([n,x,y])=>{const work=n*(x+y),[lo,hi]=s1Band(work,st),rec=n*R.betweenFractions+(n-1)*R.betweenSets;
-  return cand({sector:'s1',fam:'s1.mix',kind:'shape',key:`s1:mix:${n}-${x}-${y}`,size:'mix',structure:{type:'sets',sets:n,durationsMin:[x,y],recoveryBetweenFractionsMin:R.betweenFractions,recoveryBetweenSetsMin:R.betweenSets},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec,recEach:rec/(2*n-1),work});});}
+  const lo=Math.min(...bands.map(x=>x[0])),hi=Math.max(...bands.map(x=>x[1]));
+  const parts=L.map((d,i)=>{const b=bands[i];return[d,accel?b[0]+(b[1]-b[0])*i/Math.max(1,L.length-1):(b[0]+b[1])/2];});
+  const rr=L.slice(0,-1).map(recS1Range),rlo=Math.min(...rr.map(x=>x[0])),rhi=Math.max(...rr.map(x=>x[1]));
+  return cand({sector:'s1',fam,kind:'shape',key:`s1:${fam}:${L.join('-')}`,size:fam,structure:{type:'ladder',shape:fam==='s1.pyr'?'pyramid':'descending',durationsMin:L,recoveryType:'free',recoveryRangeMin:[rlo,rhi]},intensity:accel?{type:'progression_range',fromKmh:lo,toKmh:hi,when:'shortening'}:{type:'speed_range',minKmh:lo,maxKmh:hi},parts,rec,recEach:rec/Math.max(1,L.length-1),work});});}
+function s1Mix(W,st){const R=RULES.s1.recovery.mixed;return RULES.s1.formats.mixed.map(([n,x,y])=>{const work=n*(x+y),[lo,hi]=s1Band((x+y)/2,work,st),rf=rangeMid(R.betweenFractions),rs=rangeMid(R.betweenSets),rec=n*rf+(n-1)*rs;
+  return cand({sector:'s1',fam:'s1.mix',kind:'shape',key:`s1:mix:${n}-${x}-${y}`,size:'mix',structure:{type:'sets',sets:n,durationsMin:[x,y],recoveryBetweenFractionsMin:rf,recoveryBetweenFractionsRangeMin:R.betweenFractions,recoveryBetweenSetsMin:rs,recoveryBetweenSetsRangeMin:R.betweenSets,recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec,recEach:rec/(2*n-1),work});});}
 
 /* ======== Familles S2 ======== */
 function s2Dist(table,fam,dense){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
   let rm=d/1000/(st.s2+(dense?RULES.s2.densePaceOffsetForDuration:0))*60;const n=clamp(Math.round(W/rm),a,b);
   const[lo,hi]=s2Range(dense?RULES.s2.densePaceBand:s2Group(rm).r,n*rm,st),v=(lo+hi)/2;rm=d/1000/v*60;
-  const rec=dense?stepLookup(RULES.s2.recovery.denseByDistance,d):recS2dist(rm),work=n*rm;
-  return cand({sector:'s2',fam,kind:'dist',key:`s2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryType:'active_trot'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},cues:dense?['s2_dense']:[],parts:[[work,v]],rec:(n-1)*rec,recEach:rec,work});});}
+  const rr=dense?null:recS2Range(rm),rec=dense?stepLookup(RULES.s2.recovery.denseByDistance,d):rangeMid(rr),work=n*rm;
+  return cand({sector:'s2',fam,kind:'dist',key:`s2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryRangeMin:rr||[rec,rec],recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},cues:dense?['s2_dense']:[],parts:[[work,v]],rec:(n-1)*rec,recEach:rec,work});});}
 function s2Time(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
-  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s2Range(s2Group(d).r,work,st),rec=recS2(d);
-  return cand({sector:'s2',fam,kind:'time',key:`s2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryType:'active_trot'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
+  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s2Range(s2Group(d).r,work,st),rr=recS2Range(d),rec=rangeMid(rr);
+  return cand({sector:'s2',fam,kind:'time',key:`s2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
 function s2Mixed(durs,shape,fam,key,st,sets){
   const work=durs.reduce((x,y)=>x+y,0);let rec=0;
-  const RB=RULES.s2.recovery.blocs;if(sets)rec=sets*RB.betweenFractions+(sets-1)*RB.betweenSets;else for(let i=0;i<durs.length-1;i++)rec+=recS2(durs[i]);
+  const RB=RULES.s2.recovery.blocs;if(sets)rec=sets*rangeMid(RB.betweenFractions)+(sets-1)*rangeMid(RB.betweenSets);else for(let i=0;i<durs.length-1;i++)rec+=recS2(durs[i]);
   const groups=[...new Set(durs.map(s2Group))];
   const bands=groups.map(g=>{const ds=[...new Set(durs.filter(d=>s2Group(d)===g))].sort((x,y)=>x-y),[lo,hi]=s2Range(g.r,work,st);return{durationsMin:ds,minKmh:lo,maxKmh:hi};});
   const parts=durs.map(d=>{const[lo,hi]=s2Range(s2Group(d).r,work,st);return[d,(lo+hi)/2];});
-  const structure=sets?{type:'sets',sets,durationsMin:durs.slice(0,2),recoveryBetweenFractionsMin:RB.betweenFractions,recoveryBetweenSetsMin:RB.betweenSets}
-    :{type:'ladder',shape,durationsMin:durs,recoveryType:'active_trot',recoveryRangeMin:[1,2.5]};
+  const rrs=durs.slice(0,-1).map(recS2Range),rlo=rrs.length?Math.min(...rrs.map(x=>x[0])):0,rhi=rrs.length?Math.max(...rrs.map(x=>x[1])):0;
+  const structure=sets?{type:'sets',sets,durationsMin:durs.slice(0,2),recoveryBetweenFractionsMin:rangeMid(RB.betweenFractions),recoveryBetweenFractionsRangeMin:RB.betweenFractions,recoveryBetweenSetsMin:rangeMid(RB.betweenSets),recoveryBetweenSetsRangeMin:RB.betweenSets,recoveryType:'free'}
+    :{type:'ladder',shape,durationsMin:durs,recoveryType:'free',recoveryRangeMin:[rlo,rhi]};
   return cand({sector:'s2',fam,kind:'shape',key,size:fam,structure,intensity:{type:'by_duration',bands},parts,rec,recEach:rec/Math.max(1,durs.length-1),work});
 }
 const s2Shape=(list,fam,shape)=>(W,st)=>list.map(L=>s2Mixed(L,shape,fam,`s2:${fam}:${L.join('-')}`,st));
@@ -1118,20 +1177,21 @@ const s2Blocs=(W,st)=>RULES.s2.formats.blocs.map(([n,x,y])=>{const durs=[];for(l
 /* ======== Familles VO₂ ======== */
 function vo2Int(W,st){return Object.entries(RULES.vo2.formats.intermittent).map(([d,c])=>{d=+d;
   let n=clamp(Math.round(W/d),c.n[0],c.n[1]);const sp=seriesSplit(n,c.set);if(sp)n=sp.sets*sp.per;
-  const BS=RULES.vo2.recovery.betweenSets,work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rec=n*d+(sp?(sp.sets-1)*BS:0);
-  return cand({sector:'vo2',fam:'vo2.int',kind:'int',key:`vo2:int:${d}`,size:`t${d}`,structure:{type:'intermittent',reps:n,workMin:d,recoveryMin:d,sets:sp?sp.sets:0,perSet:sp?sp.per:0,recoveryBetweenSetsMin:BS},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,(vlo+vhi)/2]],rec,recEach:d,work});});}
+  const work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rr=recVO2Range(d),ri=rangeMid(rr),bsr=RULES.vo2.recovery.betweenSets,bs=rangeMid(bsr),sets=sp?sp.sets:1;
+  const rec=(n-sets)*ri+(sets-1)*bs;
+  return cand({sector:'vo2',fam:'vo2.int',kind:'int',key:`vo2:int:${d}`,size:`t${d}`,structure:{type:'intermittent',reps:n,workMin:d,recoveryMin:ri,recoveryRangeMin:rr,recoveryType:'free',sets:sp?sp.sets:0,perSet:sp?sp.per:0,recoveryBetweenSetsMin:bs,recoveryBetweenSetsRangeMin:bsr},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,(vlo+vhi)/2]],rec,recEach:ri,work});});}
 function vo2Dist(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
   let rm=d/1000/st.vma*60;for(let i=0;i<2;i++){const[p1,p2]=vo2Pct(rm);rm=d/1000/(st.vma*(p1+p2)/200)*60;}
-  const SS=RULES.vo2.formats.shortDistanceSeries,BS=RULES.vo2.recovery.betweenSets;let n=clamp(Math.round(W/rm),a,b);const sp=seriesSplit(n,d<=SS.maxDistance?SS.perSet:0);if(sp)n=sp.sets*sp.per;
-  const[vlo,vhi,lo,hi]=vo2Band(rm,n*rm,st),v=(vlo+vhi)/2;rm=d/1000/v*60;const rec=r15(recVO2(rm)),work=n*rm;
-  return cand({sector:'vo2',fam,kind:'dist',key:`vo2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryType:'trot',sets:sp?sp.sets:0,perSet:sp?sp.per:0,recoveryBetweenSetsMin:BS},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,v]],rec:(n-1)*rec+(sp?(sp.sets-1)*BS:0),recEach:rec,work});});}
+  const SS=RULES.vo2.formats.shortDistanceSeries;let n=clamp(Math.round(W/rm),a,b);const sp=seriesSplit(n,d<=SS.maxDistance?SS.perSet:0);if(sp)n=sp.sets*sp.per;
+  const[vlo,vhi,lo,hi]=vo2Band(rm,n*rm,st),v=(vlo+vhi)/2;rm=d/1000/v*60;const rr=recVO2Range(rm),rec=rangeMid(rr),bsr=RULES.vo2.recovery.betweenSets,bs=rangeMid(bsr),work=n*rm,sets=sp?sp.sets:1;
+  return cand({sector:'vo2',fam,kind:'dist',key:`vo2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free',sets:sp?sp.sets:0,perSet:sp?sp.per:0,recoveryBetweenSetsMin:bs,recoveryBetweenSetsRangeMin:bsr},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,v]],rec:(n-sets)*rec+(sets-1)*bs,recEach:rec,work});});}
 function vo2Time(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
-  const n=clamp(Math.round(W/d),a,b),work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rec=recVO2(d),m=Math.round((vlo+vhi)/2*d/60*100)*10;
-  return cand({sector:'vo2',fam,kind:'time',key:`vo2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryType:'trot'},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,(vlo+vhi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
+  const n=clamp(Math.round(W/d),a,b),work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rr=recVO2Range(d),rec=rangeMid(rr),m=Math.round((vlo+vhi)/2*d/60*100)*10;
+  return cand({sector:'vo2',fam,kind:'time',key:`vo2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,(vlo+vhi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
 function vo2Pyr(W,st){return RULES.vo2.formats.pyramids.map(L=>{const work=L.reduce((x,y)=>x+y,0);let rec=0;for(let i=0;i<L.length-1;i++)rec+=recVO2(L[i]);
   const parts=L.map(d=>{const[vlo,vhi]=vo2Band(d,work,st);return[d,(vlo+vhi)/2];});
-  const[a1,b1]=vo2Band(Math.min(...L),work,st),[a2,b2]=vo2Band(Math.max(...L),work,st);
-  return cand({sector:'vo2',fam:'vo2.pyr',kind:'shape',key:`vo2:pyr:${L.join('-')}`,size:'pyr',structure:{type:'ladder',shape:'pyramid',durationsMin:L,recoveryType:'trot',recoveryRule:'three_quarters'},intensity:{type:'pct_by_duration',shortest:{durationMin:Math.min(...L),maxKmh:b1},longest:{durationMin:Math.max(...L),minKmh:a2}},parts,rec,recEach:rec/(L.length-1),work});});}
+  const[a1,b1]=vo2Band(Math.min(...L),work,st),[a2,b2]=vo2Band(Math.max(...L),work,st),rr=L.slice(0,-1).map(recVO2Range),rlo=Math.min(...rr.map(x=>x[0])),rhi=Math.max(...rr.map(x=>x[1]));
+  return cand({sector:'vo2',fam:'vo2.pyr',kind:'shape',key:`vo2:pyr:${L.join('-')}`,size:'pyr',structure:{type:'ladder',shape:'pyramid',durationsMin:L,recoveryType:'free',recoveryRangeMin:[rlo,rhi]},intensity:{type:'pct_by_duration',shortest:{durationMin:Math.min(...L),maxKmh:b1},longest:{durationMin:Math.max(...L),minKmh:a2}},parts,rec,recEach:rec/(L.length-1),work});});}
 
 
 /* ======== Spécifique 10 km : l'allure 10 km est l'ancre ; structure et récupération décident comment on la travaille ======== */
@@ -1210,11 +1270,11 @@ const FAMILY_RULES=(()=>{
   const s1=(f,r)=>['s1.band',`s1.formats.${f}`,`s1.recovery.${r}`],s2=(f,r)=>['s2.paceBands','s2.band',`s2.formats.${f}`,`s2.recovery.${r}`];
   const vo2=(f,r)=>['vo2.pctByDuration','vo2.band',`vo2.formats.${f}`,`vo2.recovery.${r}`],p10=(f,r)=>['spec10k.paceBands',`spec10k.formats.${f}`,`spec10k.recovery.${r}`];
   return{
-    's1.dist':s1('distances','denseDistance'),'s1.time':s1('times','byFractionDuration'),'s1.long':s1('long','byFractionDuration'),
+    's1.dist':s1('distances','byFractionDuration'),'s1.time':s1('times','byFractionDuration'),'s1.long':s1('long','byFractionDuration'),
     's1.cont':['s1.band','s1.formats.continuous'],'s1.progCont':['s1.formats.progressiveContinuous'],'s1.progFrac':['s1.formats.progressive','s1.recovery.byFractionDuration'],
     's1.pyr':s1('pyramids','byFractionDuration'),'s1.desc':s1('descending','byFractionDuration'),'s1.mix':s1('mixed','mixed'),
     's2.dense':['s2.densePaceBand','s2.densePaceOffsetForDuration','s2.band','s2.formats.dense','s2.recovery.denseByDistance'],
-    's2.dist':s2('distances','byDistanceDuration'),'s2.longDist':s2('longDistances','byDistanceDuration'),'s2.time':s2('times','byFractionDuration'),
+    's2.dist':s2('distances','byFractionDuration'),'s2.longDist':s2('longDistances','byFractionDuration'),'s2.time':s2('times','byFractionDuration'),
     's2.longTime':s2('longTimes','byFractionDuration'),'s2.pyr':s2('pyramids','byFractionDuration'),'s2.deg':s2('descending','byFractionDuration'),
     's2.prog':s2('progressive','byFractionDuration'),'s2.blocs':s2('blocs','blocs'),
     'vo2.int':['vo2.pctByDuration','vo2.band','vo2.formats.intermittent','vo2.recovery.betweenSets'],
@@ -1719,13 +1779,14 @@ function buildCalendar(st,pred){
 /* ===================== Présentateurs (v8.1) =====================
    Le moteur décrit les séances en données (structure, intensity, cues) ; le texte est construit ici. */
 const SHAPE_NAME={pyramid:'Pyramide',descending:'Dégressif',progressive:'Progressif'};
-const REC_TYPE={trot:'trot',active_trot:'trot actif'};
+const REC_TYPE={trot:'trot',active_trot:'trot actif',free:'libre'};
 const CUE_TEXT={s2_dense:'S2 dense : la récup courte compte autant que l\'allure',s2_to_race_no_recovery:'Passer de S2 à l\'allure de course sans récupération',
   effort_vma:'Effort ressenti proche de la VMA',effort_pace10k:'Effort ressenti proche de l\'allure 10 km',dynamic_stride:'Foulée dynamique, buste droit',relaxed_top:'Relâché en haut de côte'};
 const minLab=d=>d+"'";
 function presentVariantRaw(v){
   const S=v.structure,I=v.intensity||{},f=v.fam||'';
-  const rec=S.recoveryMin!==undefined&&S.recoveryType?`, récup ${fmtRec(S.recoveryMin)} ${REC_TYPE[S.recoveryType]}`:'';
+  const recVal=S.recoveryRangeMin&&S.recoveryRangeMin[0]!==S.recoveryRangeMin[1]?`${fmtRec(S.recoveryRangeMin[0])}–${fmtRec(S.recoveryRangeMin[1])}`:fmtRec(S.recoveryMin);
+  const rec=S.recoveryMin!==undefined&&S.recoveryType?`, récup ${recVal} ${REC_TYPE[S.recoveryType]}`:'';
   const repChip=()=>`${fmtRep(S.repDurationMin)} par fraction`;
   const meters=()=>`≈ ${Math.round((I.minKmh+I.maxKmh)/2*S.durationMin/60*100)*10} m par fraction`;
   const pct=()=>[`${fmtPct(I.minPct)} à ${fmtPct(I.maxPct)} % VMA`,paceRange(I.minKmh,I.maxKmh)];
@@ -1744,7 +1805,7 @@ function presentVariantRaw(v){
     if(f==='s1.cont')return{text:`${S.durationMin}' continu au S1`,chips:[sr()]};
     if(f==='s1.progCont'){const[a,b,c]=I.speedsKmh;return{text:`${S.durationMin}' progressif, du S1 bas au S1 haut par tiers`,chips:[`${fmtPace(a)} puis ${fmtPace(b)} puis ${fmtPace(c)}/km`]};}
     if(f==='s1.progFrac')return{text:`${S.reps} × ${S.durationMin}' de plus en plus vite${rec}`,chips:[`de ${fmtSpd(I.fromKmh)} à ${fmtSpd(I.toKmh)} km/h (${fmtPace(I.fromKmh)} à ${fmtPace(I.toKmh)}/km)`]};
-    if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup trot de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction`,
+    if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction`,
       chips:[I.type==='progression_range'?`de ${fmtSpd(I.fromKmh)} à ${fmtSpd(I.toKmh)} km/h quand les fractions raccourcissent (${fmtPace(I.fromKmh)} à ${fmtPace(I.toKmh)}/km)`:sr()]};
     if(S.type==='sets')return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), ${fmtRec(S.recoveryBetweenFractionsMin)} entre fractions, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`,chips:[sr()]};
     return{text:`${S.reps} × ${S.durationMin}'${rec}`,chips:[sr()]};
@@ -1752,14 +1813,14 @@ function presentVariantRaw(v){
   if(sec==='s2'){
     const bands=()=>I.bands.length>1?I.bands.map(b=>`${b.durationsMin.map(minLab).join(', ')} : ${kmh(b.minKmh,b.maxKmh)}`):[kmh(I.bands[0].minKmh,I.bands[0].maxKmh)];
     if(S.distanceM)return{text:`${S.reps} × ${S.distanceM} m${rec}`,chips:[sr(),repChip()].concat(cues)};
-    if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup trot actif de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction précédente`,chips:bands()};
+    if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction précédente`,chips:bands()};
     if(S.type==='sets')return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), ${fmtRec(S.recoveryBetweenFractionsMin)} trot entre fractions, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`,chips:bands()};
     return{text:`${S.reps} × ${S.durationMin}'${rec}`,chips:[sr()]};
   }
   if(sec==='vo2'){
-    if(S.type==='intermittent'){const lab=`${fmtRec(S.workMin)}/${fmtRec(S.recoveryMin)}`;
-      return{text:S.sets?`${S.sets} × (${S.perSet} × ${lab}), ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`:`${S.reps} × ${lab}`,chips:pct()};}
-    if(S.type==='ladder')return{text:`Pyramide : ${S.durationsMin.map(minLab).join(' – ')}, récup trot égale à 3/4 de la fraction précédente`,
+    if(S.type==='intermittent'){const rlab=S.recoveryRangeMin?`${fmtRec(S.recoveryRangeMin[0])}–${fmtRec(S.recoveryRangeMin[1])}`:fmtRec(S.recoveryMin),lab=`${fmtRec(S.workMin)}/${rlab}`;
+      return{text:S.sets?`${S.sets} × (${S.perSet} × ${lab}), ${fmtRec(S.recoveryBetweenSetsRangeMin?.[0]||S.recoveryBetweenSetsMin)}–${fmtRec(S.recoveryBetweenSetsRangeMin?.[1]||S.recoveryBetweenSetsMin)} libre entre séries`:`${S.reps} × ${lab} libre`,chips:pct()};}
+    if(S.type==='ladder')return{text:`Pyramide : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])}`,
       chips:[`${fmtPace(I.shortest.maxKmh)} sur les ${I.shortest.durationMin}' à ${fmtPace(I.longest.minKmh)} sur les ${I.longest.durationMin}'/km`]};
     if(S.distanceM)return{text:S.sets?`${S.sets} × (${S.perSet} × ${S.distanceM} m), récup ${fmtRec(S.recoveryMin)} trot, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`:`${S.reps} × ${S.distanceM} m${rec}`,chips:pct().concat([repChip()])};
     return{text:`${S.reps} × ${fmtMin(S.durationMin)}${rec}`,chips:pct().concat([meters()])};
@@ -1786,7 +1847,7 @@ const PURPOSE={
   vma:'Puissance aérobie : accumuler du temps près de VO₂max.',
   vmaShort:'Rappel VO₂ en intermittent court, sans grosse fatigue.',
   s2:'Endurance à haute fraction aérobie. La fourchette d\'allure dépend de la durée des fractions et du volume total.',
-  s1:'Capacité aérobie : pousser le premier seuil vers le haut. Récupérations très courtes pour garder la continuité.',
+  s1:'Capacité aérobie : travailler légèrement au-dessus du LT1 pour développer ce secteur par le haut, avec une récupération courte et libre.',
   spec:'Rythme, économie et confiance à l\'allure de course.',
   hills:'Force spécifique et économie de course.',
   taper:'Garder le rythme sans créer de fatigue, 2 à 4 jours avant la course.'
