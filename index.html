@@ -1807,14 +1807,16 @@ function presentVariantRaw(v){
     if(f==='s1.progFrac')return{text:`${S.reps} × ${S.durationMin}' de plus en plus vite${rec}`,chips:[`de ${fmtSpd(I.fromKmh)} à ${fmtSpd(I.toKmh)} km/h (${fmtPace(I.fromKmh)} à ${fmtPace(I.toKmh)}/km)`]};
     if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction`,
       chips:[I.type==='progression_range'?`de ${fmtSpd(I.fromKmh)} à ${fmtSpd(I.toKmh)} km/h quand les fractions raccourcissent (${fmtPace(I.fromKmh)} à ${fmtPace(I.toKmh)}/km)`:sr()]};
-    if(S.type==='sets')return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), ${fmtRec(S.recoveryBetweenFractionsMin)} entre fractions, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`,chips:[sr()]};
+    if(S.type==='sets'){const rf=S.recoveryBetweenFractionsRangeMin||[S.recoveryBetweenFractionsMin,S.recoveryBetweenFractionsMin],rs=S.recoveryBetweenSetsRangeMin||[S.recoveryBetweenSetsMin,S.recoveryBetweenSetsMin];
+      return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), récup libre ${fmtRec(rf[0])}–${fmtRec(rf[1])} entre fractions, ${fmtRec(rs[0])}–${fmtRec(rs[1])} entre séries`,chips:[sr()]};}
     return{text:`${S.reps} × ${S.durationMin}'${rec}`,chips:[sr()]};
   }
   if(sec==='s2'){
     const bands=()=>I.bands.length>1?I.bands.map(b=>`${b.durationsMin.map(minLab).join(', ')} : ${kmh(b.minKmh,b.maxKmh)}`):[kmh(I.bands[0].minKmh,I.bands[0].maxKmh)];
     if(S.distanceM)return{text:`${S.reps} × ${S.distanceM} m${rec}`,chips:[sr(),repChip()].concat(cues)};
     if(S.type==='ladder')return{text:`${SHAPE_NAME[S.shape]} : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])} selon la fraction précédente`,chips:bands()};
-    if(S.type==='sets')return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), ${fmtRec(S.recoveryBetweenFractionsMin)} trot entre fractions, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`,chips:bands()};
+    if(S.type==='sets'){const rf=S.recoveryBetweenFractionsRangeMin||[S.recoveryBetweenFractionsMin,S.recoveryBetweenFractionsMin],rs=S.recoveryBetweenSetsRangeMin||[S.recoveryBetweenSetsMin,S.recoveryBetweenSetsMin];
+      return{text:`${S.sets} × (${S.durationsMin[0]}' + ${S.durationsMin[1]}'), récup libre ${fmtRec(rf[0])}–${fmtRec(rf[1])} entre fractions, ${fmtRec(rs[0])}–${fmtRec(rs[1])} entre séries`,chips:bands()};}
     return{text:`${S.reps} × ${S.durationMin}'${rec}`,chips:[sr()]};
   }
   if(sec==='vo2'){
@@ -1822,7 +1824,8 @@ function presentVariantRaw(v){
       return{text:S.sets?`${S.sets} × (${S.perSet} × ${lab}), ${fmtRec(S.recoveryBetweenSetsRangeMin?.[0]||S.recoveryBetweenSetsMin)}–${fmtRec(S.recoveryBetweenSetsRangeMin?.[1]||S.recoveryBetweenSetsMin)} libre entre séries`:`${S.reps} × ${lab} libre`,chips:pct()};}
     if(S.type==='ladder')return{text:`Pyramide : ${S.durationsMin.map(minLab).join(' – ')}, récup libre de ${fmtRec(S.recoveryRangeMin[0])} à ${fmtRec(S.recoveryRangeMin[1])}`,
       chips:[`${fmtPace(I.shortest.maxKmh)} sur les ${I.shortest.durationMin}' à ${fmtPace(I.longest.minKmh)} sur les ${I.longest.durationMin}'/km`]};
-    if(S.distanceM)return{text:S.sets?`${S.sets} × (${S.perSet} × ${S.distanceM} m), récup ${fmtRec(S.recoveryMin)} trot, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`:`${S.reps} × ${S.distanceM} m${rec}`,chips:pct().concat([repChip()])};
+    if(S.distanceM){const rr=S.recoveryRangeMin||[S.recoveryMin,S.recoveryMin],rs=S.recoveryBetweenSetsRangeMin||[S.recoveryBetweenSetsMin,S.recoveryBetweenSetsMin];
+      return{text:S.sets?`${S.sets} × (${S.perSet} × ${S.distanceM} m), récup libre ${fmtRec(rr[0])}–${fmtRec(rr[1])}, ${fmtRec(rs[0])}–${fmtRec(rs[1])} entre séries`:`${S.reps} × ${S.distanceM} m${rec}`,chips:pct().concat([repChip()])};}
     return{text:`${S.reps} × ${fmtMin(S.durationMin)}${rec}`,chips:pct().concat([meters()])};
   }
   if(sec==='p10'){
