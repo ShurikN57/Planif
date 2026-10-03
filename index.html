@@ -919,6 +919,61 @@ const SOURCES=[
     result:'Cette étude compare seuils ventilatoires, seuils lactate et paramètres de vitesse maximale. Elle montre que les différents repères de seuil sont proches sans être parfaitement interchangeables, et que la vitesse maximale aérobie et la vitesse terminale d’un test ne doivent pas être confondues.',
     limitations:'Petit échantillon de 22 athlètes entraînés ; l’étude sert surtout à la validité méthodologique des repères plutôt qu’à établir des valeurs normatives universelles.',
     themes:['LT1','LT2','VMA','Tests','Méthodologie'],status:'verified'
+  },
+  {
+    id:'SRC_008',
+    title:'Towards Accurate Reference Values for Heart Rate and Speed Zones by Aerobic Fitness and Sex in Long-Distance Runners',
+    authors:['Jonathan Esteve-Lanao','Sergio Sellés-Pérez','Héctor Arévalo-Chico','Roberto Cejuela'],
+    year:2026,journal:'Sports',doi:'10.3390/sports14010029',
+    url:'https://pubmed.ncbi.nlm.nih.gov/41590971/',studyType:'Étude transversale',
+    population:{level:'Coureurs de fond entraînés',n:1411},
+    result:'Chez 1 411 coureurs, VT1 et VT2 surviennent en moyenne à 73,9 ± 5,5 % et 87,6 ± 3,9 % de la vitesse au VO₂peak. Les valeurs varient selon le sexe et le niveau, ce qui en fait surtout des repères de population et non des seuils individuels fixes.',
+    limitations:'Étude transversale sur tapis ; la vitesse au VO₂peak est proche de la VMA pratique sans être strictement interchangeable avec toutes les méthodes de terrain.',
+    themes:['LT1','LT2','VMA','Sexe','Niveau'],status:'verified'
+  },
+  {
+    id:'SRC_009',
+    title:'The accuracy of fixed intensity anchors to estimate lactate thresholds in recreational runners',
+    authors:['Olli-Pekka Nuuttila','Piia Kaikkonen','Harri Sievänen','Tommi Vasankari','Heikki Kyröläinen'],
+    year:2025,journal:'European Journal of Applied Physiology',doi:'10.1007/s00421-025-05748-8',
+    url:'https://pubmed.ncbi.nlm.nih.gov/40088270/',studyType:'Étude transversale',
+    population:{level:'Coureurs loisirs',n:165},
+    result:'Les pourcentages fixes de FC, VO₂ ou vitesse estiment imparfaitement LT1 et LT2. Pour la vitesse, l’erreur absolue moyenne est d’environ 0,6–0,8 km/h pour LT1 et 0,4–0,8 km/h pour LT2.',
+    limitations:'Coureurs loisirs et test incrémental sur tapis ; les résultats portent sur la précision d’ancres fixes et non sur une prescription d’entraînement complète.',
+    themes:['LT1','LT2','Individualisation','Tests'],status:'verified'
+  },
+  {
+    id:'SRC_010',
+    title:'Differences in the ventilatory thresholds in treadmill according to training status in 971 males and 301 females: a cross-sectional study',
+    authors:['José Antonio Benítez-Muñoz','Pedro J Benito','Isabel Guisado-Cuadrado','Rocío Cupeiro','Ana Belén Peinado'],
+    year:2025,journal:'European Journal of Applied Physiology',doi:'10.1007/s00421-024-05622-z',
+    url:'https://pubmed.ncbi.nlm.nih.gov/39316126/',studyType:'Étude transversale',
+    population:{level:'Adultes classés par niveau d’entraînement',n:null},
+    result:'Les pourcentages de VO₂max, FCmax et vitesse maximale auxquels surviennent VT1 et VT2 augmentent avec le niveau d’entraînement. Des pourcentages fixes du maximum risquent donc de mal aligner l’intensité entre individus de niveaux différents.',
+    limitations:'La fiche PubMed est incohérente sur l’effectif masculin : le titre indique 971 hommes tandis que l’abstract en indique 791. L’effectif exact est donc volontairement laissé non figé dans Planif.',
+    themes:['LT1','LT2','Niveau','Individualisation','Tests'],status:'verified'
+  },
+  {
+    id:'SRC_011',
+    title:'Training Periodization, Methods, Intensity Distribution, and Volume in Highly Trained and Elite Distance Runners: A Systematic Review',
+    authors:['Arturo Casado','Fernando González-Mohíno','José María González-Ravé','Carl Foster'],
+    year:2022,journal:'International Journal of Sports Physiology and Performance',doi:'10.1123/ijspp.2021-0435',
+    url:'https://pubmed.ncbi.nlm.nih.gov/35418513/',studyType:'Revue systématique',
+    population:{level:'Coureurs de demi-fond et fond très entraînés / élite',n:null},
+    result:'Les 10 études incluses décrivent généralement une distribution pyramidale, avec alternance jours durs / jours faciles et davantage de polarisation en période compétitive. Les séances à vLT2 et au-dessus de LT2 sont toutes deux utilisées dans la programmation.',
+    limitations:'Population très entraînée / élite et données principalement descriptives ; la revue décrit des pratiques efficaces sans fixer une recette universelle.',
+    themes:['Périodisation','Distribution','Volume','LT2','Organisation'],status:'verified'
+  },
+  {
+    id:'SRC_012',
+    title:'Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners',
+    authors:['Thomas Haugen','Øyvind Sandbakk','Eystein Enoksen','Stephen Seiler','Espen Tønnessen'],
+    year:2021,journal:'Sports Medicine',doi:'10.1007/s40279-021-01481-2',
+    url:'https://pubmed.ncbi.nlm.nih.gov/34021488/',studyType:'Revue',
+    population:{level:'Coureurs 800–1500 m de niveau mondial',n:null},
+    result:'La revue décrit la périodisation, les séances aérobies, le fartlek, les intervalles et le travail neuromusculaire de coureurs de 800–1500 m de niveau mondial. Elle sert dans Planif comme référence complémentaire pour certaines méthodes, pas comme base normative pour le 5 km–marathon.',
+    limitations:'Population et distances plus courtes que le cœur de cible de Planif ; application indirecte pour les coureurs de fond plus longs.',
+    themes:['Fartlek','Périodisation','VO₂max','Côtes','Demi-fond'],status:'verified'
   }
 ];
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
@@ -2659,7 +2714,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.10';
+const APP_VERSION='2026.10.03.11';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
