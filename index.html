@@ -1029,6 +1029,50 @@ const SOURCES=[
     result:'Après 6 semaines de différents entraînements en côte, la performance sur 5 km s’est améliorée en moyenne d’environ 2 % sans protocole clairement optimal. Les intensités les plus élevées favorisaient davantage l’économie de course et plusieurs paramètres neuromusculaires.',
     limitations:'Petit effectif réparti sur cinq protocoles et absence d’un format clairement supérieur ; l’étude soutient l’intérêt des côtes mais pas précisément le format Planif de 10–15 s.',
     themes:['Côtes','Économie de course','Neuromusculaire','5 km'],status:'verified'
+  },
+  {
+    id:'SRC_018',
+    title:'Does Lactate-Guided Threshold Interval Training within a High-Volume Low-Intensity Approach Represent the "Next Step" in the Evolution of Distance Running Training?',
+    authors:['Arturo Casado','Carl Foster','Marius Bakken','Leif Inge Tjelta'],
+    year:2023,journal:'International Journal of Environmental Research and Public Health',doi:'10.3390/ijerph20053782',
+    url:'https://pubmed.ncbi.nlm.nih.gov/36900796/',studyType:'Revue',
+    population:{level:'Coureurs de demi-fond et fond, avec exemples de niveau mondial',n:null},
+    result:'Décrit un modèle de séances de seuil par intervalles guidées par le lactate au sein d’un volume élevé de basse intensité. L’intensité interne est généralement contrôlée autour de 2 à 4,5 mmol/L afin d’accumuler du travail à vitesse élevée tout en limitant la fatigue.',
+    limitations:'Revue descriptive et conceptuelle, avec des exemples issus de pratiques d’élite ; ne démontre pas qu’un taux de lactate, une allure ou une récupération précise soit optimal pour tous les coureurs.',
+    themes:['LT2','Seuil','Intervalles','Lactate','Distribution'],status:'verified'
+  },
+  {
+    id:'SRC_019',
+    title:'Interval training for performance: a scientific and empirical practice. Special recommendations for middle- and long-distance running. Part I: aerobic interval training',
+    authors:['Véronique L Billat'],
+    year:2001,journal:'Sports Medicine',doi:'10.2165/00007256-200131010-00002',
+    url:'https://pubmed.ncbi.nlm.nih.gov/11219499/',studyType:'Revue',
+    population:{level:'Coureurs de demi-fond et fond',n:null},
+    result:'Revue historique et physiologique de l’entraînement intermittent aérobie. Elle traite explicitement du choix de l’intensité, de la durée de travail et des périodes de récupération, depuis les vitesses proches du maximal lactate steady state jusqu’aux vitesses maximales.',
+    limitations:'Publication ancienne et essentiellement de synthèse ; elle fournit des principes de programmation mais ne valide pas les marges chiffrées exactes de Planif.',
+    themes:['LT2','Intervalles','Récupération','VO₂max','Allure'],status:'verified'
+  },
+  {
+    id:'SRC_020',
+    title:'Effect of training on lactate/ventilatory thresholds: a meta-analysis',
+    authors:['B R Londeree'],
+    year:1997,journal:'Medicine & Science in Sports & Exercise',doi:'10.1097/00005768-199706000-00016',
+    url:'https://pubmed.ncbi.nlm.nih.gov/9219214/',studyType:'Méta-analyse',
+    population:{level:'Sujets sédentaires et entraînés',n:null},
+    result:'Méta-analyse de 85 groupes issus de 34 études. L’entraînement améliore les seuils lactate/ventilatoires, avec des gains nets chez les sujets sédentaires ; chez les sujets déjà entraînés, les réponses sont plus faibles et tendent à nécessiter une intensité plus élevée.',
+    limitations:'Population hétérogène et littérature ancienne ; ne permet pas de fixer une marge précise au-dessus de LT1 ou LT2 chez un coureur donné.',
+    themes:['LT1','LT2','Seuil','Intensité','Adaptation'],status:'verified'
+  },
+  {
+    id:'SRC_021',
+    title:'Training variability and threshold density: a conceptual comparison of East African and Norwegian endurance training systems',
+    authors:['Gerasimos V Grivas','Walaa Jumah Alkasasbeh','Ioannis Trigonis','Konstantinos Karakatsanis','Adam Tawfiq Amawi'],
+    year:2026,journal:'Frontiers in Physiology',doi:'10.3389/fphys.2026.1878492',
+    url:'https://pubmed.ncbi.nlm.nih.gov/42389749/',studyType:'Revue narrative',
+    population:{level:'Systèmes d’entraînement de coureurs de fond de niveau mondial',n:null},
+    result:'Compare un modèle est-africain plus variable, collectif et souvent piloté au ressenti avec un modèle norvégien plus structuré et guidé par le lactate. Le fartlek y est décrit comme une pratique à allure variable, adaptable au terrain et à régulation interne.',
+    limitations:'Revue narrative et comparaison conceptuelle, non essai contrôlé ; elle soutient le principe d’un fartlek flexible mais ne démontre pas qu’un volume précis, comme 8–24 min, soit optimal.',
+    themes:['Fartlek','LT2','Périodisation','Distribution','RPE'],status:'verified'
   }
 ];
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
@@ -2769,7 +2813,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.12';;
+const APP_VERSION='2026.10.03.13';;;
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
