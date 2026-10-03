@@ -1193,7 +1193,7 @@ function qualityAdvice(runs,q){
   return'1 qualité : compatible avec 3 sorties ou plus.';
 }
 function syncQualityPrereqs(){
-  const runs=+$('#runs').value,sel=$('qualityCount'),max=maxQualityForRuns(runs);
+  const runs=+$('runs').value,sel=$('qualityCount'),max=maxQualityForRuns(runs);
   [...sel.options].forEach(o=>{o.disabled=+o.value>max;});
   if(+sel.value>max)sel.value=String(max);
   const h=$('qualityHint');if(h)h.textContent=qualityAdvice(runs,+sel.value);
@@ -2547,7 +2547,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.5';
+const APP_VERSION='2026.10.03.6';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2664,8 +2664,8 @@ function appSetHtml(){
     h+=`<div class="card"><div class="settingsTitle"><h2>1. Course</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div>${fSel('Distance à préparer','calDist')}<div class="sf2">${fDate('Date de la course','calRace')}${fDate('Début du plan','calStart')}</div>${fText('Objectif (facultatif)','calGoal')}</div>`;
 
     h+=`<div class="card"><div class="settingsTitle"><h2>2. Structure</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Jours de qualité','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
-    h+=`<div class="sf2">${fSel('Jour qualité 1','q1Day')}${+$('#qualityCount').value>=2?fSel('Jour qualité 2','q2Day'):'<span></span>'}</div>`;
-    if(+$('#qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
+    h+=`<div class="sf2">${fSel('Jour qualité 1','q1Day')}${+$('qualityCount').value>=2?fSel('Jour qualité 2','q2Day'):'<span></span>'}</div>`;
+    if(+$('qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
     h+=`<div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div></div>`;
   }else{
     h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
@@ -2688,10 +2688,10 @@ function updateSet(){
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
   STRUCT_IDS.forEach(id=>{const el=document.querySelector('#scr-set [data-bind="'+id+'"]');if(el)el.disabled=locked;});
-  const q3=document.querySelector('#scr-set [data-bind="q3Day"]');if(q3){const lab=q3.closest('label');if(lab)lab.hidden=+$('#qualityCount').value<3;}
-  const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('#qualityCount').value<2;}
+  const q3=document.querySelector('#scr-set [data-bind="q3Day"]');if(q3){const lab=q3.closest('label');if(lab)lab.hidden=+$('qualityCount').value<3;}
+  const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('qualityCount').value<2;}
   const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
-  const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('#runs').value,+$('#qualityCount').value);
+  const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
 }
 $('scr-set').addEventListener('input',e=>{
   const tp=e.target.closest('[data-timepart]');if(tp){
