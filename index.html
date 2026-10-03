@@ -1065,11 +1065,91 @@ const isCheck=el=>el.type==='checkbox'||el.type==='radio';
 ['q1Day','q2Day','q3Day','slDay'].forEach(id=>{const sel=$(id);[['','Auto'],...['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map((x,i)=>[String(i),x])].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});});
 {const t=new Date(),iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const r=new Date(t.getFullYear(),t.getMonth(),t.getDate()+83);while(r.getDay()!==0)r.setDate(r.getDate()+1);$('calStart').value=iso(t);$('calRace').value=iso(r);}
-const KEY='calc-allures-v7';
+const KEY='calc-allures-v7'; /* migration historique */
+const STORE={
+  global:'planif-global-v1',
+  block:'planif-block-draft-v1',
+  calendar:'planif-calendar-draft-v1',
+  active:'planif-active-plan-v1',
+  history:'planif-plan-history-v1',
+  mode:'planif-mode-v1'
+};
+const GLOBAL_IDS=['vma','s2','s1lo','s1hi','lt1Hr','refDist','refTime','profile','penalty','ref2Dist','ref2Time'];
+const BLOCK_IDS=['block','specDist','specGoal','weeks','vol','runs','qualityCount','assimQ2'];
+const CAL_IDS=['calStart','calRace','calDist','calGoal','vol','runs','qualityCount','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','q3Day','slDay'];
+const STRUCT_IDS=['calDist','calRace','calStart','runs','vol','qualityCount','q1Day','q2Day','q3Day','slDay','av0','av1','av2','av3','av4','av5','av6'];
 const DEFAULTS={};
 IDS.forEach(id=>{const el=$(id);DEFAULTS[id]=isCheck(el)?el.checked:el.value;});
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d)IDS.forEach(id=>{if(d[id]===undefined)return;const el=$(id);if(isCheck(el))el.checked=d[id];else el.value=d[id];});}catch(e){}}
-function save(){try{const d={};IDS.forEach(id=>{const el=$(id);d[id]=isCheck(el)?el.checked:el.value;});localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
+const getJson=(k,f=null)=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??f;}catch(_){return f;}};
+const putJson=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(_){}};
+const captureIds=ids=>{const d={};ids.forEach(id=>{const el=$(id);d[id]=isCheck(el)?el.checked:el.value;});return d;};
+const applyIds=(d,ids)=>{if(!d)return;ids.forEach(id=>{if(d[id]===undefined)return;const el=$(id);if(isCheck(el))el.checked=!!d[id];else el.value=d[id];});};
+let CURRENT_MODE='bloc',activePlan=null,planHistory=[],structureEditing=false;
+
+function loadModeState(mode){
+  applyIds(getJson(mode==='cal'?STORE.calendar:STORE.block,null),mode==='cal'?CAL_IDS:BLOCK_IDS);
+}
+function saveModeState(mode){
+  putJson(mode==='cal'?STORE.calendar:STORE.block,captureIds(mode==='cal'?CAL_IDS:BLOCK_IDS));
+}
+function switchModeState(mode){
+  if(mode===CURRENT_MODE)return;
+  saveModeState(CURRENT_MODE);
+  CURRENT_MODE=mode;
+  $('modeCal').checked=mode==='cal';$('modeBloc').checked=mode==='bloc';
+  loadModeState(mode);
+  try{localStorage.setItem(STORE.mode,mode);}catch(_){}
+  syncQualityPrereqs();
+}
+function load(){
+  const legacy=getJson(KEY,null);
+  if(legacy&&!getJson(STORE.global,null)){
+    applyIds(legacy,IDS);
+    putJson(STORE.global,captureIds(GLOBAL_IDS));
+    putJson(STORE.block,captureIds(BLOCK_IDS));
+    putJson(STORE.calendar,captureIds(CAL_IDS));
+    try{localStorage.setItem(STORE.mode,legacy.modeCal?'cal':'bloc');}catch(_){}
+  }
+  applyIds(getJson(STORE.global,null),GLOBAL_IDS);
+  CURRENT_MODE=localStorage.getItem(STORE.mode)||'bloc';
+  $('modeCal').checked=CURRENT_MODE==='cal';$('modeBloc').checked=CURRENT_MODE==='bloc';
+  loadModeState(CURRENT_MODE);
+  activePlan=getJson(STORE.active,null);
+  planHistory=getJson(STORE.history,[])||[];
+}
+function save(){
+  putJson(STORE.global,captureIds(GLOBAL_IDS));
+  saveModeState(CURRENT_MODE);
+  try{localStorage.setItem(STORE.mode,CURRENT_MODE);}catch(_){}
+}
+function calendarStructure(){
+  return captureIds(STRUCT_IDS);
+}
+function sameStructure(a,b){return JSON.stringify(a||{})===JSON.stringify(b||{});}
+function planTitle(st){return `${DIST[st.calDist].lab} · ${st.calRace||'sans date'}`;}
+function snapshotPlan(C){return JSON.parse(JSON.stringify(C));}
+function archiveActivePlan(reason){
+  if(!activePlan)return;
+  planHistory.unshift({...activePlan,archivedAt:new Date().toISOString(),archiveReason:reason||'remplacé'});
+  planHistory=planHistory.slice(0,20);
+  putJson(STORE.history,planHistory);
+}
+function saveActivePlan(st,C,forceNew=false){
+  if(!C||C.error||st.mode!=='cal')return;
+  const structure=calendarStructure();
+  if(!activePlan||forceNew){
+    activePlan={id:'plan-'+Date.now(),title:planTitle(st),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),structure,plan:snapshotPlan(C)};
+  }else{
+    activePlan={...activePlan,title:planTitle(st),updatedAt:new Date().toISOString(),structure:activePlan.structure||structure,plan:snapshotPlan(C)};
+  }
+  putJson(STORE.active,activePlan);
+}
+function restoreActiveStructure(){
+  if(activePlan&&activePlan.structure){applyIds(activePlan.structure,STRUCT_IDS);saveModeState('cal');}
+}
+$('modeBloc').addEventListener('change',()=>{if($('modeBloc').checked)switchModeState('bloc');});
+$('modeCal').addEventListener('change',()=>{if($('modeCal').checked)switchModeState('cal');});
+
 function readState(){
   return{mode:$('modeCal').checked?'cal':'bloc',calStart:$('calStart').value,calRace:$('calRace').value,calDist:+$('calDist').value,calGoal:parseTime($('calGoal').value),
     avail:[0,1,2,3,4,5,6].map(i=>$('av'+i).checked),q1Day:$('q1Day').value,q2Day:$('q2Day').value,q3Day:$('q3Day').value,slDay:$('slDay').value,vma:num($('vma').value),s2:num($('s2').value),s1lo:num($('s1lo').value),s1hi:num($('s1hi').value),lt1Hr:num($('lt1Hr').value),
@@ -2150,6 +2230,11 @@ function render(){
     lastCalError=C.error||null;
     if(C.error){$('overview').innerHTML=`<h2>Calendrier à compléter</h2><p>${warnText(C.error)}</p>`;$('weeksSec').innerHTML='';lastPlan=null;return;}
     lastPlan=C;lastPred=pred;lastSt=st;
+    if(!structureEditing){
+      if(activePlan&&activePlan.structure&&!sameStructure(calendarStructure(),activePlan.structure)){
+        restoreActiveStructure();
+      }else saveActivePlan(st,C,false);
+    }
     if(calSel){const w=C.weeks[calSel.w],dd=w&&w.days[calSel.d];if(!dd||!dd.items[calSel.i])calSel=null;}
     renderCalHeader(st,C);renderCalBody(st,C);return;}
   if(st.block==='spec'&&!pred&&!st.specGoal){$('overview').innerHTML='<h2>Allure spécifique à définir</h2><p>Saisis une perf de référence ou un chrono objectif pour la distance visée.</p>';$('weeksSec').innerHTML='';return;}
@@ -2435,7 +2520,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.2';
+const APP_VERSION='2026.10.03.3';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2529,8 +2614,13 @@ const fSel=(lab,id)=>`<label class="sf"><span>${lab}</span><select data-bind="${
 const fSw=(lab,id)=>`<label class="sw"><input type="checkbox" data-bind="${id}"${$(id).checked?' checked':''}><span>${lab}</span></label>`;
 const info=(t,body)=>`<details class="info"><summary>ⓘ ${t}</summary>${body.map(p=>`<p>${p}</p>`).join('')}</details>`;
 function appSetHtml(){
-  const cal=$('modeCal').checked;
-  let h=`<div class="card"><h2>Plan</h2><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div>`;
+  const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
+  let h='';
+  if(cal&&activePlan){
+    h+=`<div class="card"><div class="lbl">Plan actif</div><h2 style="margin:.2rem 0 .35rem">${activePlan.title}</h2><div class="lbl">Sauvegardé automatiquement · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+  }
+  let planCard=`<div class="card"><h2>Plan</h2><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div>`;
+  h+=planCard;
   h+=`<div data-when="cal"><div class="sf2">${fDate('Début de préparation','calStart')}${fDate('Date de la course','calRace')}</div><div class="sf2">${fSel('Distance','calDist')}${fText('Objectif (facultatif)','calGoal')}</div>`+
     info('Calendrier',['Le calendrier se construit à rebours depuis la course : la dernière semaine se termine le jour J.','Seul le spécifique 10 km utilise la bibliothèque de séances ; les autres distances gardent leur générateur actuel.'])+`</div>`;
   h+=`<div data-when="bloc">${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div>`+
@@ -2550,9 +2640,12 @@ function appSetHtml(){
 }
 function initSet(){document.querySelectorAll('#scr-set select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
 function updateSet(){
-  const st=lastSt||readState(),cal=$('modeCal').checked;
+  const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
+  STRUCT_IDS.forEach(id=>{const el=document.querySelector('#scr-set [data-bind="'+id+'"]');if(el)el.disabled=locked;});
+  const q3=document.querySelector('#scr-set [data-bind="q3Day"]');if(q3){const lab=q3.closest('label');if(lab)lab.hidden=+$('#qualityCount').value<3;}
+  const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('#qualityCount').value<2;}
   const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('#runs').value,+$('#qualityCount').value);
 }
@@ -2597,9 +2690,18 @@ async function updateApp(btn){
   }
 }
 $('scr-set').addEventListener('click',e=>{
-  const m=e.target.closest('[data-mode]');if(m){$(m.dataset.mode==='cal'?'modeCal':'modeBloc').checked=true;$('f').dispatchEvent(new Event('input'));return;}
+  const m=e.target.closest('[data-mode]');if(m){switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='update'){updateApp(a);return;}
+  if(a.dataset.act==='edit-structure'){structureEditing=true;setBuilt=false;renderApp();return;}
+  if(a.dataset.act==='cancel-structure'){structureEditing=false;restoreActiveStructure();render();setBuilt=false;calOpen=null;renderApp();return;}
+  if(a.dataset.act==='commit-structure'){
+    if(!confirm('Modifier la structure va archiver le plan actif et créer un nouveau plan avec ces paramètres. Continuer ?'))return;
+    archiveActivePlan('structure modifiée');
+    activePlan=null;structureEditing=false;
+    render();if(lastPlan&&lastSt&&lastSt.mode==='cal')saveActivePlan(lastSt,lastPlan,true);
+    setBuilt=false;calOpen=null;renderApp();return;
+  }
   if(a.dataset.act==='copy')$('copyBtn').click(),a.textContent='Plan copié',setTimeout(()=>{a.textContent='Copier le plan';},1800);
   if(a.dataset.act==='reset'){$('resetBtn').click();setBuilt=false;calOpen=null;renderApp();}
   if(a.dataset.act==='audit'){setUi('expert');if($('auditSec').hidden)$('auditBtn').click();$('auditSec').scrollIntoView();}
