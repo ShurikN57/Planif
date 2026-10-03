@@ -1531,10 +1531,89 @@ const SOURCES=[
     "LT1"
   ],
   "status": "verified"
+},
+{
+  "id": "SRC_037",
+  "title": "Polarized vs. Threshold Training Intensity Distribution on Endurance Sport Performance: A Systematic Review and Meta-Analysis of Randomized Controlled Trials",
+  "authors": [
+    "Michael A. Rosenblat",
+    "Andrew S. Perrotta",
+    "Bill Vicenzino"
+  ],
+  "year": 2019,
+  "journal": "Journal of Strength and Conditioning Research",
+  "doi": "10.1519/JSC.0000000000002618",
+  "url": "https://pubmed.ncbi.nlm.nih.gov/29863593/",
+  "studyType": "Revue systématique et méta-analyse",
+  "population": {
+    "level": "Athlètes d’endurance entraînés ; quatre études en revue, trois en méta-analyse",
+    "n": null
+  },
+  "result": "La méta-analyse du contre-la-montre favorise la distribution polarisée par rapport à celle centrée sur le seuil : effet standardisé −0,66 (IC95 % −1,17 à −0,15).",
+  "limitations": "Seulement quatre études retenues, dont trois agrégées ; qualité méthodologique limitée (PEDro 4–5/10). Comparaison POL/THR, pas intervalles/continu ni POL/pyramidal. Ne valide pas une répartition exacte, une table VO₂ ou les formats S1/S2 Planif.",
+  "themes": [
+    "Distribution",
+    "Polarisation",
+    "Performance"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_038",
+  "title": "Effects of Strength Training on Running Economy in Highly Trained Runners: A Systematic Review With Meta-Analysis of Controlled Trials",
+  "authors": [
+    "Carlos Balsalobre-Fernández",
+    "Jordan Santos-Concejero",
+    "Gerasimos V. Grivas"
+  ],
+  "year": 2016,
+  "journal": "Journal of Strength and Conditioning Research",
+  "doi": "10.1519/JSC.0000000000001316",
+  "url": "https://pubmed.ncbi.nlm.nih.gov/26694507/",
+  "studyType": "Revue systématique et méta-analyse",
+  "population": {
+    "level": "93 coureurs compétitifs très entraînés répartis dans cinq études ; VO₂max >60 ml/kg/min",
+    "n": 93
+  },
+  "result": "Sur cinq essais contrôlés, le renforcement améliore l’économie de course : différence moyenne standardisée −1,42 (IC95 % −2,23 à −0,60). Les interventions incluses durent 8–12 semaines, à raison de 2–3 séances hebdomadaires.",
+  "limitations": "Économie de course comme critère principal, petit nombre d’études et population très entraînée. Ne garantit pas un gain de chrono, une masse corporelle inchangée ou l’absence d’effet sur VO₂max. Chevauchement possible avec Blagrove : ne pas compter ces synthèses comme des confirmations indépendantes. Les côtes Planif sont une transposition indirecte.",
+  "themes": [
+    "Économie de course",
+    "Renforcement",
+    "Pliométrie"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_039",
+  "title": "Effects of tapering on performance: a meta-analysis",
+  "authors": [
+    "Laurent Bosquet",
+    "Jonathan Montpetit",
+    "Denis Arvisais",
+    "Iñigo Mujika"
+  ],
+  "year": 2007,
+  "journal": "Medicine & Science in Sports & Exercise",
+  "doi": "10.1249/mss.0b013e31806010e0",
+  "url": "https://pubmed.ncbi.nlm.nih.gov/17762369/",
+  "studyType": "Méta-analyse",
+  "population": {
+    "level": "Athlètes compétitifs de différents sports ; 27 études incluses",
+    "n": null
+  },
+  "result": "Les analyses favorisent un affûtage de deux semaines avec réduction exponentielle du volume de 41–60 %, en conservant intensité et fréquence. La performance est mesurée en compétition ou par des tests de terrain.",
+  "limitations": "Cadre issu de sous-groupes et de données pré/post : pas une règle mathématique universelle ni une comparaison randomisée de toutes les combinaisons. Adapter au sport, à la charge et à l’athlète ; ne valide pas le découpage J−2/J−1 Planif. Chevauchement possible avec Wang, sans indépendance présumée.",
+  "themes": [
+    "Taper",
+    "Volume",
+    "Performance"
+  ],
+  "status": "verified"
 }
 ];
 /* Portée documentaire : les sources de contexte ne prescrivent aucune nouvelle règle. */
-const CONTEXT_SOURCE_IDS=['SRC_026','SRC_027','SRC_028','SRC_029','SRC_031','SRC_032','SRC_033','SRC_034'];
+const CONTEXT_SOURCE_IDS=['SRC_026','SRC_027','SRC_028','SRC_029','SRC_031','SRC_032','SRC_033','SRC_034','SRC_038'];
 const sourceScope=id=>CONTEXT_SOURCE_IDS.includes(id)?'context':'engine';
 const scopeLabel=id=>sourceScope(id)==='context'?'Contexte':'Moteur';
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
@@ -1898,18 +1977,77 @@ const FINDINGS=[
       "population": "Directe : coureurs étudiés en entraînement en côte.",
       "outcome": "Plus pertinent que le renforcement général pour les côtes, mais ne valide pas exactement 6–10 × 10–15 s à 6–10 % ni leur statut hors qualité."
     }
+  },
+{
+  "id": "FND_025",
+  "sourceId": "SRC_037",
+  "questionId": "Q_INTENSITY_DISTRIBUTION",
+  "statement": "La méta-analyse du contre-la-montre favorise la distribution polarisée par rapport à celle centrée sur le seuil : effet standardisé −0,66 (IC95 % −1,17 à −0,15).",
+  "parameters": {
+    "reviewStudies": 4,
+    "metaAnalysisStudies": 3,
+    "effectSize": -0.66,
+    "ci95": [
+      -1.17,
+      -0.15
+    ]
+  },
+  "direction": "nuances",
+  "directness": {
+    "population": "Athlètes d’endurance entraînés, multisports ; transposition selon la population Planif.",
+    "outcome": "Performance en contre-la-montre directement étudiée ; lien indirect aux budgets exacts de qualité. POL/THR ne permet pas de conclure sur POL/pyramidal."
   }
+},
+{
+  "id": "FND_026",
+  "sourceId": "SRC_038",
+  "questionId": "Q_RUNNING_ECONOMY",
+  "statement": "Sur cinq essais contrôlés, le renforcement améliore l’économie de course : différence moyenne standardisée −1,42 (IC95 % −2,23 à −0,60). Les interventions incluses durent 8–12 semaines, à raison de 2–3 séances hebdomadaires.",
+  "parameters": {
+    "includedStudies": 5,
+    "totalParticipants": 93,
+    "standardizedMeanDifference": -1.42,
+    "ci95": [
+      -2.23,
+      -0.6
+    ]
+  },
+  "direction": "nuances",
+  "directness": {
+    "population": "Directe pour les coureurs très entraînés ; généralisation prudente aux récréatifs.",
+    "outcome": "Économie de course directement mesurée ; contexte renforcement, transposition indirecte aux côtes courtes, sans validation du format Planif ni indépendance supposée vis-à-vis de Blagrove."
+  }
+},
+{
+  "id": "FND_027",
+  "sourceId": "SRC_039",
+  "questionId": "Q_TAPER",
+  "statement": "Les analyses favorisent un affûtage de deux semaines avec réduction exponentielle du volume de 41–60 %, en conservant intensité et fréquence. La performance est mesurée en compétition ou par des tests de terrain.",
+  "parameters": {
+    "includedStudies": 27,
+    "taperWeeks": 2,
+    "volumeReductionPct": [
+      41,
+      60
+    ]
+  },
+  "direction": "nuances",
+  "directness": {
+    "population": "Athlètes compétitifs multisports ; transposition au calendrier de course à pied.",
+    "outcome": "Performance directement analysée, prescription précise individualisée ; durée et pourcentages décrivent le cadre favorable de la synthèse, sans valider chaque journée Planif."
+  }
+}
 ];
 const RULE_META=(()=>{
   const m=(questionId,kind,meta={})=>Object.assign({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null,reviewSummary:null},meta);
   return{
   'blocks.aero.A':m('Q_BLOCK_WORK_VOLUME','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Le bloc aérobie comporte une seule vraie qualité hebdomadaire : un fartlek de 8–24 min de travail cumulé, piloté au ressenti et sans cible d’allure. Les efforts courts peuvent être plus vifs ; les longs restent davantage contrôlés.'}),
   'blocks.aero.B':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Aucune deuxième ou troisième vraie qualité n’est générée en développement aérobie, même si le réglage général autorise 2 ou 3 qualités.'}),
-  'blocks.aero.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{findings:["FND_014"],origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Bloc à dominante basse intensité ; le budget de travail qualitatif est limité à 5–15 %. SRC_035 : soutien indirect issu de l’aviron à une dominante basse intensité ; le budget exact reste heuristique.'}),
+  'blocks.aero.budget':m("Q_INTENSITY_DISTRIBUTION","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_014", "FND_025"], "lastReview": "2026-10-03", "reviewSummary": "Bloc à dominante basse intensité ; le budget de travail qualitatif est limité à 5–15 %. SRC_035 : soutien indirect issu de l’aviron à une dominante basse intensité ; le budget exact reste heuristique. SRC_037 compare POL/THR, dans un contexte différent de LOW/MIX chez les rameurs : ces études ne valident ni une supériorité universelle ni les 5–15 % Planif."}),
   'blocks.aero.maxQualities':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Plafond spécifique du bloc aérobie : une seule vraie séance de qualité par semaine.'}),
   'blocks.aero.fartlek':m("Q_SESSION_COMBINATION","organizational",{"origin": "internal_heuristic", "confidence": "low", "decision": "keep", "findings": [], "lastReview": "2026-10-03", "reviewSummary": "Fartlek sans cible chronométrique : effort contrôlé au ressenti, récupération en footing facile, structure adaptable au terrain. Aucune preuve externe directement reliée dans la revue actuelle : prescription pratique Planif, sans revendication de consensus scientifique vérifié."}),
   'blocks.aero.ramp':m('Q_LOAD_PROGRESSION','organizational'),
-  'blocks.aero.shortHills':m("Q_HILLS","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "keep", "findings": ["FND_024", "FND_005", "FND_006"], "lastReview": "2026-10-03", "reviewSummary": "SRC_017 apporte une comparaison de programmes de côtes chez des coureurs ; SRC_026/027 fournissent un contexte économie et renforcement indirect. Le format exact 6–10 × 10–15 s à 6–10 %, l’alternance avec les lignes droites et le statut hors qualité restent heuristiques."}),
+  'blocks.aero.shortHills':m("Q_HILLS","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "keep", "findings": ["FND_024", "FND_005", "FND_006", "FND_026"], "lastReview": "2026-10-03", "reviewSummary": "SRC_017 apporte une comparaison de programmes de côtes chez des coureurs ; SRC_026/027 fournissent un contexte économie et renforcement indirect. Le format exact 6–10 × 10–15 s à 6–10 %, l’alternance avec les lignes droites et le statut hors qualité restent heuristiques. SRC_038 apporte un contexte supplémentaire sur renforcement et économie, avec possible chevauchement des études de SRC_027 ; pas de validation directe du format de côtes."}),
   'blocks.assimilation':m('Q_ASSIMILATION','organizational'),
   'blocks.eco.A':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.eco.B':m('Q_SESSION_COMBINATION','organizational'),
@@ -1927,7 +2065,7 @@ const RULE_META=(()=>{
   'blocks.spec.0.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
   'blocks.spec.1.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.spec.1.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
-  'blocks.spec.1.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_003"], "lastReview": "2026-10-03", "reviewSummary": "Essai 10 km sur la distribution globale ; avantage seulement en sous-analyse. Budget Planif exact non validé."}),
+  'blocks.spec.1.budget':m("Q_INTENSITY_DISTRIBUTION","organizational",{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_003", "FND_025"], "lastReview": "2026-10-03", "reviewSummary": "Essai 10 km sur la distribution globale ; avantage seulement en sous-analyse. Budget Planif exact non validé. SRC_037 complète la revue de distribution globale POL/THR ; lien indirect au budget spécifique 10 km, dont les valeurs exactes restent heuristiques."}),
   'blocks.spec.2.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.spec.2.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.spec.2.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
@@ -1946,7 +2084,7 @@ const RULE_META=(()=>{
   'calendar.phaseSequence':m('Q_PERIODIZATION','organizational'),
   'calendar.placement':m('Q_SESSION_SPACING','organizational'),
   'calendar.segment':m('Q_PERIODIZATION','organizational'),
-  'calendar.taper':m("Q_TAPER","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_002", "FND_021"], "lastReview": "2026-10-03", "reviewSummary": "SRC_006 soutient la réduction du volume avec maintien de l’intensité lors de l’affûtage ; SRC_023 décrit les plans marathon. Soutien au principe général ; J−2 repos et J−1 15–25 min faciles + 3–5 lignes droites de 10–15 s restent des heuristiques."}),
+  'calendar.taper':m("Q_TAPER","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_002", "FND_021", "FND_027"], "lastReview": "2026-10-03", "reviewSummary": "SRC_006 soutient la réduction du volume avec maintien de l’intensité lors de l’affûtage ; SRC_023 décrit les plans marathon. Soutien au principe général ; J−2 repos et J−1 15–25 min faciles + 3–5 lignes droites de 10–15 s restent des heuristiques. SRC_039 fournit le cadre général de deux semaines et 41–60 % de réduction ; ce résultat ne rend pas universels ces chiffres ni le découpage quotidien Planif. SRC_006 et SRC_039 ne sont pas présumées indépendantes."}),
   'calendar.tieBreak':m('Q_PERIODIZATION','organizational'),
   'hills.descentRecoveryFactor':m('Q_HILLS','physiological'),
   'hills.long':m('Q_HILLS','physiological'),
@@ -3648,7 +3786,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.18';
+const APP_VERSION='2026.10.03.19';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
