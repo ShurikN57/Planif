@@ -334,7 +334,7 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 </head>
 <body data-ui="app">
 <div class="shell" id="appShell">
-  <div class="appbar"><div><button type="button" class="back" id="appBack" hidden>‹ Retour</button><h1 id="appTitle">Aujourd'hui</h1></div><button type="button" id="toExpert">Vue experte</button></div>
+  <div class="appbar" id="appBar"><div><button type="button" class="back" id="appBack" hidden>‹ Retour</button><h1 id="appTitle"></h1></div></div>
   <div class="screens">
     <section class="screen" id="scr-today" aria-label="Aujourd'hui"></section>
     <section class="screen" id="scr-cal" aria-label="Calendrier" hidden></section>
@@ -2547,7 +2547,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.6';
+const APP_VERSION='2026.10.03.7';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2575,7 +2575,7 @@ function appTodayHtml(){
   return h;
 }
 /* ---------- Calendrier mobile (v9.1) : semaines repliables, lecture directe de w.days ---------- */
-let calOpen=null;
+let calOpen=null,calendarTimelineOpen=false;
 function appCalHtml(){
   const C=lastPlan,st=lastSt;if(!C||!C.weeks||(st&&st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${lastCalError?warnText(lastCalError):'Aucun plan.'}</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
   const isCal=st.mode==='cal'&&C.weeks[0]&&C.weeks[0].days;
@@ -2585,9 +2585,13 @@ function appCalendarWeeks(C,st){
   const t=today0(),d=C.race.distance;
   const curIdx=C.weeks.findIndex(w=>w.startDate<=t&&t<=w.endDate);
   if(calOpen===null)calOpen=new Set([curIdx>=0?curIdx:0]);
-  let h=`<div class="card"><div class="lbl">${DIST[d].lab}, ${fmtDs(C.start)} → ${fmtDs(C.race.date)}</div><h2 style="margin:.2rem 0 .6rem">${C.weeks.length} semaines</h2><div class="phaseList">`;
-  phaseGroups(C).forEach(g=>{h+=`<b>S${g.from+1}${g.to>g.from?`–S${g.to+1}`:''}</b><span><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase,d)}</span>`;});
-  h+='</div></div>';
+  let h=`<div class="card"><div class="lbl">${DIST[d].lab}, ${fmtDs(C.start)} → ${fmtDs(C.race.date)}</div><div class="settingsTitle" style="margin:.2rem 0 0"><h2 style="margin:0">${C.weeks.length} semaines</h2><button type="button" class="ghost" data-timeline="1" aria-expanded="${calendarTimelineOpen}">${calendarTimelineOpen?'Masquer':'Afficher'} la chronologie</button></div>`;
+  if(calendarTimelineOpen){
+    h+='<div class="phaseList" style="margin-top:.7rem">';
+    phaseGroups(C).forEach(g=>{h+=`<b>S${g.from+1}${g.to>g.from?`–S${g.to+1}`:''}</b><span><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase,d)}</span>`;});
+    h+='</div>';
+  }
+  h+='</div>';
   C.weeks.forEach((w,i)=>{
     const open=calOpen.has(i),pos=w.phase!=='assim'&&w.segLen?` ${w.segK+1}/${w.segLen}`:'';
     h+=`<div class="cw${w.assimilation?' assimW':''}${w.raceWeek?' raceW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>`+
@@ -2621,7 +2625,7 @@ function appBlockWeeks(C,st){
 function appRefHtml(){
   const st=lastSt,C=lastPlan;if(!st)return'';
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big">${fmtPace(v)}</div><div class="lbl">${sub||fmtSpd(v)+' km/h'}</div></div>`;
-  let h=`<button type="button" class="libEntry" data-openlib="1"><span>Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span aria-hidden="true">›</span></button><div class="refgrid">${c('VMA',st.vma)}${c('Second seuil',st.s2)}${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}</div>`;
+  let h=`<div class="refgrid">${c('VMA',st.vma)}${c('Second seuil',st.s2)}${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}</div>`;
   h+=`<div class="card" style="margin-top:.8rem"><details class="info"><summary>ⓘ Repères et zones</summary><p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p></details></div>`;
   if(lastPred){h+='<div class="card"><h2>Chronos estimés</h2><div class="kv">'+lastPred.map(p=>`<span>${p.lab}${p.isRef?' (réf.)':''}</span><span class="v">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+
     `</div><details class="info" style="margin-top:.4rem"><summary>ⓘ Méthode</summary><p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p></details></div>`;}
@@ -2630,6 +2634,7 @@ function appRefHtml(){
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
       '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+
       `</div><details class="info" style="margin-top:.4rem"><summary>ⓘ Charge</summary><p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p></details></div>`;}
+  h+=`<button type="button" class="libEntry" data-openlib="1" style="margin-top:.8rem"><span>Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span aria-hidden="true">›</span></button>`;
   return h;
 }
 /* ---------- Réglages (v9.2) : contrôles reliés aux champs existants, une seule source de vérité ---------- */
@@ -2654,23 +2659,6 @@ function appSetHtml(){
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Physiologie</h2></div><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><div class="sf2">${fText('VMA (km/h)','vma','decimal')}${fText('Second seuil (km/h)','s2','decimal')}</div><div class="sf2">${fText('LT1 bas (km/h)','s1lo','decimal')}${fText('LT1 haut (km/h)','s1hi','decimal')}</div><div class="sf2">${fText('FC LT1 (bpm)','lt1Hr','numeric')}<span></span></div></div>`;
 
-  h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
-
-  if(cal&&activePlan){
-    h+=`<div class="card"><div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
-  }
-
-  if(cal){
-    h+=`<div class="card"><div class="settingsTitle"><h2>1. Course</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div>${fSel('Distance à préparer','calDist')}<div class="sf2">${fDate('Date de la course','calRace')}${fDate('Début du plan','calStart')}</div>${fText('Objectif (facultatif)','calGoal')}</div>`;
-
-    h+=`<div class="card"><div class="settingsTitle"><h2>2. Structure</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Jours de qualité','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
-    h+=`<div class="sf2">${fSel('Jour qualité 1','q1Day')}${+$('qualityCount').value>=2?fSel('Jour qualité 2','q2Day'):'<span></span>'}</div>`;
-    if(+$('qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
-    h+=`<div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div></div>`;
-  }else{
-    h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
-  }
-
   h+=`<div class="card"><div class="settingsTitle"><h2>Chronos de référence</h2></div>${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
   if(!ref2Open){
     h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
@@ -2678,6 +2666,23 @@ function appSetHtml(){
     h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
   }
   h+=`<p class="lbl" id="setProfileHint"></p></div>`;
+
+  h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
+
+  if(cal&&activePlan){
+    h+=`<div class="card"><div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+  }
+
+  if(cal&&(!activePlan||structureEditing)){
+    h+=`<div class="card"><div class="settingsTitle"><h2>1. Course</h2></div>${fSel('Distance à préparer','calDist')}<div class="sf2">${fDate('Date de la course','calRace')}${fDate('Début du plan','calStart')}</div>${fText('Objectif (facultatif)','calGoal')}</div>`;
+
+    h+=`<div class="card"><div class="settingsTitle"><h2>2. Structure</h2></div><div class="sf2">${fSel('Sorties par semaine','runs')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Jours de qualité','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
+    h+=`<div class="sf2">${fSel('Jour qualité 1','q1Day')}${+$('qualityCount').value>=2?fSel('Jour qualité 2','q2Day'):'<span></span>'}</div>`;
+    if(+$('qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
+    h+=`<div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div></div>`;
+  }else if(!cal){
+    h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
+  }
 
   h+=`<div class="card"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
@@ -2861,15 +2866,15 @@ function sessionScreenHtml(){
 function openSession(ref){appSession=ref;appOpt=0;renderApp();window.scrollTo(0,0);}
 function renderApp(){
   if(appSession){
-    $('appTitle').textContent='Séance';$('appBack').hidden=false;
+    $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
     ['today','cal','ref','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml();
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
   $('scr-session').hidden=true;
-  if(appLib){$('appTitle').textContent='Bibliothèque';$('appBack').hidden=false;['today','cal','ref','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=false;$('scr-lib').innerHTML=appLibHtml();
+  if(appLib){$('appBar').hidden=false;$('appTitle').textContent='Bibliothèque';$('appBack').hidden=false;['today','cal','ref','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=false;$('scr-lib').innerHTML=appLibHtml();
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});return;}
-  $('scr-lib').hidden=true;$('appBack').hidden=true;
-  $('appTitle').textContent=TABS[appTab];
+  $('scr-lib').hidden=true;$('appBack').hidden=true;$('appBar').hidden=true;
+  $('appTitle').textContent='';
   document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   ['today','cal','ref','set'].forEach(k=>{$('scr-'+k).hidden=k!==appTab;});
   if(appTab==='set'){if(!setBuilt){$('scr-set').innerHTML=appSetHtml();initSet();setBuilt=true;}updateSet();return;}
@@ -2878,7 +2883,9 @@ function renderApp(){
 }
 const setUi=u=>{document.body.dataset.ui=u;setBuilt=false;try{localStorage.setItem('calc-allures-ui',u);}catch(e){}if(u==='app')renderApp();window.scrollTo(0,0);};
 document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;appSession=null;appLib=false;setBuilt=false;appTab=b.dataset.tab;try{localStorage.setItem('calc-allures-tab',appTab);}catch(_){}renderApp();window.scrollTo(0,0);});
-$('appShell').addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){const p=o.dataset.open.split(',');openSession(p[1]==='q'?{w:+p[0],q:+p[2]}:{w:+p[0],d:+p[1],i:+p[2]});return;}
+$('appShell').addEventListener('click',e=>{
+  const tl=e.target.closest('[data-timeline]');if(tl){calendarTimelineOpen=!calendarTimelineOpen;renderApp();return;}
+  const o=e.target.closest('[data-open]');if(o){const p=o.dataset.open.split(',');openSession(p[1]==='q'?{w:+p[0],q:+p[2]}:{w:+p[0],d:+p[1],i:+p[2]});return;}
   const wk=e.target.closest('[data-week]');if(wk){const i=+wk.dataset.week;if(calOpen.has(i))calOpen.delete(i);else calOpen.add(i);renderApp();return;}
   const ol=e.target.closest('[data-openlib]');if(ol){appLib=true;renderApp();window.scrollTo(0,0);return;}
   const ls=e.target.closest('[data-lsec]');if(ls){libSector=ls.dataset.lsec;libFam='all';renderApp();return;}
@@ -2887,7 +2894,6 @@ $('appShell').addEventListener('click',e=>{const o=e.target.closest('[data-open]
   const lt=e.target.closest('[data-lib]');if(lt){const[sector,k]=lt.dataset.lib.split('|');appSession={lib:{sector,key:decodeURIComponent(k)}};renderApp();window.scrollTo(0,0);return;}
   const op=e.target.closest('[data-opt]');if(op){appOpt=+op.dataset.opt;renderApp();return;}
   const g=e.target.closest('[data-goto]');if(!g)return;if(g.dataset.goto==='expert')setUi('expert');else{appTab=g.dataset.goto;setBuilt=false;renderApp();}});
-$('toExpert').addEventListener('click',()=>setUi('expert'));
 $('appBack').addEventListener('click',()=>{if(appSession){const fromLib=!!appSession.lib;appSession=null;if(!fromLib)appLib=false;}else appLib=false;renderApp();window.scrollTo(0,0);});
 $('toApp').addEventListener('click',()=>setUi('app'));
 $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEventListener('change',()=>renderApp());
