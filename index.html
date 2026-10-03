@@ -298,6 +298,15 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .pills input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .pills input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
 .cta.ghost{background:transparent;color:var(--accent)}
+.settingsTitle{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.65rem}
+.settingsTitle h2{margin:0}
+.lockTag{font-size:.75rem;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.2rem .5rem}
+.timeWheel{display:flex;align-items:end;gap:.35rem;margin-bottom:.7rem}
+.timeWheel label{flex:1;min-width:0;font-size:.8rem;color:var(--muted)}
+.timeWheel select{width:100%;font-size:1.05rem;min-height:44px;padding:.45rem .35rem;border-radius:8px}
+.timeSep{padding:0 0 .8rem;color:var(--muted);font-weight:700}
+.addRef{width:100%;min-height:44px;border:1px dashed var(--line);background:var(--surface-2);color:var(--accent);font-weight:700;border-radius:10px;margin:.1rem 0 .7rem}
+.sectionHint{font-size:.84rem;color:var(--muted);margin:-.15rem 0 .7rem}
 @media (max-width:340px){.sf2{grid-template-columns:1fr}}
 /* ===== Bibliothèque (v9.3) ===== */
 .appbar h1{overflow-wrap:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(1.35rem,6.4vw,2rem)}
@@ -1030,8 +1039,8 @@ const DIST=[{lab:'5 km',km:5},{lab:'10 km',km:10},{lab:'Semi',km:21.0975},{lab:'
 const PROFILES=['Très endurant','Endurant','Équilibré','Rapide','Très rapide'].map((lab,i)=>({lab,step:RULES.prediction.profileSteps[i]}));
 const MEASURED=5;
 const ZONES={z1:{lab:'EF, sous S1',c:'var(--z1)'},z2:{lab:'Entre S1 et S2',c:'var(--z2)'},z3:{lab:'Autour de S2',c:'var(--z3)'},z4:{lab:'VO₂max',c:'var(--z4)'}};
-PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${p.lab} (${String(p.step).replace('.',',')} km/h par palier)`;if(i===2)o.selected=true;$('profile').appendChild(o);});
-{const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré (écart calculé sur tes 2 perfs)';$('profile').appendChild(o);}
+PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
+{const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
 
 /* ---------- utilitaires ---------- */
 const num=s=>parseFloat(String(s).replace(',','.'));
@@ -2236,7 +2245,7 @@ function render(){
   st.v10=pred?pred[1].v:null;st.v5=pred?pred[0].v:null;
   const sug=suggestProfile(st);
   $('profileHint').className='hint'+(sug?' ok':'');
-  $('profileHint').textContent=sug?`Écart mesuré : ${sug.step.toFixed(2).replace('.',',')} km/h par palier, profil le plus proche : ${PROFILES[sug.best].lab}.`:'';
+  $('profileHint').textContent=sug?`Profil le plus proche : ${PROFILES[sug.best].lab}.`:'';
   renderPred(st,pred);
   const cal=st.mode==='cal';
   $('calFs').style.display=cal?'':'none';['blockRow','weeksLab'].forEach(id=>{$(id).style.display=cal?'none':'';});
@@ -2538,7 +2547,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.4';
+const APP_VERSION='2026.10.03.5';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2624,36 +2633,53 @@ function appRefHtml(){
   return h;
 }
 /* ---------- Réglages (v9.2) : contrôles reliés aux champs existants, une seule source de vérité ---------- */
-let setBuilt=false,lastCalError=null;
+let setBuilt=false,lastCalError=null,ref2Open=!!$('ref2Time').value;
 const escA=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const fText=(lab,id,mode)=>`<label class="sf"><span>${lab}</span><input data-bind="${id}" value="${escA($(id).value)}" inputmode="${mode||'text'}" autocomplete="off"></label>`;
 const fDate=(lab,id)=>`<label class="sf"><span>${lab}</span><input type="date" data-bind="${id}" value="${escA($(id).value)}"></label>`;
 const fSel=(lab,id)=>`<label class="sf"><span>${lab}</span><select data-bind="${id}">${$(id).innerHTML}</select></label>`;
 const fSw=(lab,id)=>`<label class="sw"><input type="checkbox" data-bind="${id}"${$(id).checked?' checked':''}><span>${lab}</span></label>`;
 const info=(t,body)=>`<details class="info"><summary>ⓘ ${t}</summary>${body.map(p=>`<p>${p}</p>`).join('')}</details>`;
+const opt=(v,cur)=>`<option value="${v}"${v===cur?' selected':''}>${String(v).padStart(2,'0')}</option>`;
+function timeWheelHtml(target,dist){
+  const sec=parseTime($(target).value)||0,h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=Math.floor(sec%60),long=+dist>=2;
+  const range=(a,b,cur)=>Array.from({length:b-a+1},(_,i)=>opt(a+i,cur)).join('');
+  return `<div class="timeWheel" data-time-target="${target}" data-time-long="${long?'1':'0'}">`+
+    (long?`<label>h<select data-timepart="h">${range(0,9,h)}</select></label><span class="timeSep">:</span>`:'')+
+    `<label>min<select data-timepart="m">${range(0,long?59:99,m)}</select></label><span class="timeSep">:</span><label>sec<select data-timepart="s">${range(0,59,ss)}</select></label></div>`;
+}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   let h='';
+
+  h+=`<div class="card"><div class="settingsTitle"><h2>Physiologie</h2></div><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><div class="sf2">${fText('VMA (km/h)','vma','decimal')}${fText('Second seuil (km/h)','s2','decimal')}</div><div class="sf2">${fText('LT1 bas (km/h)','s1lo','decimal')}${fText('LT1 haut (km/h)','s1hi','decimal')}</div><div class="sf2">${fText('FC LT1 (bpm)','lt1Hr','numeric')}<span></span></div></div>`;
+
+  h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
+
   if(cal&&activePlan){
-    h+=`<div class="card"><div class="lbl">Plan actif</div><h2 style="margin:.2rem 0 .35rem">${activePlan.title}</h2><div class="lbl">Sauvegardé automatiquement · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+    h+=`<div class="card"><div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
   }
-  let planCard=`<div class="card"><h2>Plan</h2><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div>`;
-  h+=planCard;
-  h+=`<div data-when="cal"><div class="sf2">${fDate('Début de préparation','calStart')}${fDate('Date de la course','calRace')}</div><div class="sf2">${fSel('Distance','calDist')}${fText('Objectif (facultatif)','calGoal')}</div>`+
-    info('Calendrier',['Le calendrier se construit à rebours depuis la course : la dernière semaine se termine le jour J.','Seul le spécifique 10 km utilise la bibliothèque de séances ; les autres distances gardent leur générateur actuel.'])+`</div>`;
-  h+=`<div data-when="bloc">${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div>`+
-    `<div class="sf2">${fSel('Semaines de charge','weeks')}<span></span></div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div></div>`;
-  h+=`<div class="card"><h2>Semaine</h2><div class="sf2">${fText('Volume moyen','vol')}${fSel('Sorties par semaine','runs')}</div><div class="sf2">${fSel('Qualités par semaine','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
-  h+=`<div data-when="cal"><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div>`+
-    `<div class="sf2">${fSel('Jour qualité 1','q1Day')}${fSel('Jour qualité 2','q2Day')}</div><div class="sf2">${fSel('Jour qualité 3','q3Day')}${fSel('Jour sortie longue','slDay')}</div></div>`;
-  h+=info('Volume',['Saisis le volume sous la forme 5h00. Il vaut pour toute la préparation, semaines d\'assimilation et de course comprises, et module légèrement le volume des séances de qualité.','Les footings restent dans leurs plages plutôt que de tomber à la minute près : la moyenne réelle peut s\'écarter un peu de la cible.'])+'</div>';
-  h+=`<div class="card"><h2>Repères</h2><div class="sf2">${fText('VMA (km/h)','vma','decimal')}${fText('Second seuil (km/h)','s2','decimal')}</div><div class="sf2">${fText('LT1 bas (km/h)','s1lo','decimal')}${fText('LT1 haut (km/h)','s1hi','decimal')}</div><div class="sf2">${fText('FC LT1 (bpm)','lt1Hr','numeric')}<span></span></div>`+
-    info('Repères',['VMA, premier et second seuil sont des repères indépendants : le moteur ne déduit aucun seuil de la VMA.','La FC LT1 sert de plafond aux séances d’endurance active ; laisse le champ vide si tu ne connais pas encore ce repère.'])+'</div>';
-  h+=`<div class="card"><h2>Chronos de référence</h2><div class="sf2">${fSel('Perf de référence','refDist')}${fText('Temps','refTime')}</div>${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`+
-    `<div class="sf2">${fSel('Distance 2 (facultatif)','ref2Dist')}${fText('Temps 2','ref2Time')}</div><p class="lbl" id="setProfileHint"></p>`+
-    info('Estimation',['Estimation empirique : écart de vitesse constant par palier entre distances, selon le profil.','Avec une deuxième perf, l\'appli calcule ton écart réel et propose un profil ; le profil « Mesuré » l\'utilise directement.'])+'</div>';
-  h+=`<div class="card"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button>`+
-    `<button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
+
+  if(cal){
+    h+=`<div class="card"><div class="settingsTitle"><h2>1. Course</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div>${fSel('Distance à préparer','calDist')}<div class="sf2">${fDate('Date de la course','calRace')}${fDate('Début du plan','calStart')}</div>${fText('Objectif (facultatif)','calGoal')}</div>`;
+
+    h+=`<div class="card"><div class="settingsTitle"><h2>2. Structure</h2>${locked?'<span class="lockTag">Verrouillé</span>':''}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Jours de qualité','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
+    h+=`<div class="sf2">${fSel('Jour qualité 1','q1Day')}${+$('#qualityCount').value>=2?fSel('Jour qualité 2','q2Day'):'<span></span>'}</div>`;
+    if(+$('#qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
+    h+=`<div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div></div>`;
+  }else{
+    h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
+  }
+
+  h+=`<div class="card"><div class="settingsTitle"><h2>Chronos de référence</h2></div>${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
+  if(!ref2Open){
+    h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
+  }else{
+    h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
+  }
+  h+=`<p class="lbl" id="setProfileHint"></p></div>`;
+
+  h+=`<div class="card"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
 function initSet(){document.querySelectorAll('#scr-set select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
@@ -2667,10 +2693,23 @@ function updateSet(){
   const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('#runs').value,+$('#qualityCount').value);
 }
-$('scr-set').addEventListener('input',e=>{const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
-  if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));});
-$('scr-set').addEventListener('change',e=>{const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
-  if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));});
+$('scr-set').addEventListener('input',e=>{
+  const tp=e.target.closest('[data-timepart]');if(tp){
+    const box=tp.closest('[data-time-target]'),target=$(box.dataset.timeTarget),long=box.dataset.timeLong==='1';
+    const h=long?+(box.querySelector('[data-timepart="h"]').value):0,m=+(box.querySelector('[data-timepart="m"]').value),ss=+(box.querySelector('[data-timepart="s"]').value);
+    target.value=long?`${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${m}:${String(ss).padStart(2,'0')}`;
+    $('f').dispatchEvent(new Event('input'));return;
+  }
+  const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
+  if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));
+});
+$('scr-set').addEventListener('change',e=>{
+  const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));return;}
+  const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
+  if(isCheck(src))src.checked=el.checked;else src.value=el.value;
+  $('f').dispatchEvent(new Event('input'));
+  if(el.dataset.bind==='refDist'||el.dataset.bind==='ref2Dist'||el.dataset.bind==='qualityCount'){setBuilt=false;renderApp();}
+});
 async function updateApp(btn){
   const status=$('updateStatus');
   const setStatus=t=>{if(status)status.textContent=t;};
@@ -2711,6 +2750,8 @@ $('scr-set').addEventListener('click',e=>{
   const m=e.target.closest('[data-mode]');if(m){switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='update'){updateApp(a);return;}
+  if(a.dataset.act==='add-ref2'){ref2Open=true;setBuilt=false;renderApp();return;}
+  if(a.dataset.act==='remove-ref2'){ref2Open=false;$('ref2Time').value='';save();render();setBuilt=false;renderApp();return;}
   if(a.dataset.act==='edit-structure'){structureEditing=true;setBuilt=false;renderApp();return;}
   if(a.dataset.act==='cancel-structure'){structureEditing=false;restoreActiveStructure();render();setBuilt=false;calOpen=null;renderApp();return;}
   if(a.dataset.act==='commit-structure'){
