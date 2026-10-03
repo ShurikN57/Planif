@@ -857,11 +857,9 @@ const QUESTIONS={
   Q_SPEC_OTHER:{theme:'specOther',text:'Quels formats spécifiques pour le 5 km, le semi-marathon et le marathon ?'},
   Q_PERF_PREDICTION:{theme:'prediction',text:'Comment estimer une performance sur une autre distance à partir d\'une performance connue ?'}
 };
-/* SOURCES — une fiche par publication, vide tant qu'aucune revue n'est faite. Schéma :
-   { id:'SRC_001', title, authors:[], year, journal, doi, url,
-     studyType, population:{level, sex, age, n}, intensityAnchor,
-     intervention:{weeks, intensity, volume, recovery, frequency},
-     outcome, results, limitations, riskOfBias, themes:[], status:'to_verify'|'verified' } */
+/* SOURCES — schéma effectivement utilisé par la bibliothèque :
+   { id:'SRC_001', title, authors:[], year, journal, doi, url, studyType,
+     population:{level, n}, result, limitations, themes:[], status:'to_verify'|'verified' } */
 const SOURCES=[
   {
     id:'SRC_001',
@@ -1093,12 +1091,244 @@ const SOURCES=[
     result:'Compare un modèle est-africain plus variable, collectif et souvent piloté au ressenti avec un modèle norvégien plus structuré et guidé par le lactate. Le fartlek y est décrit comme une pratique à allure variable, adaptable au terrain et à régulation interne.',
     limitations:'Revue narrative et comparaison conceptuelle, non essai contrôlé ; elle soutient le principe d’un fartlek flexible mais ne démontre pas qu’un volume précis, comme 8–24 min, soit optimal.',
     themes:['Fartlek','LT2','Périodisation','Distribution','RPE'],status:'verified'
+  },
+  {
+    "id": "SRC_022",
+    "title": "Polarized vs pyramidal training intensity distribution in recreational marathoners: A randomized controlled study",
+    "authors": [
+      "Jonathan Esteve-Lanao",
+      "Arturo Casado",
+      "Héctor Arévalo-Chico",
+      "Sergio Sellés-Pérez",
+      "Roberto Cejuela"
+    ],
+    "year": 2026,
+    "journal": "International Journal of Sports Science & Coaching",
+    "doi": "10.1177/17479541261468168",
+    "url": "https://journals.sagepub.com/doi/10.1177/17479541261468168",
+    "studyType": "Essai randomisé",
+    "population": {
+      "level": "Coureurs récréatifs ; 16 semaines, charge hebdomadaire appariée",
+      "n": 20
+    },
+    "result": "POL (82/8/10 % en trois zones) et PYR (75/22/3 %) : marathon comparable, 3 h 45 contre 3 h 46 (p = 0,23), après un semi à mi-parcours. PYR améliore davantage l’économie de course ; POL limite davantage le ralentissement en seconde moitié du marathon.",
+    "limitations": "Petit échantillon et niveau proche de 3 h 45. Résumé éditeur vérifié ; texte intégral non accessible. Auteurs en partie communs avec SRC_008. Absence de différence significative ne prouve pas une équivalence.",
+    "themes": [
+      "Marathon",
+      "Distribution",
+      "Économie de course",
+      "Spécifique"
+    ],
+    "status": "verified"
+  },
+  {
+    "id": "SRC_023",
+    "title": "Quantitative Analysis of 92 12-Week Sub-elite Marathon Training Plans",
+    "authors": [
+      "Melanie Knopp",
+      "Daniel Appelhans",
+      "Martin Schönfelder",
+      "Stephen Seiler",
+      "Henning Wackerhage"
+    ],
+    "year": 2024,
+    "journal": "Sports Medicine - Open",
+    "doi": "10.1186/s40798-024-00717-5",
+    "url": "https://link.springer.com/article/10.1186/s40798-024-00717-5",
+    "studyType": "Analyse descriptive de plans",
+    "population": {
+      "level": "92 plans marathon publics ; pics <65, 65–90 ou >90 km/semaine ; aucune cohorte de coureurs suivie",
+      "n": 92
+    },
+    "result": "Analyse des 12 dernières semaines : distribution pyramidale en cinq zones, 13,2/65,6/15,1/3,0/3,0 % du kilométrage. Sortie longue moyenne au pic autour de 30–32 km ; pic 3,6–4,4 semaines avant la course. Réduction moyenne hebdomadaire d’affûtage de 22–31 %, puis 46–54 % la dernière semaine par rapport à la précédente.",
+    "limitations": "Pratiques prescrites, sans mesure de leur efficacité. Cinq zones et proportions en distance : ne pas les assimiler aux trois zones physiologiques ni au temps de qualité Planif. 30–32 km est une moyenne descriptive, pas un plafond validé.",
+    "themes": [
+      "Marathon",
+      "Périodisation",
+      "Taper",
+      "Structure de bloc",
+      "Sortie longue"
+    ],
+    "status": "verified"
+  },
+  {
+    "id": "SRC_024",
+    "title": "Does polarized training improve performance in recreational runners?",
+    "authors": [
+      "Iker Muñoz",
+      "Stephen Seiler",
+      "Javier Bautista",
+      "Javier España",
+      "Eneko Larumbe",
+      "Jonathan Esteve-Lanao"
+    ],
+    "year": 2014,
+    "journal": "International Journal of Sports Physiology and Performance",
+    "doi": "10.1123/ijspp.2012-0350",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23752040/",
+    "studyType": "Essai randomisé",
+    "population": {
+      "level": "Coureurs récréatifs ; intervention de 10 semaines",
+      "n": 30
+    },
+    "result": "Le temps sur 10 km progresse de 5,0 % avec PET et de 3,6 % avec BThET ; différence entre groupes non significative. Une sous-analyse selon la distribution réalisée favorise PET : effet standardisé 1,29 (IC90 % 0,31–2,27 ; p = 0,038).",
+    "limitations": "Supériorité significative uniquement en sous-analyse. Résumé PubMed incohérent sur son effectif (12 annoncés, puis n=6 et n=16) : effectif non retenu sans clarification du texte intégral. Ne valide ni formats AS10 ni récupération précise.",
+    "themes": [
+      "10 km",
+      "Distribution",
+      "Polarisation",
+      "Spécifique"
+    ],
+    "status": "verified"
+  },
+  {
+    "id": "SRC_025",
+    "title": "Effects of a 4-week high-intensity interval training on pacing during 5-km running trial",
+    "authors": [
+      "R. Silva",
+      "M. Damasceno",
+      "R. Cruz",
+      "M.D. Silva-Cavalcante",
+      "A.E. Lima-Silva",
+      "D.J. Bishop",
+      "R. Bertuzzi"
+    ],
+    "year": 2017,
+    "journal": "Brazilian Journal of Medical and Biological Research",
+    "doi": "10.1590/1414-431X20176335",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5649866/",
+    "studyType": "Essai randomisé",
+    "population": {
+      "level": "Hommes coureurs récréatifs ; HIIT n=8 et témoin n=8",
+      "n": 16
+    },
+    "result": "Quatre semaines, deux HIIT/semaine : amélioration significative de l’économie de course et de la vitesse maximale sur tapis (PTS), sans changement significatif du chrono 5 km, du pacing ou du ressenti. Pas de différence significative pour VO₂max ni la vitesse OBLA (p = 0,101).",
+    "limitations": "Cycle court, petit échantillon masculin, un seul protocole. OBLA fixé à 3,5 mmol/L, distinct d’un LT1/LT2 individuel. Noms reproduits avec les initiales publiées. Absence de significativité ne démontre pas l’inefficacité du HIIT.",
+    "themes": [
+      "5 km",
+      "HIIT",
+      "Pacing",
+      "Cycle court",
+      "Économie de course"
+    ],
+    "status": "verified"
   }
 ];
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
    { id:'FND_001', sourceId, questionId, statement, parameters:{}, direction,
      directness:{population, outcome} } */
-const FINDINGS=[];
+const FINDINGS=[
+  {
+    "id": "FND_001",
+    "sourceId": "SRC_022",
+    "questionId": "Q_INTENSITY_DISTRIBUTION",
+    "statement": "Sur 16 semaines, POL et PYR ne diffèrent pas significativement sur le marathon ; adaptations différentes. Lien indirect aux budgets Planif, sans validation de leurs pourcentages exacts.",
+    "parameters": {
+      "weeks": 16,
+      "n": 20,
+      "zones": 3,
+      "polPct": [
+        82,
+        8,
+        10
+      ],
+      "pyrPct": [
+        75,
+        22,
+        3
+      ],
+      "marathonP": 0.23
+    },
+    "direction": "nuances",
+    "directness": {
+      "population": "Coureurs récréatifs marathon : directement étudiés.",
+      "outcome": "Performance marathon directement mesurée ; budget de qualité Planif indirect."
+    }
+  },
+  {
+    "id": "FND_002",
+    "sourceId": "SRC_023",
+    "questionId": "Q_LONG_RUN",
+    "statement": "Les plans prescrivent une sortie longue moyenne autour de 30–32 km au pic ; description, sans test causal ni validation d’un plafond en minutes ou du format marathon Planif.",
+    "parameters": {
+      "plans": 92,
+      "weeksAnalyzed": 12,
+      "peakLongRunKm": [
+        30,
+        32
+      ],
+      "peakWeeksBeforeRace": [
+        3.6,
+        4.4
+      ],
+      "taperWeeklyReductionPct": [
+        22,
+        31
+      ],
+      "finalWeekReductionPct": [
+        46,
+        54
+      ],
+      "tidDistancePct": [
+        13.2,
+        65.6,
+        15.1,
+        3,
+        3
+      ],
+      "zones": 5
+    },
+    "direction": "neutral",
+    "directness": {
+      "population": "Plans publics : aucune adaptation individuelle observée.",
+      "outcome": "Prescription directement décrite ; efficacité non mesurée."
+    }
+  },
+  {
+    "id": "FND_003",
+    "sourceId": "SRC_024",
+    "questionId": "Q_INTENSITY_DISTRIBUTION",
+    "statement": "Sur 10 km, gains dans les deux groupes, sans différence globale significative ; avantage PET en sous-analyse seulement. Soutien indirect à l’organisation spécifique, pas aux formats AS10.",
+    "parameters": {
+      "weeks": 10,
+      "n": 30,
+      "improvementPct": {
+        "PET": 5,
+        "BThET": 3.6
+      },
+      "subsetEffectSize": 1.29,
+      "subsetCI90": [
+        0.31,
+        2.27
+      ],
+      "subsetP": 0.038,
+      "subsetN": null
+    },
+    "direction": "nuances",
+    "directness": {
+      "population": "Coureurs récréatifs : directement étudiés.",
+      "outcome": "Chrono 10 km direct ; valeurs du budget Planif indirectes."
+    }
+  },
+  {
+    "id": "FND_004",
+    "sourceId": "SRC_025",
+    "questionId": "Q_SPEC_OTHER",
+    "statement": "Des gains physiologiques après quatre semaines de HIIT ne garantissent pas un gain significatif au 5 km ; ne valide pas le volume ni le choix du complément du bloc 5 km Planif.",
+    "parameters": {
+      "weeks": 4,
+      "n": 16,
+      "hiitSessionsPerWeek": 2,
+      "vo2maxP": 0.495,
+      "oblaP": 0.101
+    },
+    "direction": "nuances",
+    "directness": {
+      "population": "Hommes récréatifs : directement étudiés, généralisation limitée.",
+      "outcome": "Pacing et chrono 5 km directs ; architecture du bloc indirecte."
+    }
+  }
+];
 const RULE_META=(()=>{
   const m=(questionId,kind,meta={})=>Object.assign({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null,reviewSummary:null},meta);
   return{
@@ -1121,18 +1351,18 @@ const RULE_META=(()=>{
   'blocks.s2.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
   'blocks.s2.longRunS1EndMinutes':m('Q_LONG_RUN','organizational'),
   'blocks.s2.sequence':m('Q_SESSION_COMBINATION','organizational'),
-  'blocks.spec.0.B':m('Q_SESSION_COMBINATION','organizational'),
+  'blocks.spec.0.B':m('Q_SESSION_COMBINATION','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_004"], "lastReview": "2026-10-03", "reviewSummary": "Essai HIIT avec mesure sur 5 km : adaptations physiologiques sans gain significatif de performance à quatre semaines. Lien indirect ; alternance des compléments Planif non validée."}),
   'blocks.spec.0.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.spec.0.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
   'blocks.spec.1.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.spec.1.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
-  'blocks.spec.1.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
+  'blocks.spec.1.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_003"], "lastReview": "2026-10-03", "reviewSummary": "Essai 10 km sur la distribution globale ; avantage seulement en sous-analyse. Budget Planif exact non validé."}),
   'blocks.spec.2.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.spec.2.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.spec.2.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
   'blocks.spec.3.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.spec.3.K':m('Q_BLOCK_WORK_VOLUME','organizational'),
-  'blocks.spec.3.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
+  'blocks.spec.3.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_001"], "lastReview": "2026-10-03", "reviewSummary": "Essai marathon directement pertinent pour comparer POL/PYR ; soutien indirect à ce budget. Ses pourcentages exacts restent une heuristique."}),
   'blocks.vma.A':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.vma.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.vma.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
@@ -1145,7 +1375,7 @@ const RULE_META=(()=>{
   'calendar.phaseSequence':m('Q_PERIODIZATION','organizational'),
   'calendar.placement':m('Q_SESSION_SPACING','organizational'),
   'calendar.segment':m('Q_PERIODIZATION','organizational'),
-  'calendar.taper':m('Q_TAPER','organizational',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Affûtage distinct de l’assimilation : volume réduit, intensité conservée. Fin standard retenue comme heuristique pratique : J−2 repos, J−1 15–25 min très faciles + 3–5 lignes droites de 10–15 s.'}),
+  'calendar.taper':m('Q_TAPER','organizational',{findings:['FND_002'],origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Affûtage distinct de l’assimilation : volume réduit, intensité conservée. SRC_023 décrit des plans marathon, sans valider le découpage final Planif. Fin standard retenue comme heuristique pratique : J−2 repos, J−1 15–25 min très faciles + 3–5 lignes droites de 10–15 s.'}),
   'calendar.tieBreak':m('Q_PERIODIZATION','organizational'),
   'hills.descentRecoveryFactor':m('Q_HILLS','physiological'),
   'hills.long':m('Q_HILLS','physiological'),
@@ -1197,7 +1427,7 @@ const RULE_META=(()=>{
   'load.intensity':m('Q_LOAD_WEIGHTING','physiological'),
   'load.sessionZone':m('Q_LOAD_WEIGHTING','physiological'),
   'load.zones':m('Q_LOAD_WEIGHTING','physiological'),
-  'organization.longRun':m('Q_LONG_RUN','organizational'),
+  'organization.longRun':m('Q_LONG_RUN','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_002"], "lastReview": "2026-10-03", "reviewSummary": "Observation de prescriptions marathon, sans preuve d’efficacité ni plafond universel. Durées et parts hebdomadaires Planif restent heuristiques."}),
   'organization.qualityFrequency':m('Q_MIXED_SESSIONS','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Le nombre de qualités reste choisi par l’athlète. Deux qualités sont possibles dès 4 sorties mais plutôt recommandées à partir de 5 ; trois qualités nécessitent au moins 6 sorties. La troisième est allégée.'}),
   'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Endurance active distincte des qualités : au plus une fois par semaine, 15 à 45 min à 92–98 % de la vitesse LT1, avec LT1 comme plafond, précédées de 20 min faciles et suivies de 10 min faciles. Utilisée en développement aérobie ou assimilation.'}),
   'organization.warmup':m('Q_WARMUP','organizational'),
@@ -1216,17 +1446,17 @@ const RULE_META=(()=>{
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
   's1.band':m('Q_S1_INTENSITY','physiological',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'LT1 est un repère ; S1 travaille légèrement au-dessus, avec une marge qui diminue quand durée de fraction et volume augmentent.'}),
-  's1.formats.continuous':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.descending':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
-  's1.formats.distances':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.long':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.mixed':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.progressive':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.progressiveContinuous':m('Q_S1_STRUCTURE','physiological'),
-  's1.formats.pyramids':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
-  's1.formats.times':m('Q_S1_STRUCTURE','physiological'),
-  's1.recovery.byFractionDuration':m('Q_S1_RECOVERY','physiological',{origin:'consensus',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Récupération courte et incomplète ; ratio pratique décroissant d’environ 15 % vers 10 %, fourchettes de 15 s, mode libre.'}),
-  's1.recovery.mixed':m('Q_S1_RECOVERY','physiological'),
+  's1.formats.continuous':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.descending':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques. Variante de programmation, sans supériorité physiologique démontrée.'}),
+  's1.formats.distances':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.long':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.mixed':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.progressive':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.progressiveContinuous':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.formats.pyramids':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques. Variante de programmation, sans supériorité physiologique démontrée.'}),
+  's1.formats.times':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
+  's1.recovery.byFractionDuration':m('Q_S1_RECOVERY','physiological',{origin:'consensus',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques. Récupération courte et incomplète ; ratio pratique décroissant d’environ 15 % vers 10 %, fourchettes de 15 s, mode libre.'}),
+  's1.recovery.mixed':m('Q_S1_RECOVERY','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
   's2.band':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
   's2.densePaceBand':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
   's2.densePaceOffsetForDuration':m('Q_S2_INTENSITY_BY_REP_DURATION','physiological'),
@@ -1264,7 +1494,7 @@ const RULE_META=(()=>{
   'spec10k.recovery.byFractionDuration':m('Q_SPEC10K_RECOVERY','physiological'),
   'spec10k.recovery.mixedBetweenSets':m('Q_SPEC10K_RECOVERY','physiological'),
   'spec10k.workCap':m('Q_SPEC10K_VOLUME','physiological'),
-  'specOther.marathonLongRun':m('Q_SPEC_OTHER','physiological'),
+  'specOther.marathonLongRun':m('Q_SPEC_OTHER','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_002"], "lastReview": "2026-10-03", "reviewSummary": "Contexte descriptif marathon uniquement ; ni segments à allure marathon ni plafond en minutes validés par cette étude."}),
   'specOther.minReps':m('Q_SPEC_OTHER','physiological'),
   'specOther.recoveryByDistance':m('Q_SPEC_OTHER','physiological'),
   'vo2.band':m('Q_VO2_INTENSITY','physiological',{origin:'partial_science',confidence:'high',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Le volume pertinent dépend de la durée des fractions et doit être couplé à l’intensité.'}),
@@ -2811,7 +3041,7 @@ function planRefCounts(){
 function renderAudit(){
   const counts=planRefCounts(),used=Object.keys(counts),P=auditIntegrity(used);
   const byQ={};Object.entries(RULE_META).forEach(([id,m])=>{(byQ[m.questionId]=byQ[m.questionId]||[]).push([id,m]);});
-  let h=`<h2>Audit des règles</h2><p class="note">${Object.keys(RULE_META).length} règles, ${Object.keys(QUESTIONS).length} questions, ${SOURCES.length} source, ${FINDINGS.length} résultat extrait. Aucune règle n'est encore évaluée : origine, confiance et décision restent « non évaluée » jusqu'à la revue scientifique. La dernière colonne compte les séances du plan affiché qui utilisent la règle.</p>`;
+  let h=`<h2>Audit des règles</h2><p class="note">${Object.keys(RULE_META).length} règles, ${Object.keys(QUESTIONS).length} questions, ${SOURCES.length} source, ${FINDINGS.length} résultat extrait. Les liens aux résultats documentent la revue ; un lien indirect ou descriptif ne valide pas les valeurs exactes du moteur. Les règles sans revue restent « non évaluée ». La dernière colonne compte les séances du plan affiché qui utilisent la règle.</p>`;
   h+=P.length?`<div class="warn">Contrôle d'intégrité : ${P.length} problème(s)<br>${P.join('<br>')}</div>`:'<p class="note">Contrôle d\'intégrité : aucun problème (références, questions, couverture de RULES, absence de conclusion).</p>';
   h+='<div class="scroll"><table><thead><tr><th>Règle</th><th>Nature</th><th>Origine</th><th>Confiance</th><th>Décision</th><th class="num">Séances</th></tr></thead><tbody>';
   Object.keys(QUESTIONS).forEach(q=>{const rows=byQ[q]||[];if(!rows.length)return;
@@ -2834,7 +3064,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.15';
+const APP_VERSION='2026.10.03.16';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
