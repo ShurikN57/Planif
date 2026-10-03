@@ -226,6 +226,8 @@ body:not([data-ui="app"]) .shell{display:none}
 .tile.raceT{background:var(--z4);color:#fff;border-left-color:var(--z4)}.tile.raceT .t{color:#fff}
 .rest2{color:var(--muted);margin-top:.4rem}
 .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem 1rem;font-size:.95rem}
+.kv .wideLabel,.kv .wideVal{grid-column:1 / -1;min-width:0;overflow-wrap:anywhere}
+.kv .v.wideVal{text-align:left;line-height:1.5}
 .kv .v{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
 .wkrow{display:grid;grid-template-columns:.4rem minmax(0,1fr) auto;gap:.7rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line)}
 .wkrow:last-child{border-bottom:0}
@@ -237,7 +239,7 @@ body:not([data-ui="app"]) .shell{display:none}
 .refgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
 .refgrid .card{margin:0;text-align:center;padding:.8rem .4rem}
 .refgrid .big{font-size:1.9rem}
-.refgrid .card>.lbl:last-child{font-size:.84rem;color:var(--ink);opacity:.82;font-weight:500}
+.refgrid .card>.lbl:last-child{font-size:.88rem;color:var(--ink);font-weight:600;line-height:1.35}
 .cta{width:100%;min-height:48px;margin-top:.6rem}
 
 /* ===== Écran Séance (v9.0b) ===== */
@@ -260,7 +262,7 @@ details.info summary::-webkit-details-marker{display:none}
 details.info[open] summary{margin-bottom:.3rem}
 details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 /* ===== Calendrier mobile et Repères (v9.1) ===== */
-.cw{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:.7rem;overflow:hidden}
+.cw{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:.85rem;overflow:hidden}
 .cw.assimW{background:var(--surface-2)}
 .cw.raceW{border:2px solid var(--z4)}
 .cw>button.cwHead{display:grid;grid-template-columns:.35rem minmax(0,1fr) auto;gap:.7rem;align-items:center;width:100%;text-align:left;font:inherit;color:var(--ink);background:transparent;border:0;border-radius:0;padding:.7rem .8rem;min-height:56px}
@@ -269,7 +271,7 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .cwHead small{display:block;color:var(--muted);font-weight:400}
 .cwHead .v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:0 .8rem .7rem}
-.strip span{height:26px;border-radius:4px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--muted)}
+.strip span{height:22px;border-radius:4px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--muted)}
 .strip span.on{background:color-mix(in srgb,var(--c) 70%,var(--surface));color:var(--ink);font-weight:700}
 .strip span.raceS{background:var(--z4);color:#fff}
 .strip span.out{background:transparent}
@@ -282,11 +284,11 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .dayRow .tile.footT .s{font-weight:500}
 .dayRow .tile.calCompact .t{display:none}
 .dayRow .tile.calCompact{padding-top:.72rem;padding-bottom:.72rem}
-.cwHead small{font-size:.78rem}
+.cwHead small{font-size:.78rem;line-height:1.35}
 .phaseList{font-size:.86rem}
 .dayRow .rest3{color:var(--muted);font-size:.9rem;padding:.7rem 0}
 .cwFoot{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;padding:.3rem 0 .2rem}
-.phaseList{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.3rem .8rem;font-size:.95rem}
+.phaseList{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.4rem .8rem;font-size:.9rem}
 .phaseList b{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
 .phaseList span{display:flex;align-items:center;gap:.45rem}
 .phaseList i{width:.7rem;height:.7rem;border-radius:2px;background:var(--c);display:inline-block}
@@ -308,10 +310,14 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .pills input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .pills input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
 .cta.ghost{background:transparent;color:var(--accent)}
+.toolsCard .cta{background:var(--surface-2);color:var(--ink);border-color:var(--line)}
+.toolsCard .cta:hover{border-color:var(--accent)}
 .cta.updateBtn{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);box-shadow:none}
 .cta.updateBtn:hover{background:color-mix(in srgb,var(--accent) 7%,var(--surface-2))}
-.todayCountdown{border-color:color-mix(in srgb,var(--accent) 48%,var(--line));background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-.todayCountdown .big{font-size:2.25rem;color:var(--ink)}
+.todayCountdown{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.todayCountdown .big{font-size:3rem;color:var(--accent);margin:.45rem 0}
+.todayCountdown .lbl{color:var(--ink)}
+.todayCountdown p{margin:.45rem 0 0}
 #scr-today>.card+ .card{margin-top:.9rem}
 .settingsTitle{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.65rem}
 .settingsTitle h2{margin:0}
@@ -343,9 +349,9 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .inPlan{display:inline-block;margin-top:.3rem;font-size:.78rem;font-weight:700;color:var(--accent);border:1px solid currentColor;border-radius:4px;padding:0 .35rem}
 .libEntry{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;min-height:56px;margin-bottom:.8rem}
 .libEntry small{display:block;font-weight:400;color:var(--muted)}
-.studyFilters{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:.8rem;padding-right:1.4rem;scrollbar-width:none;
-  -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.1rem),transparent 100%);
-  mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.1rem),transparent 100%)}
+.studyFilters{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:.8rem;padding-right:1.8rem;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.6rem),transparent 100%);
+  mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.6rem),transparent 100%)}
 .studyFilters::-webkit-scrollbar{display:none}
 .studyFilters button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.4rem .7rem;min-height:38px;font-size:.82rem;font-weight:600}
 .studyFilters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -1326,6 +1332,7 @@ function parseHM(str){
 function fmtPace(v){if(!v||v<=0)return '–';let s=Math.round(3600/v);const m=Math.floor(s/60);s%=60;return `${m}'${String(s).padStart(2,'0')}`;}
 const paceRange=(vlo,vhi)=>`${fmtPace(vlo)} à ${fmtPace(vhi)}/km`;
 const fmtSpd=v=>v.toFixed(1).replace('.',',');
+function fmtFootDur(min){const center=Math.round(min);return `${Math.max(0,center-5)}–${center+5}′`;}
 function fmtDur(min){min=Math.round(min);const h=Math.floor(min/60),m=min%60;return h?`${h}h${String(m).padStart(2,'0')}`:`${m}'`;}
 function fmtTime(sec){sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h}h${String(m).padStart(2,'0')}'${String(s).padStart(2,'0')}`:`${m}'${String(s).padStart(2,'0')}`;}
 function fmtMin(x){const m=Math.floor(x),s=Math.round((x-m)*60);return s?`${m}'${String(s).padStart(2,'0')}`:`${m}'`;}
@@ -2586,7 +2593,7 @@ function renderSession(s,role){
   return h+'</div>';
 }
 const activeRangeText=x=>x&&x.activeRange?`${Math.round(x.activeRange[0])} à ${Math.round(x.activeRange[1])}' EA`:'';
-const footLabel=x=>x.type==='active'?`Endurance active ${fmtDur(x.min)} (${activeRangeText(x)})`:`${FOOT[x.type].lab} ${fmtDur(x.min)}${x.after?` (lendemain de « ${sessionTitle(x.after)} »)`:''}${x.ld?LD_SUFFIX[x.ld]:''}${x.shortHills?' + côtes courtes':''}`;
+const footLabel=x=>x.type==='active'?`Endurance active ${fmtFootDur(x.min)} (${activeRangeText(x)})`:`${FOOT[x.type].lab} ${fmtFootDur(x.min)}${x.after?` (lendemain de « ${sessionTitle(x.after)} »)`:''}${x.ld?LD_SUFFIX[x.ld]:''}${x.shortHills?' + côtes courtes':''}`;
 function renderWeeks(st,plan){
   let h='<h2>Détail semaine par semaine</h2>';
   plan.weeks.forEach(w=>{
@@ -2653,7 +2660,7 @@ function itemShort(it,w){
     return{k,s:compactTxt(vText(s.variants[0])),t:`≈ ${fmtDur(s.total)}`};}
   if(it.kind==='sl')return{k:'Sortie longue',s:fmtDur(w.sl),t:w.slS1?`dont ${w.slS1}' S1`:w.slEA?`${Math.round(w.slEA.range[0])}–${Math.round(w.slEA.range[1])}' actif`:(lastSt?efBandText('std',lastSt):'EF')};
   if(it.kind==='veille')return{k:'Footing veille',s:`${it.min}'`,t:lastSt?efBandText('rec',lastSt):'Très facile'};
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return{k:'Footing actif',s:fmtDur(f.min),t:lastSt?efBandText('active',lastSt):activeRangeText(f)};return{k:{rec:'Footing récup',std:'EF normale',pro:'Footing prolongé'}[f.type],s:fmtDur(f.min),t:lastSt?efBandText(f.type,lastSt):(f.shortHills?'+ côtes courtes':f.ld?'+ lignes droites':'EF')};}
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return{k:'Footing actif',s:fmtFootDur(f.min),t:lastSt?efBandText('active',lastSt):activeRangeText(f)};return{k:{rec:'Footing récup',std:'EF normale',pro:'Footing prolongé'}[f.type],s:fmtFootDur(f.min),t:lastSt?efBandText(f.type,lastSt):(f.shortHills?'+ côtes courtes':f.ld?'+ lignes droites':'EF')};}
   return{k:'',s:'',t:''};
 }
 /* Résumé de case : la structure seule, raccourcie pour les formes longues (pyramides, mixtes…) */
@@ -2681,7 +2688,7 @@ function calWeekHtml(w,st,C){
   w.days.forEach((x,di)=>{
     h+=`<div class="day"><div class="dlab"><b>${x.date.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})}</b> ${x.date.toLocaleDateString('fr-FR',{month:'short'})}</div>`;
     if(!x.items.length)h+='<span class="rest">Repos</span>';
-    x.items.forEach((it,ii)=>{const c=itemShort(it,w),sel=calSel&&calSel.w===i&&calSel.d===di&&calSel.i===ii;      h+=`<button type="button" class="item${it.kind==='race'?' raceIt':''}" style="--c:${itemColor(it,w)}" data-w="${i}" data-d="${di}" data-i="${ii}" aria-pressed="${!!sel}"><span class="k">${c.k}</span><span class="s">${c.s}</span><span class="t">${c.t}</span></button>`;});
+    x.items.forEach((it,ii)=>{const c=itemShort(it,w),sel=calSel&&calSel.w===i&&calSel.d===di&&calSel.i===ii;      h+=`<button type="button" class="item${it.kind==='race'?' raceIt':''}" style="--c:${itemColor(it,w)}" data-w="${i}" data-d="${di}" data-i="${ii}" aria-pressed="${!!sel}"><span class="k">${c.k}</span><span class="s">${c.s}</span>${it.kind==='foot'||it.kind==='sl'?'':`<span class="t">${c.t}</span>`}</button>`;});
     h+='</div>';});
   h+=`</div></div><div class="calDetail" id="cd-${i}"${calSel&&calSel.w===i?'':' hidden'}>${calSel&&calSel.w===i?renderCalendarDayDetail(st,C,calSel):''}</div></section>`;
   return h;
@@ -2694,8 +2701,8 @@ function renderCalendarDayDetail(st,C,sel){
   if(it.kind==='race'){const r=it.s;return`<h4>${when} : ${sessionTitle(r)}</h4><p class="purpose">${r.goal?'Objectif':'Estimation'} ${fmtTime(r.targetTime)}, ${fmtPace(r.targetPace)}/km, ${fmtSpd(r.targetPace)} km/h. Échauffement 20' avec quelques accélérations progressives, retour au calme 10'. Durée totale ≈ ${fmtDur(r.total)}, charge ${pts(r.load)}.</p>`;}
   if(it.kind==='sl')return`<h4>${when} : Sortie longue, ${fmtDur(w.sl)}</h4><p class="purpose">${w.slS1?`${fmtDur(w.sl-w.slS1)} en EF (plus lent que ${fmtPace(st.s1lo)}/km), puis ${w.slS1}' au S1 (${paceRange(st.s1lo,st.s1hi)}).`:w.slEA?`20' faciles, puis ${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}' d’endurance active au choix, en continu ou en blocs, puis au moins 10' faciles. Ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}.`:`Entièrement en EF, plus lent que ${fmtPace(st.s1lo)}/km.`} Charge ${pts(w.slLoad)}.</p>`;
   if(it.kind==='veille')return`<h4>${when} : Footing de la veille, ${it.min}'</h4><p class="purpose">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}" avec récupération complète.</p>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return`<h4>${when} : Endurance active, ${fmtDur(f.min)}</h4><p class="purpose">20' faciles, puis ${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}' d’endurance active au choix, en continu ou en blocs, puis 10' faciles. Critère principal : ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}. Ce n’est pas une séance de qualité. Charge ${pts(f.load)}.</p>`;const lab={rec:'Footing récupération (35 à 45\')',std:'Footing standard (40 à 60\')',pro:'Footing prolongé (60 à 75\')'}[f.type];
-    return`<h4>${when} : ${lab}</h4><p class="purpose">${fmtDur(f.min)} en EF, plus lent que ${fmtPace(st.s1lo)}/km${f.after?`, le lendemain de « ${sessionTitle(f.after)} »`:''}.${f.ld?` En fin de footing : ${LD.split(' : ')[1]}.`:''}${f.shortHills?` En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte à ${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %, récupération complète. Travail neuromusculaire, pas une séance de qualité.`:''} Charge ${pts(f.load)}.</p>`;}
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return`<h4>${when} : Endurance active, ${fmtFootDur(f.min)}</h4><p class="purpose">${efBandText('active',st)}. 20' faciles, puis ${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}' d’endurance active au choix, en continu ou en blocs, puis 10' faciles. Critère principal : ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}. Ce n’est pas une séance de qualité. Charge ${pts(f.load)}.</p>`;const lab={rec:'Footing récupération (35 à 45\')',std:'Footing standard (40 à 60\')',pro:'Footing prolongé (60 à 75\')'}[f.type];
+    return`<h4>${when} : ${lab}</h4><p class="purpose">${fmtFootDur(f.min)} en EF, ${efBandText(f.type,st)}${f.after?`, le lendemain de « ${sessionTitle(f.after)} »`:''}.${f.ld?` En fin de footing : ${LD.split(' : ')[1]}.`:''}${f.shortHills?` En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte à ${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %, récupération complète. Travail neuromusculaire, pas une séance de qualité.`:''} Charge ${pts(f.load)}.</p>`;}
   return'';
 }
 function renderCalendarGrid(st,C){
@@ -2827,12 +2834,12 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.14';;;;
-const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
+const APP_VERSION='2026.10.03.15';
+const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
-function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&it.kind==='foot',cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${c.t}</span>`}`;
+function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${c.t}</span>`}`;
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 function appTodayHtml(){
@@ -2975,7 +2982,7 @@ function appSetHtml(){
     h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
   }
 
-  h+=`<div class="card"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
+  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
 function initSet(){document.querySelectorAll('#scr-set select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
@@ -3146,11 +3153,11 @@ function sessionScreenHtml(){
   if(it.kind==='race'){const r2=it.s;
     return head(sessionTitle(r2))+`<div class="card"><div class="lbl">${r2.goal?'Objectif':'Estimation'}</div><div class="big">${fmtTime(r2.targetTime)}</div><div class="kv" style="margin-top:.7rem"><span>Allure</span><span class="v">${fmtPace(r2.targetPace)}/km</span><span>Vitesse</span><span class="v">${fmtSpd(r2.targetPace)} km/h</span><span>Échauffement</span><span class="v">${r2.wu}'</span><span>Retour au calme</span><span class="v">${r2.cd}'</span></div></div>`+
       `<div class="card"><details class="info"><summary>ⓘ Charge de la course</summary><p>Charge estimée : ${pts(r2.load)}.</p></details></div>`;}
-  if(it.kind==='sl')return head('Sortie longue')+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span>Allure EF</span><span class="v">plus lent que ${fmtPace(st.s1lo)}/km</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceRange(st.s1lo,st.s1hi)}</span>`:''}</div></div>`+
+  if(it.kind==='sl')return head('Sortie longue')+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${efBandText('std',st)}</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceRange(st.s1lo,st.s1hi)}</span>`:''}</div></div>`+
       `<div class="card"><details class="info"><summary>ⓘ Charge</summary><p>Charge estimée : ${pts(w.slLoad)}.</p></details></div>`;
   if(it.kind==='veille')return head('Footing de la veille')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head('Footing actif')+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}'</span><span>Intensité du bloc</span><span class="v">${efBandText('active',st)}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">Continu ou blocs au choix. 92–98 % de la vitesse LT1, sans dépasser LT1.</p></div>`;const lab={rec:'Footing récupération',std:'EF normale',pro:'Footing prolongé'}[f.type];
-    return head(lab)+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Zone proposée</span><span class="v">${efBandText(f.type,st)}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head('Footing actif')+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}'</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${efBandText('active',st)}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">Continu ou blocs au choix. 92–98 % de la vitesse LT1, sans dépasser LT1.</p></div>`;const lab={rec:'Footing récupération',std:'EF normale',pro:'Footing prolongé'}[f.type];
+    return head(lab)+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${efBandText(f.type,st)}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
       `<div class="card"><details class="info"><summary>ⓘ Pourquoi ce footing</summary><p>${(()=>{const F=RULES.recovery.footing,r=x=>`${x[0]} à ${x[1]}'`;return f.after?`Le lendemain de « ${sessionTitle(f.after)} » : footing de récupération, plage de ${r(F.rec.range)}.`:f.type==='pro'?`Footing prolongé (${r(F.pro.range)}) : utilisé seulement quand le volume visé l'impose.`:f.type==='rec'?`Footing de récupération, plage de ${r(F.rec.range)}.`:`Footing standard (${r(F.std.range)}) en endurance fondamentale.`;})()}</p><p>Charge estimée : ${pts(f.load)}.</p></details></div>`;}
   return'';
 }
