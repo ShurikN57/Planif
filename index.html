@@ -822,6 +822,11 @@ const EVIDENCE_ENUMS={
 };
 /* Questions neutres : formulées sans présupposer la réponse ni la valeur actuelle du moteur */
 const QUESTIONS={
+  Q_RUNNING_ECONOMY:{"theme": "economy", "text": "Quels facteurs et interventions modifient l’économie de course ?"},
+  Q_BIOMECHANICS_INJURY:{"theme": "biomechanics", "text": "Que montrent les études sur la mécanique de course et les blessures ?"},
+  Q_FOOTWEAR:{"theme": "footwear", "text": "Comment les chaussures influencent-elles le coût énergétique de la course ?"},
+  Q_NUTRITION:{"theme": "nutrition", "text": "Quel rôle jouent les apports nutritionnels dans la performance et la récupération ?"},
+  Q_SLEEP:{"theme": "sleep", "text": "Quels liens et interventions sont documentés entre sommeil et récupération sportive ?"},
   Q_S1_INTENSITY:{theme:'s1',text:'Où situer l\'intensité du travail au premier seuil, et faut-il l\'ajuster au volume de travail de la séance ?'},
   Q_S1_STRUCTURE:{theme:'s1',text:'Quelles durées ou distances de fraction, et quels volumes de travail, pour développer le premier seuil ?'},
   Q_S1_RECOVERY:{theme:'s1',text:'Quelle récupération entre fractions pour un travail au premier seuil ?'},
@@ -1212,7 +1217,321 @@ const SOURCES=[
       "Économie de course"
     ],
     "status": "verified"
-  }
+  },
+{
+  "id": "SRC_026",
+  "title": "Factors affecting running economy in trained distance runners",
+  "authors": [
+    "Philo U. Saunders",
+    "David B. Pyne",
+    "Richard D. Telford",
+    "John A. Hawley"
+  ],
+  "year": 2004,
+  "journal": "Sports Medicine",
+  "doi": "10.2165/00007256-200434070-00005",
+  "url": "https://doi.org/10.2165/00007256-200434070-00005",
+  "studyType": "Revue",
+  "population": {
+    "level": "Coureurs de fond entraînés",
+    "n": null
+  },
+  "result": "L’économie de course dépend de facteurs physiologiques, biomécaniques et anthropométriques ; elle constitue un déterminant de performance distinct de VO₂max.",
+  "limitations": "Revue ancienne et facteurs multiples ; aucun format précis de côte, de renforcement ou de séance Planif n’est validé par cette synthèse.",
+  "themes": [
+    "Économie de course",
+    "Renforcement",
+    "Biomécanique"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_027",
+  "title": "Effects of Strength Training on the Physiological Determinants of Middle- and Long-Distance Running Performance: A Systematic Review",
+  "authors": [
+    "Richard C. Blagrove",
+    "Glyn Howatson",
+    "Philip R. Hayes"
+  ],
+  "year": 2018,
+  "journal": "Sports Medicine",
+  "doi": "10.1007/s40279-017-0835-7",
+  "url": "https://doi.org/10.1007/s40279-017-0835-7",
+  "studyType": "Revue systématique",
+  "population": {
+    "level": "Coureurs de demi-fond et fond ; 24 études incluses",
+    "n": null
+  },
+  "result": "L’ajout de force lourde, explosive ou de pliométrie améliore souvent l’économie de course (environ 2–8 %) ; VO₂max et composition corporelle sont généralement peu modifiées.",
+  "limitations": "Protocoles et populations hétérogènes ; bénéfice non garanti. Ne démontre ni absence universelle d’hypertrophie ni efficacité équivalente des côtes courtes Planif.",
+  "themes": [
+    "Économie de course",
+    "Renforcement",
+    "Pliométrie"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_028",
+  "title": "Biomechanical Risk Factors Associated with Running-Related Injuries: A Systematic Review",
+  "authors": [
+    "Linde Ceyssens",
+    "Romy Vanelderen",
+    "Christian Barton",
+    "Peter Malliaras",
+    "Bart Dingenen"
+  ],
+  "year": 2019,
+  "journal": "Sports Medicine",
+  "doi": "10.1007/s40279-019-01110-z",
+  "url": "https://doi.org/10.1007/s40279-019-01110-z",
+  "studyType": "Revue systématique",
+  "population": {
+    "level": "Coureurs initialement non blessés ; études prospectives",
+    "n": null
+  },
+  "result": "Les associations prospectives entre biomécanique et blessures sont limitées et souvent incohérentes ; certaines associations dépendent de la blessure et de la population.",
+  "limitations": "Ne démontre pas qu’une correction universelle de cadence, d’impact ou de technique prévient les blessures ; aucune règle biomécanique ajoutée au moteur.",
+  "themes": [
+    "Blessures",
+    "Biomécanique"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_029",
+  "title": "Influence of Stride Frequency and Length on Running Mechanics: A Systematic Review",
+  "authors": [
+    "Amy G. Schubert",
+    "Jenny Kempf",
+    "Bryan C. Heiderscheit"
+  ],
+  "year": 2014,
+  "journal": "Sports Health",
+  "doi": "10.1177/1941738113508544",
+  "url": "https://doi.org/10.1177/1941738113508544",
+  "studyType": "Revue systématique",
+  "population": {
+    "level": "Coureurs ; modification de fréquence ou longueur de pas à vitesse constante",
+    "n": null
+  },
+  "result": "Une fréquence de pas accrue réduit plusieurs paramètres mécaniques, dont l’excursion verticale et l’énergie absorbée à certaines articulations.",
+  "limitations": "Mesures surtout biomécaniques ; réduction d’une charge mécanique ne prouve pas une diminution des blessures. Pas de cadence optimale universelle ni de correction automatique de 5–10 %.",
+  "themes": [
+    "Biomécanique",
+    "Cadence",
+    "Blessures"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_030",
+  "title": "How much is too much? (Part 1) International Olympic Committee consensus statement on load in sport and risk of injury",
+  "authors": [
+    "Torbjørn Soligard",
+    "Martin Schwellnus",
+    "Juan-Manuel Alonso",
+    "Roald Bahr",
+    "Ben Clarsen",
+    "H. Paul Dijkstra",
+    "Tim Gabbett",
+    "Michael Gleeson",
+    "Martin Hägglund",
+    "Mark R. Hutchinson",
+    "Christa Janse van Rensburg",
+    "Karim M. Khan",
+    "Romain Meeusen",
+    "John W. Orchard",
+    "Babette M. Pluim",
+    "Martin Raftery",
+    "Richard Budgett",
+    "Lars Engebretsen"
+  ],
+  "year": 2016,
+  "journal": "British Journal of Sports Medicine",
+  "doi": "10.1136/bjsports-2016-096581",
+  "url": "https://doi.org/10.1136/bjsports-2016-096581",
+  "studyType": "Consensus",
+  "population": {
+    "level": "Athlètes de différents sports",
+    "n": null
+  },
+  "result": "Le suivi individuel de la charge, de ses variations et de la récupération doit tenir compte du contexte et des autres contraintes de l’athlète.",
+  "limitations": "Consensus multisports ; ne valide pas les coefficients, rampes ou alertes Planif. Les plages ACWR proposées ne constituent pas une garantie causale de prévention des blessures ; aucun ACWR ajouté.",
+  "themes": [
+    "Charge",
+    "Progression",
+    "Blessures",
+    "Récupération"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_031",
+  "title": "A comparison of running economy across seven highly cushioned racing shoes with carbon-fibre plates",
+  "authors": [
+    "Dustin P. Joubert",
+    "Garrett P. Jones"
+  ],
+  "year": 2022,
+  "journal": "Footwear Science",
+  "doi": "10.1080/19424280.2022.2038691",
+  "url": "https://www.tandfonline.com/doi/full/10.1080/19424280.2022.2038691",
+  "studyType": "Étude expérimentale aiguë croisée",
+  "population": {
+    "level": "Hommes entraînés ; essais sur tapis à 16 km/h",
+    "n": 12
+  },
+  "result": "L’économie de course diffère selon les modèles testés ; certaines chaussures réduisent le coût en oxygène par rapport à une chaussure traditionnelle, d’autres non.",
+  "limitations": "Petit échantillon masculin, une vitesse et anciens modèles ; effet individuel variable. Gain métabolique non convertible automatiquement en gain de vitesse ou de chrono.",
+  "themes": [
+    "Chaussures",
+    "Économie de course"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_032",
+  "title": "American College of Sports Medicine Joint Position Statement. Nutrition and Athletic Performance",
+  "authors": [
+    "D. Travis Thomas",
+    "Kelly Anne Erdman",
+    "Louise M. Burke"
+  ],
+  "year": 2016,
+  "journal": "Medicine & Science in Sports & Exercise",
+  "doi": "10.1249/MSS.0000000000000852",
+  "url": "https://doi.org/10.1249/MSS.0000000000000852",
+  "studyType": "Position conjointe / consensus",
+  "population": {
+    "level": "Athlètes de différents sports",
+    "n": null
+  },
+  "result": "Les apports énergétiques, glucidiques, protéiques et hydriques sont à adapter aux besoins, au type d’effort et au calendrier d’entraînement pour soutenir performance et récupération.",
+  "limitations": "Recommandations générales, pas un essai unique ; besoins individuels et situations diverses. Aucune prescription nutritionnelle automatique introduite dans Planif.",
+  "themes": [
+    "Nutrition",
+    "Hydratation",
+    "Récupération"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_033",
+  "title": "Low carbohydrate, high fat diet impairs exercise economy and negates the performance benefit from intensified training in elite race walkers",
+  "authors": [
+    "Louise M. Burke",
+    "Megan L. Ross",
+    "Laura A. Garvican-Lewis",
+    "Marijke Welvaert",
+    "Ida A. Heikura",
+    "Shona G. Forbes",
+    "Joanne G. Mirtschin",
+    "Louise E. Cato",
+    "Nikki Strobel",
+    "Avish P. Sharma",
+    "John A. Hawley"
+  ],
+  "year": 2017,
+  "journal": "The Journal of Physiology",
+  "doi": "10.1113/JP273230",
+  "url": "https://doi.org/10.1113/JP273230",
+  "studyType": "Intervention contrôlée non randomisée",
+  "population": {
+    "level": "Marcheurs athlétiques élite ; trois semaines",
+    "n": null
+  },
+  "result": "Le régime très pauvre en glucides et riche en lipides augmente l’oxydation des graisses mais dégrade l’économie à des vitesses de compétition et ne produit pas les gains de performance observés avec les régimes riches en glucides.",
+  "limitations": "Marche athlétique, pas course à pied ; cycle court et groupes non randomisés. Ne généraliser ni à tout régime réduit en glucides ni à toutes les intensités.",
+  "themes": [
+    "Nutrition",
+    "Économie de course",
+    "Performance"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_034",
+  "title": "Sleep Hygiene for Optimizing Recovery in Athletes: Review and Recommendations",
+  "authors": [
+    "Kenneth C. Vitale",
+    "Roberts Owens",
+    "Susan R. Hopkins",
+    "Atul Malhotra"
+  ],
+  "year": 2019,
+  "journal": "International Journal of Sports Medicine",
+  "doi": "10.1055/a-0905-3103",
+  "url": "https://doi.org/10.1055/a-0905-3103",
+  "studyType": "Revue et recommandations",
+  "population": {
+    "level": "Athlètes de différents sports",
+    "n": null
+  },
+  "result": "La revue décrit les enjeux du sommeil pour la récupération et la performance et propose des mesures d’hygiène du sommeil adaptées aux contraintes sportives.",
+  "limitations": "Ne démontre pas qu’une intervention prévient le surentraînement ; ne valide pas un nombre exact d’heures ni un espacement précis des séances Planif.",
+  "themes": [
+    "Sommeil",
+    "Récupération"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_035",
+  "title": "Physiological and performance effects of low- versus mixed-intensity rowing training",
+  "authors": [
+    "Stephen A. Ingham",
+    "Helen Carter",
+    "Gregory P. Whyte",
+    "Jonathan H. Doust"
+  ],
+  "year": 2008,
+  "journal": "Medicine & Science in Sports & Exercise",
+  "doi": "10.1249/MSS.0b013e31815ecc6a",
+  "url": "https://doi.org/10.1249/MSS.0b013e31815ecc6a",
+  "studyType": "Essai contrôlé",
+  "population": {
+    "level": "Rameurs expérimentés ; 12 semaines",
+    "n": 18
+  },
+  "result": "LOW (100 % au seuil lactate ou dessous) améliore davantage la puissance au LT que MIX (70 % au LT ou dessous, 30 % au-dessus) : +23,5 contre +5,1 W, p=0,013. Les gains sur 2 000 m et VO₂peak ne diffèrent pas significativement entre groupes.",
+  "limitations": "Aviron : transposition indirecte au coureur. Ne pas assimiler automatiquement le LT mesuré à SV1 sans vérifier sa méthode ; pas de supériorité propre de LOW sur l’économie rapportée dans le résumé. Ne valide pas les formats S1 ni la nocivité du HIIT.",
+  "themes": [
+    "Basse intensité",
+    "Distribution",
+    "LT1",
+    "Volume"
+  ],
+  "status": "verified"
+},
+{
+  "id": "SRC_036",
+  "title": "Training-Induced Changes in Mitochondrial Content and Respiratory Function in Human Skeletal Muscle",
+  "authors": [
+    "Cesare Granata",
+    "Nicholas A. Jamnick",
+    "David J. Bishop"
+  ],
+  "year": 2018,
+  "journal": "Sports Medicine",
+  "doi": "10.1007/s40279-018-0936-y",
+  "url": "https://doi.org/10.1007/s40279-018-0936-y",
+  "studyType": "Revue",
+  "population": {
+    "level": "Études humaines sur le muscle squelettique",
+    "n": null
+  },
+  "result": "Le volume peut jouer un rôle important dans l’augmentation du contenu mitochondrial ; l’intensité relative compte aussi pour les adaptations de la fonction respiratoire mitochondriale. Ces deux réponses peuvent être dissociées.",
+  "limitations": "Soutien mécanistique indirect pour LT1 ; ne démontre pas une dépendance exclusive au volume sous SV1, ni la supériorité de 2 × 20 min ou 3 × 15 min, ni une inhibition des adaptations par tout dépassement de SV2.",
+  "themes": [
+    "Mitochondries",
+    "Volume",
+    "Basse intensité",
+    "HIIT",
+    "LT1"
+  ],
+  "status": "verified"
+}
 ];
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
    { id:'FND_001', sourceId, questionId, statement, parameters:{}, direction,
@@ -1327,18 +1646,167 @@ const FINDINGS=[
       "population": "Hommes récréatifs : directement étudiés, généralisation limitée.",
       "outcome": "Pacing et chrono 5 km directs ; architecture du bloc indirecte."
     }
+  },
+{
+  "id": "FND_005",
+  "sourceId": "SRC_026",
+  "questionId": "Q_RUNNING_ECONOMY",
+  "statement": "L’économie de course dépend de facteurs physiologiques, biomécaniques et anthropométriques ; elle constitue un déterminant de performance distinct de VO₂max.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Coureurs de fond entraînés",
+    "outcome": "Revue ancienne et facteurs multiples ; aucun format précis de côte, de renforcement ou de séance Planif n’est validé par cette synthèse."
   }
+},
+{
+  "id": "FND_006",
+  "sourceId": "SRC_027",
+  "questionId": "Q_RUNNING_ECONOMY",
+  "statement": "L’ajout de force lourde, explosive ou de pliométrie améliore souvent l’économie de course (environ 2–8 %) ; VO₂max et composition corporelle sont généralement peu modifiées.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Coureurs de demi-fond et fond ; 24 études incluses",
+    "outcome": "Protocoles et populations hétérogènes ; bénéfice non garanti. Ne démontre ni absence universelle d’hypertrophie ni efficacité équivalente des côtes courtes Planif."
+  }
+},
+{
+  "id": "FND_007",
+  "sourceId": "SRC_028",
+  "questionId": "Q_BIOMECHANICS_INJURY",
+  "statement": "Les associations prospectives entre biomécanique et blessures sont limitées et souvent incohérentes ; certaines associations dépendent de la blessure et de la population.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Coureurs initialement non blessés ; études prospectives",
+    "outcome": "Ne démontre pas qu’une correction universelle de cadence, d’impact ou de technique prévient les blessures ; aucune règle biomécanique ajoutée au moteur."
+  }
+},
+{
+  "id": "FND_008",
+  "sourceId": "SRC_029",
+  "questionId": "Q_BIOMECHANICS_INJURY",
+  "statement": "Une fréquence de pas accrue réduit plusieurs paramètres mécaniques, dont l’excursion verticale et l’énergie absorbée à certaines articulations.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Coureurs ; modification de fréquence ou longueur de pas à vitesse constante",
+    "outcome": "Mesures surtout biomécaniques ; réduction d’une charge mécanique ne prouve pas une diminution des blessures. Pas de cadence optimale universelle ni de correction automatique de 5–10 %."
+  }
+},
+{
+  "id": "FND_009",
+  "sourceId": "SRC_030",
+  "questionId": "Q_LOAD_PROGRESSION",
+  "statement": "Le suivi individuel de la charge, de ses variations et de la récupération doit tenir compte du contexte et des autres contraintes de l’athlète.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Athlètes de différents sports",
+    "outcome": "Consensus multisports ; ne valide pas les coefficients, rampes ou alertes Planif. Les plages ACWR proposées ne constituent pas une garantie causale de prévention des blessures ; aucun ACWR ajouté."
+  }
+},
+{
+  "id": "FND_010",
+  "sourceId": "SRC_031",
+  "questionId": "Q_FOOTWEAR",
+  "statement": "L’économie de course diffère selon les modèles testés ; certaines chaussures réduisent le coût en oxygène par rapport à une chaussure traditionnelle, d’autres non.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Hommes entraînés ; essais sur tapis à 16 km/h",
+    "outcome": "Petit échantillon masculin, une vitesse et anciens modèles ; effet individuel variable. Gain métabolique non convertible automatiquement en gain de vitesse ou de chrono."
+  }
+},
+{
+  "id": "FND_011",
+  "sourceId": "SRC_032",
+  "questionId": "Q_NUTRITION",
+  "statement": "Les apports énergétiques, glucidiques, protéiques et hydriques sont à adapter aux besoins, au type d’effort et au calendrier d’entraînement pour soutenir performance et récupération.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Athlètes de différents sports",
+    "outcome": "Recommandations générales, pas un essai unique ; besoins individuels et situations diverses. Aucune prescription nutritionnelle automatique introduite dans Planif."
+  }
+},
+{
+  "id": "FND_012",
+  "sourceId": "SRC_033",
+  "questionId": "Q_NUTRITION",
+  "statement": "Le régime très pauvre en glucides et riche en lipides augmente l’oxydation des graisses mais dégrade l’économie à des vitesses de compétition et ne produit pas les gains de performance observés avec les régimes riches en glucides.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Marcheurs athlétiques élite ; trois semaines",
+    "outcome": "Marche athlétique, pas course à pied ; cycle court et groupes non randomisés. Ne généraliser ni à tout régime réduit en glucides ni à toutes les intensités."
+  }
+},
+{
+  "id": "FND_013",
+  "sourceId": "SRC_034",
+  "questionId": "Q_SLEEP",
+  "statement": "La revue décrit les enjeux du sommeil pour la récupération et la performance et propose des mesures d’hygiène du sommeil adaptées aux contraintes sportives.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Athlètes de différents sports",
+    "outcome": "Ne démontre pas qu’une intervention prévient le surentraînement ; ne valide pas un nombre exact d’heures ni un espacement précis des séances Planif."
+  }
+},
+{
+  "id": "FND_014",
+  "sourceId": "SRC_035",
+  "questionId": "Q_INTENSITY_DISTRIBUTION",
+  "statement": "LOW (100 % au seuil lactate ou dessous) améliore davantage la puissance au LT que MIX (70 % au LT ou dessous, 30 % au-dessus) : +23,5 contre +5,1 W, p=0,013. Les gains sur 2 000 m et VO₂peak ne diffèrent pas significativement entre groupes.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Rameurs expérimentés ; 12 semaines",
+    "outcome": "Aviron : transposition indirecte au coureur. Ne pas assimiler automatiquement le LT mesuré à SV1 sans vérifier sa méthode ; pas de supériorité propre de LOW sur l’économie rapportée dans le résumé. Ne valide pas les formats S1 ni la nocivité du HIIT."
+  }
+},
+{
+  "id": "FND_015",
+  "sourceId": "SRC_036",
+  "questionId": "Q_VOLUME_MODULATION",
+  "statement": "Le volume peut jouer un rôle important dans l’augmentation du contenu mitochondrial ; l’intensité relative compte aussi pour les adaptations de la fonction respiratoire mitochondriale. Ces deux réponses peuvent être dissociées.",
+  "parameters": {},
+  "direction": "nuances",
+  "directness": {
+    "population": "Études humaines sur le muscle squelettique",
+    "outcome": "Soutien mécanistique indirect pour LT1 ; ne démontre pas une dépendance exclusive au volume sous SV1, ni la supériorité de 2 × 20 min ou 3 × 15 min, ni une inhibition des adaptations par tout dépassement de SV2."
+  }
+},
+{
+  "id": "FND_016",
+  "sourceId": "SRC_018",
+  "questionId": "Q_S1_INTENSITY",
+  "statement": "Le modèle décrit des intervalles guidés par des lactatémies généralement comprises entre 2 et 4,5 mmol/L ; il ne valide ni un seuil LT1 universel à 2 mmol/L ni un format S1 précis.",
+  "parameters": {
+    "lactateMmolRange": [
+      2,
+      4.5
+    ]
+  },
+  "direction": "nuances",
+  "directness": {
+    "population": "Pratiques décrites chez des coureurs de haut niveau ; transposition prudente.",
+    "outcome": "Modèle descriptif et discussion de mécanismes ; pas un essai contrôlé d’amélioration de LT1."
+  }
+}
 ];
 const RULE_META=(()=>{
   const m=(questionId,kind,meta={})=>Object.assign({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null,reviewSummary:null},meta);
   return{
   'blocks.aero.A':m('Q_BLOCK_WORK_VOLUME','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Le bloc aérobie comporte une seule vraie qualité hebdomadaire : un fartlek de 8–24 min de travail cumulé, piloté au ressenti et sans cible d’allure. Les efforts courts peuvent être plus vifs ; les longs restent davantage contrôlés.'}),
   'blocks.aero.B':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Aucune deuxième ou troisième vraie qualité n’est générée en développement aérobie, même si le réglage général autorise 2 ou 3 qualités.'}),
-  'blocks.aero.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Bloc à dominante basse intensité ; le budget de travail qualitatif est limité à 5–15 %.'}),
+  'blocks.aero.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{findings:["FND_014"],origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Bloc à dominante basse intensité ; le budget de travail qualitatif est limité à 5–15 %. SRC_035 : soutien indirect issu de l’aviron à une dominante basse intensité ; le budget exact reste heuristique.'}),
   'blocks.aero.maxQualities':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Plafond spécifique du bloc aérobie : une seule vraie séance de qualité par semaine.'}),
   'blocks.aero.fartlek':m('Q_SESSION_COMBINATION','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Fartlek sans cible chronométrique : effort contrôlé au ressenti, récupération en footing facile, structure adaptable au terrain.'}),
   'blocks.aero.ramp':m('Q_LOAD_PROGRESSION','organizational'),
-  'blocks.aero.shortHills':m('Q_HILLS','organizational',{origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Côtes courtes utilisées comme stimulus neuromusculaire/économie, non comptées comme vraie séance de qualité, en alternance avec les lignes droites.'}),
+  'blocks.aero.shortHills':m('Q_HILLS','organizational',{findings:["FND_005", "FND_006"],origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Côtes courtes utilisées comme stimulus neuromusculaire/économie, non comptées comme vraie séance de qualité, en alternance avec les lignes droites. SRC_026/SRC_027 : contexte économie et renforcement ; transposition aux côtes indirecte, sans validation du format 10–15 s.'}),
   'blocks.assimilation':m('Q_ASSIMILATION','organizational'),
   'blocks.eco.A':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.eco.B':m('Q_SESSION_COMBINATION','organizational'),
@@ -1435,7 +1903,7 @@ const RULE_META=(()=>{
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredStepClamp':m('Q_PERF_PREDICTION','estimation'),
   'prediction.profileSteps':m('Q_PERF_PREDICTION','estimation'),
-  'progression.priority':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'La progression porte d’abord sur le volume ciblé ; intensité ou densité peuvent ensuite évoluer, sans augmenter fortement plusieurs leviers en même temps.'}),
+  'progression.priority':m('Q_PROGRESSIVE_OVERLOAD','organizational',{findings:["FND_009"],origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'La progression porte d’abord sur le volume ciblé ; intensité ou densité peuvent ensuite évoluer, sans augmenter fortement plusieurs leviers en même temps. SRC_030 : consensus sur gestion individuelle de charge ; ne valide pas une rampe ni un ratio ACWR universel.'}),
   'progression.maxSimultaneousLevers':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Garde-fou de programmation : un seul levier majeur de surcharge est augmenté à la fois.'}),
   'mixed.allowedContexts':m('Q_MIXED_SESSIONS','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Les séances mixtes restent occasionnelles et sont réservées à la transition, au rappel ou à l’assimilation.'}),
   'mixed.maxQualities':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Deux qualités maximum dans une séance mixte standard afin de ne pas additionner plusieurs séances complètes.'}),
@@ -1445,7 +1913,7 @@ const RULE_META=(()=>{
   'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Sous-zones pratiques de footing exprimées en % de la vitesse LT1 : récupération 75–83 %, EF normale/prolongée 84–91 %. Ce découpage sert à la prescription et ne constitue pas des seuils physiologiques distincts.'}),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
-  's1.band':m('Q_S1_INTENSITY','physiological',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'LT1 est un repère ; S1 travaille légèrement au-dessus, avec une marge qui diminue quand durée de fraction et volume augmentent.'}),
+  's1.band':m('Q_S1_INTENSITY','physiological',{findings:["FND_016"],origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'LT1 est un repère ; S1 travaille légèrement au-dessus, avec une marge qui diminue quand durée de fraction et volume augmentent. SRC_018 ne valide ni une lactatémie LT1 fixe ni les marges exactes S1.'}),
   's1.formats.continuous':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
   's1.formats.descending':m('Q_S1_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques. Variante de programmation, sans supériorité physiologique démontrée.'}),
   's1.formats.distances':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
@@ -1508,7 +1976,7 @@ const RULE_META=(()=>{
   'vo2.recovery.byFractionDuration':m('Q_VO2_RECOVERY','physiological',{origin:'partial_science',confidence:'high',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Récupérations en fourchettes selon la durée ; mode actif/passif libre ; le haut d’intensité appelle plutôt le haut de récupération.'}),
   'volume.assimilationFactor':m('Q_ASSIMILATION','organizational'),
   'volume.blockRamp':m('Q_LOAD_PROGRESSION','organizational'),
-  'volume.weeklyFactor':m('Q_VOLUME_MODULATION','organizational')
+  'volume.weeklyFactor':m('Q_VOLUME_MODULATION','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_015"], "lastReview": "2026-10-03", "reviewSummary": "SRC_036 : mécanismes mitochondriaux indirects ; aucun facteur numérique de modulation validé. Le coefficient exact Planif reste une heuristique."})
   };
 })();
 /* Entrées techniques ou de produit : exclues de la revue scientifique, avec leur raison */
@@ -3064,7 +3532,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.16';
+const APP_VERSION='2026.10.03.17';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3156,12 +3624,20 @@ function appRefHtml(){
 }
 /* ---------- Études : bibliothèque scientifique ---------- */
 let studyFilter='Toutes';
+function studyEvidenceHtml(sourceId){
+  const findings=FINDINGS.filter(f=>f.sourceId===sourceId);
+  if(!findings.length)return '';
+  return '<p><b>Résultats et liens Planif</b></p>'+findings.map(f=>{
+    const rules=Object.entries(RULE_META).filter(([,m])=>m.findings.includes(f.id)).map(([id])=>id);
+    return `<p><b>${f.id} · ${QUESTIONS[f.questionId].text}</b><br>${f.statement}</p><p><b>Portée :</b> ${f.directness.population} ${f.directness.outcome}</p><p><b>Règles liées :</b> ${rules.length?rules.map(id=>`<code style="overflow-wrap:anywhere">${id}</code>`).join(', '):'Question documentée, sans règle correspondante dans le moteur.'}</p>`;
+  }).join('');
+}
 function appStudyHtml(){
   const themes=['Toutes',...Array.from(new Set(SOURCES.flatMap(x=>x.themes||[]))).sort()];
   const rows=studyFilter==='Toutes'?SOURCES:SOURCES.filter(x=>(x.themes||[]).includes(studyFilter));
   let h='<div class="card"><div class="big" style="font-size:1.65rem">'+SOURCES.length+' publications</div><p class="lbl">Références vérifiées utilisées pour documenter ou challenger les règles de Planif. Les choix purement heuristiques restent identifiés comme tels dans l’audit.</p></div>';
   h+='<div class="studyFilters">'+themes.map(t=>`<button type="button" data-studyfilter="${t}" aria-pressed="${t===studyFilter}">${t}</button>`).join('')+'</div>';
-  h+=rows.map(x=>`<article class="card studyCard"><div class="lbl">${x.authors[0]} et al., ${x.year}</div><h2>${x.title}</h2><div class="studyMeta"><span>${x.studyType}</span><span>${x.journal}</span>${x.population&&x.population.n?'<span>n = '+x.population.n+'</span>':''}</div><p><b>Ce qu’on retient :</b> ${x.result}</p><details class="info"><summary>ⓘ Limites et référence</summary><p>${x.limitations}</p><p>DOI : ${x.doi}</p><p><a href="${x.url}" target="_blank" rel="noopener">Ouvrir la publication</a></p></details></article>`).join('');
+  h+=rows.map(x=>`<article class="card studyCard"><div class="lbl">${x.authors[0]} et al., ${x.year}</div><h2>${x.title}</h2><div class="studyMeta"><span>${x.studyType}</span><span>${x.journal}</span>${x.population&&x.population.n?'<span>n = '+x.population.n+'</span>':''}</div><p><b>Ce qu’on retient :</b> ${x.result}</p><details class="info"><summary>ⓘ Limites et référence</summary><p>${x.limitations}</p>${studyEvidenceHtml(x.id)}<p>DOI : ${x.doi}</p><p><a href="${x.url}" target="_blank" rel="noopener">Ouvrir la publication</a></p></details></article>`).join('');
   return h;
 }
 
