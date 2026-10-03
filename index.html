@@ -18,6 +18,7 @@
   --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#13202E; --muted:#5B6878; --line:#D3DAE2;
   --accent:#2348A8; --accent-ink:#FFFFFF;
   --z1:#7FAE9B; --z2:#E0B341; --z3:#E07B2E; --z4:#C2334A;
+  --ef-rec:#A8D8BE; --ef-std:#64A982; --ef-active:#2F7656;
   --warn-bg:#FFF2DC; --warn-ink:#7A4A00; --ok:#2E7D5B;
   color-scheme:light;
   box-sizing:border-box;
@@ -29,6 +30,7 @@
     --bg:#0F1720; --surface:#18232F; --surface-2:#1E2B39; --ink:#E4EAF0; --muted:#94A2B2; --line:#2B3947;
     --accent:#86A6F2; --accent-ink:#0F1720;
     --z1:#5F9783; --z2:#D3A835; --z3:#D9752C; --z4:#D04A60;
+    --ef-rec:#7EAD92; --ef-std:#4E8F6A; --ef-active:#2E674C;
     --warn-bg:#3A2B12; --warn-ink:#F2C784; --ok:#6FCF9F; color-scheme:dark;
   }
 }
@@ -36,6 +38,7 @@
   --bg:#0F1720; --surface:#18232F; --surface-2:#1E2B39; --ink:#E4EAF0; --muted:#94A2B2; --line:#2B3947;
   --accent:#86A6F2; --accent-ink:#0F1720;
   --z1:#5F9783; --z2:#D3A835; --z3:#D9752C; --z4:#D04A60;
+    --ef-rec:#7EAD92; --ef-std:#4E8F6A; --ef-active:#2E674C;
   --warn-bg:#3A2B12; --warn-ink:#F2C784; --ok:#6FCF9F; color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -655,7 +658,11 @@ const RULES={
     footingStep:5
   },
   recovery:{
-    footing:{rec:{range:[35,45],default:40},std:{range:[40,60],default:50},pro:{range:[60,75]}},
+    footing:{
+      rec:{range:[35,45],default:40,intensityPctLT1:[0.75,0.83]},
+      std:{range:[40,60],default:50,intensityPctLT1:[0.84,0.91]},
+      pro:{range:[60,75],intensityPctLT1:[0.84,0.91]}
+    },
     prolongedAllowed:{weeklyMinutesFrom:360,runsUpTo:4},
     secondRecoveryFootingWhenHeavy:2
   },
@@ -668,7 +675,7 @@ const RULES={
     activeEndurance:{
       weeklyMax:1,minRuns:4,maxRuns:6,
       blockWhenFourRunsAndTwoQualities:true,
-      work:[15,45],warmup:20,cooldown:10,
+      work:[15,45],warmup:20,cooldown:10,intensityPctLT1:[0.92,0.98],
       allowedContexts:['aero','assimilation'],
       formats:['continuous','blocks']
     },
@@ -929,7 +936,7 @@ const RULE_META=(()=>{
   'load.zones':m('Q_LOAD_WEIGHTING','physiological'),
   'organization.longRun':m('Q_LONG_RUN','organizational'),
   'organization.qualityFrequency':m('Q_MIXED_SESSIONS','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Le nombre de qualités reste choisi par l’athlète. Deux qualités sont possibles dès 4 sorties mais plutôt recommandées à partir de 5 ; trois qualités nécessitent au moins 6 sorties. La troisième est allégée.'}),
-  'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Endurance active distincte des qualités : au plus une fois par semaine, 15 à 45 min sous LT1, précédées de 20 min faciles et suivies de 10 min faciles. Utilisée en développement aérobie ou assimilation ; exclue avec 4 sorties et 2 qualités.'}),
+  'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Endurance active distincte des qualités : au plus une fois par semaine, 15 à 45 min à 92–98 % de la vitesse LT1, avec LT1 comme plafond, précédées de 20 min faciles et suivies de 10 min faciles. Utilisée en développement aérobie ou assimilation.'}),
   'organization.warmup':m('Q_WARMUP','organizational'),
   'prediction.marathonPenalty':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
@@ -942,7 +949,7 @@ const RULE_META=(()=>{
   'mixed.allowTripleStandard':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'S1 + S2 + VO₂ n’est pas généré comme format standard.'}),
   'mixed.betweenBlocks':m('Q_MIXED_SESSIONS','physiological',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'La coupure entre deux composantes reste libre et courte ; la valeur exacte est un choix de programmation.'}),
   'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'Les rapports de volumes par combinaison sont des heuristiques prudentes dérivées des volumes dédiés et des usages transition/rappel/assimilation.'}),
-  'recovery.footing':m('Q_EASY_RUNS','organizational'),
+  'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Sous-zones pratiques de footing exprimées en % de la vitesse LT1 : récupération 75–83 %, EF normale/prolongée 84–91 %. Ce découpage sert à la prescription et ne constitue pas des seuils physiologiques distincts.'}),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
   's1.band':m('Q_S1_INTENSITY','physiological',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'LT1 est un repère ; S1 travaille légèrement au-dessus, avec une marge qui diminue quand durée de fraction et volume augmentent.'}),
@@ -1259,6 +1266,19 @@ function s2Range(rng,work,st){
 /* S1 : marge au-dessus du LT1 estimé selon durée de fraction + volume total.
    Les deux entrées LT1 représentent une incertitude ; le centre sert d'ancre de prescription. */
 const lt1Ref=st=>(st.s1lo+st.s1hi)/2;
+function efPctBand(type){
+  if(type==='active')return RULES.organization.activeEndurance.intensityPctLT1;
+  return RULES.recovery.footing[type==='rec'?'rec':type==='pro'?'pro':'std'].intensityPctLT1;
+}
+function efBand(type,st){
+  const p=efPctBand(type),v=lt1Ref(st);
+  return[v*p[0],v*p[1]];
+}
+function efBandText(type,st){
+  const p=efPctBand(type),v=efBand(type,st);
+  return `${fmtSpd(v[0])} à ${fmtSpd(v[1])} km/h (${fmtPace(v[0])} à ${fmtPace(v[1])}/km) · ${Math.round(p[0]*100)}–${Math.round(p[1]*100)} % LT1`;
+}
+const footColor=type=>type==='active'?'var(--ef-active)':type==='rec'?'var(--ef-rec)':'var(--ef-std)';
 function s1Margin(repMin){return RULES.s1.band.durationMargins.find(x=>repMin<=x.max).r;}
 function s1Band(repMin,work,st){
   const B=RULES.s1.band,r=s1Margin(repMin),pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1);
@@ -1690,7 +1710,7 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
 }
 
 /* ---------- footings : catégories et volume cible à ±2,5 % ---------- */
-const FOOT={rec:{lab:'Footing récupération',r:RULES.recovery.footing.rec.range,d:RULES.recovery.footing.rec.default},std:{lab:'Footing',r:RULES.recovery.footing.std.range,d:RULES.recovery.footing.std.default},pro:{lab:'Footing prolongé',r:RULES.recovery.footing.pro.range},active:{lab:'Endurance active'}};
+const FOOT={rec:{lab:'Footing récupération',r:RULES.recovery.footing.rec.range,d:RULES.recovery.footing.rec.default},std:{lab:'EF normale',r:RULES.recovery.footing.std.range,d:RULES.recovery.footing.std.default},pro:{lab:'Footing prolongé',r:RULES.recovery.footing.pro.range},active:{lab:'Footing actif'}};
 function planFootings(o){
   const warns=[];let sl=o.sl,removed=0,converted=false;
   /* 1 footing récupération après la séance la plus coûteuse ; un 2e si la semaine est chargée ; tous en assimilation */
@@ -2319,7 +2339,7 @@ function renderWeeks(st,plan){
     w.sessions.forEach((s,i)=>{h+=renderSession(s,i===0?'Qualité 1':'Qualité 2');});
     h+='<div class="easy">';
     if(w.sl)h+=`<div><b>Sortie longue, ${fmtDur(w.sl)}, ${pts(w.slLoad)}</b><span>${w.slS1?`${fmtDur(w.sl-w.slS1)} en EF puis ${w.slS1}' au S1 (${paceRange(st.s1lo,st.s1hi)}).`:w.slEA?`20' faciles, puis ${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}' d’endurance active au choix (continu ou blocs), puis au moins 10' faciles. FC ≤ LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}.`:`En EF, plus lent que ${fmtPace(st.s1lo)}/km.`}</span></div>`;
-    if(w.foot.length)h+=`<div><b>${w.foot.map(footLabel).join(', ')}</b><span>En EF. ${w.heavy?'Semaine chargée : les deux footings sont en récupération.':'Garde au moins 48 h entre deux qualités.'}</span></div>`;
+    if(w.foot.length)h+=`<div><b>${w.foot.map(footLabel).join(', ')}</b><span>${w.heavy?'Semaine chargée : les footings faciles sont orientés récupération.':'Les plages d’intensité sont calculées à partir de la vitesse LT1.'}</span></div>`;
     h+='</div>';
     h+=`<div><b>Rappels</b><ul class="rap">${w.reminders.map(r=>`<li>${reminderText(r)}</li>`).join('')}</ul></div>`;
     h+='<div class="zline"><span>Minutes :</span>'+['z1','z2','z3','z4'].map(k=>`<span>${ZONES[k].lab} <b>${Math.round(w.z[k])}'</b></span>`).join('')+'</div>';
@@ -2365,15 +2385,18 @@ const SECT_SHORT={s1:'S1',s2:'S2',vo2:'VO₂',spec10k:'AS10'};
 function itemColor(it,w){
   if(it.kind==='race')return'var(--z4)';
   if(it.kind==='q'){const s=it.s;if(s.libSector==='spec10k'||s.fam==='spec'||s.fam==='taper')return'var(--accent)';return ZONES[s.zone].c;}
-  return'var(--z1)';
+  if(it.kind==='foot')return footColor(it.f.type);
+  if(it.kind==='sl')return w.slEA?'var(--ef-active)':'var(--ef-std)';
+  if(it.kind==='veille')return'var(--ef-rec)';
+  return'var(--ef-std)';
 }
 function itemShort(it,w){
   if(it.kind==='race'){const r=it.s;return{k:'Course',s:DIST[C_dist(r)].lab,t:fmtTime(r.targetTime)};}
   if(it.kind==='q'){const s=it.s,k=s.fam==='taper'?(C_dist2(s)?'Rappel AS10':'Rappel d\'allure'):s.isLong?'SL spécifique':SECT_SHORT[s.sector]||(s.fam==='hills'?'Côtes':s.fam==='spec'?'Spécifique':sessionTitle(s));
     return{k,s:compactTxt(vText(s.variants[0])),t:`≈ ${fmtDur(s.total)}`};}
-  if(it.kind==='sl')return{k:'Sortie longue',s:fmtDur(w.sl),t:w.slS1?`dont ${w.slS1}' S1`:w.slEA?`${Math.round(w.slEA.range[0])}–${Math.round(w.slEA.range[1])}' EA`:'EF'};
-  if(it.kind==='veille')return{k:'Footing veille',s:`${it.min}'`,t:`+ ${it.strides?it.strides[0]+'–'+it.strides[1]:'3–5'} lignes droites`};
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return{k:'Endurance active',s:fmtDur(f.min),t:activeRangeText(f)};return{k:{rec:'Footing récup',std:'Footing',pro:'Footing prolongé'}[f.type],s:fmtDur(f.min),t:f.shortHills?'+ côtes courtes':f.ld?'+ lignes droites':'EF'};}
+  if(it.kind==='sl')return{k:'Sortie longue',s:fmtDur(w.sl),t:w.slS1?`dont ${w.slS1}' S1`:w.slEA?`${Math.round(w.slEA.range[0])}–${Math.round(w.slEA.range[1])}' actif`:(lastSt?efBandText('std',lastSt):'EF')};
+  if(it.kind==='veille')return{k:'Footing veille',s:`${it.min}'`,t:lastSt?efBandText('rec',lastSt):'Très facile'};
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return{k:'Footing actif',s:fmtDur(f.min),t:lastSt?efBandText('active',lastSt):activeRangeText(f)};return{k:{rec:'Footing récup',std:'EF normale',pro:'Footing prolongé'}[f.type],s:fmtDur(f.min),t:lastSt?efBandText(f.type,lastSt):(f.shortHills?'+ côtes courtes':f.ld?'+ lignes droites':'EF')};}
   return{k:'',s:'',t:''};
 }
 /* Résumé de case : la structure seule, raccourcie pour les formes longues (pyramides, mixtes…) */
@@ -2547,7 +2570,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.7';
+const APP_VERSION='2026.10.03.8';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -2858,8 +2881,8 @@ function sessionScreenHtml(){
   if(it.kind==='sl')return head('Sortie longue')+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span>Allure EF</span><span class="v">plus lent que ${fmtPace(st.s1lo)}/km</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceRange(st.s1lo,st.s1hi)}</span>`:''}</div></div>`+
       `<div class="card"><details class="info"><summary>ⓘ Charge</summary><p>Charge estimée : ${pts(w.slLoad)}.</p></details></div>`;
   if(it.kind==='veille')return head('Footing de la veille')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head('Endurance active')+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Endurance active</span><span class="v">${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}'</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">Continu ou blocs au choix. Ne pas dépasser le premier seuil.</p></div>`;const lab={rec:'Footing récupération',std:'Footing',pro:'Footing prolongé'}[f.type];
-    return head(lab)+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Allure</span><span class="v">plus lent que ${fmtPace(st.s1lo)}/km</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head('Footing actif')+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}'</span><span>Intensité du bloc</span><span class="v">${efBandText('active',st)}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">Continu ou blocs au choix. 92–98 % de la vitesse LT1, sans dépasser LT1.</p></div>`;const lab={rec:'Footing récupération',std:'EF normale',pro:'Footing prolongé'}[f.type];
+    return head(lab)+`<div class="card"><div class="big">${fmtDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Zone proposée</span><span class="v">${efBandText(f.type,st)}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
       `<div class="card"><details class="info"><summary>ⓘ Pourquoi ce footing</summary><p>${(()=>{const F=RULES.recovery.footing,r=x=>`${x[0]} à ${x[1]}'`;return f.after?`Le lendemain de « ${sessionTitle(f.after)} » : footing de récupération, plage de ${r(F.rec.range)}.`:f.type==='pro'?`Footing prolongé (${r(F.pro.range)}) : utilisé seulement quand le volume visé l'impose.`:f.type==='rec'?`Footing de récupération, plage de ${r(F.rec.range)}.`:`Footing standard (${r(F.std.range)}) en endurance fondamentale.`;})()}</p><p>Charge estimée : ${pts(f.load)}.</p></details></div>`;}
   return'';
 }
