@@ -1128,6 +1128,23 @@ function calendarStructure(){
 function sameStructure(a,b){return JSON.stringify(a||{})===JSON.stringify(b||{});}
 function planTitle(st){return `${DIST[st.calDist].lab} · ${st.calRace||'sans date'}`;}
 function snapshotPlan(C){return JSON.parse(JSON.stringify(C));}
+function planDateKey(v){
+  const d=v instanceof Date?v:new Date(v);
+  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+}
+function preservePastSessions(C){
+  if(!activePlan||!activePlan.plan||!activePlan.plan.weeks)return C;
+  const old=new Map();
+  activePlan.plan.weeks.forEach(w=>(w.days||[]).forEach(d=>old.set(planDateKey(d.date),d)));
+  const today=new Date(),cut=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  C.weeks.forEach(w=>(w.days||[]).forEach(d=>{
+    if(d.date<cut){
+      const prev=old.get(planDateKey(d.date));
+      if(prev&&Array.isArray(prev.items))d.items=JSON.parse(JSON.stringify(prev.items));
+    }
+  }));
+  return C;
+}
 function archiveActivePlan(reason){
   if(!activePlan)return;
   planHistory.unshift({...activePlan,archivedAt:new Date().toISOString(),archiveReason:reason||'remplacé'});
@@ -2226,7 +2243,8 @@ function render(){
   $('blocLegend').textContent=cal?'Volume':'Bloc';$('blocHint').textContent=cal?'Le volume moyen vaut pour toute la préparation, semaines d\'assimilation et de course comprises.':'Le volume moyen inclut la semaine d\'assimilation (environ −22 % par rapport à la dernière semaine de charge).';
   if(cal){$('specRow').style.display='none';
     $('calDistHint').textContent=st.calDist===1?'':'Seul le spécifique 10 km utilise déjà la nouvelle bibliothèque ; cette distance garde son générateur actuel.';
-    const C=buildCalendar(st,pred);
+    let C=buildCalendar(st,pred);
+    if(!C.error&&!structureEditing&&activePlan&&sameStructure(calendarStructure(),activePlan.structure))C=preservePastSessions(C);
     lastCalError=C.error||null;
     if(C.error){$('overview').innerHTML=`<h2>Calendrier à compléter</h2><p>${warnText(C.error)}</p>`;$('weeksSec').innerHTML='';lastPlan=null;return;}
     lastPlan=C;lastPred=pred;lastSt=st;
@@ -2520,7 +2538,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.3';
+const APP_VERSION='2026.10.03.4';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
