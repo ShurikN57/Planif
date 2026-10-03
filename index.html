@@ -974,6 +974,61 @@ const SOURCES=[
     result:'La revue décrit la périodisation, les séances aérobies, le fartlek, les intervalles et le travail neuromusculaire de coureurs de 800–1500 m de niveau mondial. Elle sert dans Planif comme référence complémentaire pour certaines méthodes, pas comme base normative pour le 5 km–marathon.',
     limitations:'Population et distances plus courtes que le cœur de cible de Planif ; application indirecte pour les coureurs de fond plus longs.',
     themes:['Fartlek','Périodisation','VO₂max','Côtes','Demi-fond'],status:'verified'
+  },
+  {
+    id:'SRC_013',
+    title:'High-Intensity Interval Training, Solutions to the Programming Puzzle: Part I: Cardiopulmonary Emphasis',
+    authors:['Martin Buchheit','Paul B Laursen'],
+    year:2013,journal:'Sports Medicine',doi:'10.1007/s40279-013-0029-x',
+    url:'https://pubmed.ncbi.nlm.nih.gov/23539308/',studyType:'Revue',
+    population:{level:'Athlètes d’endurance et sports intermittents',n:null},
+    result:'Revue de référence sur la construction du HIIT à visée cardiorespiratoire. Elle relie durée et intensité des fractions, récupération et temps accumulé à haute consommation d’oxygène, avec l’objectif de passer plusieurs minutes à forte sollicitation aérobie.',
+    limitations:'Revue multi-sports et centrée sur les réponses physiologiques aiguës ; elle ne valide pas à elle seule chaque pourcentage ou récupération exact utilisé par Planif.',
+    themes:['VO₂max','HIIT','Intervalles','Récupération'],status:'verified'
+  },
+  {
+    id:'SRC_014',
+    title:'High-Intensity Interval Training, Solutions to the Programming Puzzle: Part II: Anaerobic Energy, Neuromuscular Load and Practical Applications',
+    authors:['Martin Buchheit','Paul B Laursen'],
+    year:2013,journal:'Sports Medicine',doi:'10.1007/s40279-013-0066-5',
+    url:'https://pubmed.ncbi.nlm.nih.gov/23832851/',studyType:'Revue',
+    population:{level:'Athlètes d’endurance et sports intermittents',n:null},
+    result:'Complète la partie I en détaillant la contribution anaérobie, la charge neuromusculaire, les manipulations travail-récupération et la programmation pratique des séances HIIT, notamment des répétitions courtes et des intervalles de 2–4 min.',
+    limitations:'Nombreux exemples hors course de fond et part importante d’application pratique ; utile pour les principes de programmation, moins pour fixer des valeurs universelles.',
+    themes:['VO₂max','HIIT','Intervalles','Récupération','Neuromusculaire'],status:'verified'
+  },
+  {
+    id:'SRC_015',
+    title:'The Moderating Role of Recovery Durations in High-Intensity Interval-Training Protocols',
+    authors:['Patrick P J M Schoenmakers','Florentina J Hettinga','Kate E Reed'],
+    year:2019,journal:'International Journal of Sports Physiology and Performance',doi:'10.1123/ijspp.2018-0876',
+    url:'https://pubmed.ncbi.nlm.nih.gov/31146621/',studyType:'Revue',
+    population:{level:'HIIT : course, cyclisme et sports intermittents',n:null},
+    result:'La durée de récupération module la charge externe et parfois le stimulus interne. Des récupérations plus longues permettent généralement de soutenir davantage la puissance ou la vitesse ; en intervalles aérobies, une récupération trop courte peut dégrader la séance, mais les données longitudinales restent limitées.',
+    limitations:'Peu d’études isolent uniquement la durée de récupération, surtout sur le long terme ; ne fournit pas un ratio unique optimal pour toutes les séances.',
+    themes:['Récupération','HIIT','VO₂max','Intervalles'],status:'verified'
+  },
+  {
+    id:'SRC_016',
+    title:'The dose-response relationship between interval-training and VO₂max in well-trained endurance runners: A systematic review',
+    authors:['Arran Parmar','Thomas W Jones','Philip R Hayes'],
+    year:2021,journal:'Journal of Sports Sciences',doi:'10.1080/02640414.2021.1876313',
+    url:'https://pubmed.ncbi.nlm.nih.gov/33605843/',studyType:'Revue systématique',
+    population:{level:'Coureurs d’endurance bien entraînés',n:null},
+    result:'Sept études ont été retenues. L’amélioration de VO₂max après entraînement intermittent est hétérogène, mais la charge de séance d’intervalles est associée à l’évolution de VO₂max, ce qui soutient une logique de dosage et de périodisation plutôt qu’un format unique.',
+    limitations:'Seulement sept études et résultats hétérogènes ; six études ne rapportent pas d’amélioration significative de VO₂max. Ne permet pas de déduire une dose optimale universelle.',
+    themes:['VO₂max','Intervalles','Dose-réponse','Volume','Périodisation'],status:'verified'
+  },
+  {
+    id:'SRC_017',
+    title:'Effects of different uphill interval-training programs on running economy and performance',
+    authors:['Kyle R Barnes','Will G Hopkins','Michael R McGuigan','Andrew E Kilding'],
+    year:2013,journal:'International Journal of Sports Physiology and Performance',doi:'10.1123/ijspp.8.6.639',
+    url:'https://pubmed.ncbi.nlm.nih.gov/23538293/',studyType:'Essai randomisé',
+    population:{level:'Coureurs de fond bien entraînés',n:20},
+    result:'Après 6 semaines de différents entraînements en côte, la performance sur 5 km s’est améliorée en moyenne d’environ 2 % sans protocole clairement optimal. Les intensités les plus élevées favorisaient davantage l’économie de course et plusieurs paramètres neuromusculaires.',
+    limitations:'Petit effectif réparti sur cinq protocoles et absence d’un format clairement supérieur ; l’étude soutient l’intérêt des côtes mais pas précisément le format Planif de 10–15 s.',
+    themes:['Côtes','Économie de course','Neuromusculaire','5 km'],status:'verified'
   }
 ];
 /* FINDINGS — un résultat précis extrait d'une source pour une question. Schéma :
@@ -2714,7 +2769,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.11';
+const APP_VERSION='2026.10.03.12';;
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
