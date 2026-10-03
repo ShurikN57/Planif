@@ -663,7 +663,7 @@ const RULES={
       allowedContexts:['aero','assimilation'],
       formats:['continuous','blocks']
     },
-    warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
+    warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],fartlek:[20,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
     longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,105,130,160]}}
   },
   library:{
@@ -694,9 +694,10 @@ const RULES={
       longRunS1EndMinutes:15},
     eco:{budget:[10,20],A:{fam:'hills',W:[8,14],min:6},B:[{fam:'s2',W:[20,28],min:18}]},
     aero:{
-      budget:[5,18],ramp:0.06,
-      A:{fam:'s1',W:[18,28],min:15},
-      B:[{fam:'vmaShort',W:[6,8],min:5},{fam:'s2',W:[12,16],min:10}],
+      budget:[5,15],ramp:0.06,maxQualities:1,
+      A:{fam:'fartlek',W:[18,28],min:15},
+      B:[{fam:'fartlek',W:[18,28],min:15}],
+      fartlek:{effort:'controlled_by_feel',paceTarget:false,recovery:'easy_jog'},
       shortHills:{weeks:'alternate',reps:[6,10],seconds:[10,15],gradePct:[6,10],recovery:'complete'}
     },
     spec:{
@@ -822,9 +823,11 @@ const FINDINGS=[];
 const RULE_META=(()=>{
   const m=(questionId,kind,meta={})=>Object.assign({questionId,kind,origin:'not_evaluated',confidence:'not_evaluated',decision:'not_evaluated',findings:[],lastReview:null,reviewSummary:null},meta);
   return{
-  'blocks.aero.A':m('Q_BLOCK_WORK_VOLUME','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Le bloc aérobie garde une seule vraie qualité principale légère, ici S1 18–28 min de travail, pour laisser la majorité du volume à basse intensité.'}),
-  'blocks.aero.B':m('Q_SESSION_COMBINATION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Les qualités supplémentaires du bloc aérobie sont des rappels courts : VO₂ 6–8 min ou S2 12–16 min selon le quota choisi.'}),
-  'blocks.aero.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-02',reviewSummary:'Bloc à dominante basse intensité ; le budget de travail qualitatif est réduit à 5–18 %.'}),
+  'blocks.aero.A':m('Q_BLOCK_WORK_VOLUME','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Le bloc aérobie comporte une seule vraie qualité hebdomadaire : un fartlek de 18–28 min de travail, piloté au ressenti et sans cible d’allure.'}),
+  'blocks.aero.B':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Aucune deuxième ou troisième vraie qualité n’est générée en développement aérobie, même si le réglage général autorise 2 ou 3 qualités.'}),
+  'blocks.aero.budget':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'partial_science',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Bloc à dominante basse intensité ; le budget de travail qualitatif est limité à 5–15 %.'}),
+  'blocks.aero.maxQualities':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Plafond spécifique du bloc aérobie : une seule vraie séance de qualité par semaine.'}),
+  'blocks.aero.fartlek':m('Q_SESSION_COMBINATION','organizational',{origin:'consensus',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'Fartlek sans cible chronométrique : effort contrôlé au ressenti, récupération en footing facile, structure adaptable au terrain.'}),
   'blocks.aero.ramp':m('Q_LOAD_PROGRESSION','organizational'),
   'blocks.aero.shortHills':m('Q_HILLS','organizational',{origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Côtes courtes utilisées comme stimulus neuromusculaire/économie, non comptées comme vraie séance de qualité, en alternance avec les lignes droites.'}),
   'blocks.assimilation':m('Q_ASSIMILATION','organizational'),
@@ -1413,6 +1416,27 @@ function hillsSession(W,k,st){
   return[A,pickBest((k%2?[L[1],L[0]]:L).map(r=>hillStruct(r,A.work,true,st)),A.work)];
 }
 
+function fartlekSession(W,k,st){
+  const durations=[1,1.5,2,3],d=durations[Math.min(durations.length-1,Math.floor(k/2))];
+  const n=Math.max(4,Math.round(W/d)),work=r5(n*d),recEach=Math.max(0.75,Math.min(2,d*0.75)),rec=r5((n-1)*recEach);
+  /* Vitesse interne uniquement pour estimer la charge : elle n'est jamais prescrite ni affichée. */
+  const loadSpeed=(st.s1hi+st.s2)/2;
+  const structured={
+    fam:'fartlek.structured',
+    structure:{type:'fartlek_structured',reps:n,durationMin:d,recoveryMin:recEach,recoveryType:'easy_jog'},
+    intensity:{type:'feel',target:'controlled_hard',paceTarget:false},
+    work,total:r5(work+rec),parts:[[work,loadSpeed]],rec,recEach
+  };
+  const freeRec=r5(work*0.65);
+  const free={
+    fam:'fartlek.free',
+    structure:{type:'fartlek_free',workMin:work,rangeSec:[30,180],recoveryType:'easy_jog',terrain:true},
+    intensity:{type:'feel',target:'controlled_hard',paceTarget:false},
+    work,total:r5(work+freeRec),parts:[[work,loadSpeed]],rec:freeRec,recEach:1
+  };
+  return[structured,free];
+}
+
 function zoneForSpeed(v,st){const Z=RULES.load.sessionZone;if(v>=Z.z4OfVma*st.vma)return'z4';if(v>=st.s2-Z.z3BelowS2)return'z3';if(v>=st.s1hi)return'z2';return'z1';}
 
 function makeSessionCore(fam,W,k,t,st,ctx){
@@ -1422,6 +1446,7 @@ function makeSessionCore(fam,W,k,t,st,ctx){
     case'vmaShort':zone='z4';variants=generateSession('vo2',W,st,{...ctx,k,t,shortOnly:true,memory:ctx.calendar?ctx.memory:null});break;
     case's2':zone='z3';variants=generateSession('s2',W,st,{...ctx,k,t});break;
     case's1':zone='z2';variants=generateSession('s1',W,st,{...ctx,k,t});break;
+    case'fartlek':zone='z3';variants=fartlekSession(W,k,st);break;
     case'hills':zone='z4';variants=hillsSession(W,k,st);break;
     case'spec':{
       const d=ctx.dist,lab=DIST[d].lab;zone=zoneForSpeed(ctx.v,st);
@@ -1654,7 +1679,7 @@ function buildWeek(B,st,o){
   const LR=RULES.organization.longRun,slCap=o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default;
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=assim?(st.assimQ2?2:1):st.qualityCount;
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?1:(assim?(st.assimQ2?2:1):st.qualityCount);
     let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
     const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
@@ -1684,7 +1709,7 @@ function buildWeek(B,st,o){
       }
     }
     /* Transition : dernière semaine de charge, le stimulus principal prépare la qualité du bloc suivant. */
-    if(!assim&&o.nextBlock&&k===N-1&&!mixedRole){
+    if(B.id!=='aero'&&!assim&&o.nextBlock&&k===N-1&&!mixedRole){
       const nextFam=o.nextBlock==='vma'?'vma':o.nextBlock;
       const C=mixedCfg(B.A.fam,nextFam,'transition');
       if(C){
@@ -1976,6 +2001,10 @@ function presentVariantRaw(v){
     return{text:`${S.reps} × ${d}, récup ${fmtMin(S.recoveryMin)} trot`,chips:[`Allure ${I.race}`,`${fmtPace(I.refKmh)}/km`,`${fmtTime(S.repDurationMin*60)} par fraction`]};}
   if(f==='spec.marathonLong')return{text:S.reps?`Sortie longue : ${S.easyMin}' EF puis ${S.reps} × ${fmtKm(S.distanceKm)} km à allure marathon, ${S.easyBetweenKm} km EF entre`
       :`Sortie longue : ${S.easyMin}' EF puis ${fmtKm(S.distanceKm)} km à allure marathon, ${fmtRec(S.cooldownMin)} au calme`,chips:['Allure marathon',`${fmtPace(I.refKmh)}/km`]};
+  if(sec==='fartlek'){
+    if(S.type==='fartlek_structured')return{text:S.reps+' × '+fmtMin(S.durationMin)+' d’accélération au ressenti, récup '+fmtRec(S.recoveryMin)+' en footing facile',chips:['Sans cible d’allure','Effort contrôlé selon les sensations et le terrain']};
+    return{text:'Fartlek libre : environ '+Math.round(S.workMin)+' min d’accélérations cumulées, efforts de '+S.rangeSec[0]+' s à '+Math.round(S.rangeSec[1]/60)+' min selon le terrain, récup en footing facile',chips:['Sans cible d’allure','Accélérer et ralentir librement selon le terrain']};
+  }
   if(sec==='hills')return{text:`${S.reps} × ${fmtRec(S.durationMin)} en côte (${S.gradePct[0]} à ${S.gradePct[1]} %), récup descente au trot, puis ${S.sprints.reps} × ${S.sprints.seconds}" de sprint en côte, récup complète`,chips:cues};
   if(f==='taper')return S.distanceM?{text:`${S.reps} × ${S.distanceM} m à allure ${I.race}, récup ${fmtRec(S.recoveryMin)} trot`,chips:[`${fmtPace(I.refKmh)}/km`,repChip()]}
       :{text:`${S.reps} × ${fmtMin(S.durationMin)} à allure ${I.race}, récup ${fmtRec(S.recoveryMin)} trot`,chips:[`${fmtPace(I.refKmh)}/km`]};
@@ -2025,7 +2054,7 @@ function presentVariantRaw(v){
   }
   return{text:'',chips:[]};
 }
-const SESSION_TITLE={vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',mixed:'Séance mixte',hills:'Côtes et économie'};
+const SESSION_TITLE={vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',fartlek:'Fartlek',mixed:'Séance mixte',hills:'Côtes et économie'};
 function sessionTitle(x){
   if(x.fam==='spec')return x.isLong?'Sortie longue spécifique marathon':`Allure spécifique ${DIST[x.dist].lab}`;
   if(x.fam==='taper')return`Rappel d'allure ${DIST[x.dist].lab}`;
@@ -2037,6 +2066,7 @@ const PURPOSE={
   vmaShort:'Rappel VO₂ en intermittent court, sans grosse fatigue.',
   s2:'Endurance à haute fraction aérobie. La fourchette d\'allure dépend de la durée des fractions et du volume total.',
   s1:'Capacité aérobie : travailler légèrement au-dessus du LT1 pour développer ce secteur par le haut, avec une récupération courte et libre.',
+  fartlek:'Qualité du bloc aérobie : varier l’effort au ressenti, sans cible chronométrique, avec récupération en footing facile.',
   mixed:'Combiner deux qualités à volume réduit pour une transition, un rappel ou une semaine d’assimilation.',
   spec:'Rythme, économie et confiance à l\'allure de course.',
   hills:'Force spécifique et économie de course.',
@@ -2404,7 +2434,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.02.5';
+const APP_VERSION='2026.10.03.1';
 const TABS={today:"Aujourd'hui",cal:'Calendrier',ref:'Repères',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
