@@ -484,9 +484,10 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .settingsFold[open]>summary>span{transform:rotate(180deg)}
 .settingsFold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
 .settingsContent{padding-top:.7rem}
-.physioSpeeds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
-.physioHr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.35rem}
-#scr-set .physioSpeeds input,#scr-set .physioHr input{font-size:16px;padding:.45rem .25rem;text-align:center}
+.physioSpeeds{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));gap:.65rem}
+.physioHr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
+#scr-set .physioSpeeds .sf,#scr-set .physioHr .sf{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+#scr-set .physioSpeeds input,#scr-set .physioHr input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;font-size:16px;padding:.45rem .25rem;text-align:center}
 .physioSpeeds .sf>span,.physioHr .sf>span{text-align:center;white-space:nowrap;font-size:.8rem}
 .s1Hint{margin:0 0 .8rem;font-size:.78rem}
 .speedUnit{max-width:11rem}
@@ -3915,7 +3916,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.11';
+const APP_VERSION='2026.10.04.12';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
