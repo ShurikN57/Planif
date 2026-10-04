@@ -665,12 +665,12 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 
 <script>
 /* COROS : client OAuth public avec PKCE. Les formats sont découverts après connexion.
-   La création est limitée à une séance neuve dans la bibliothèque, après aperçu et confirmation. */
+   La création est limitée à une séance neuve dans le calendrier ou la bibliothèque, après aperçu et confirmation. */
 window.PlanifCoros=(()=>{
   'use strict';
   const KEY='planif-coros-v1',SCOPES='openid offline_access mcp.tools';
   const REGIONS={eu:'https://mcpeu.coros.com',us:'https://mcpus.coros.com',cn:'https://mcpcn.coros.com'};
-  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0,currentDraft=null;
+  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0,currentDraft=null,currentDate='';
   const callback=new URL(location.href).searchParams.get('coros_callback')==='1';
   const read=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null');}catch(_){return null;}};
   const write=(store,key,value)=>{store.setItem(key,JSON.stringify(value));};
@@ -751,7 +751,7 @@ window.PlanifCoros=(()=>{
     const tools=[],seen=new Set();let cursor;
     do{const r=await rpc('tools/list',cursor?{cursor}:{});if(!Array.isArray(r.tools))fail('COROS n’a pas fourni ses formats.');tools.push(...r.tools);cursor=r.nextCursor;if(cursor){if(seen.has(cursor)||seen.size>=20)fail('La liste des fonctionnalités COROS est incomplète.');seen.add(cursor);}}while(cursor);
     catalog=tools.map(({name,description,inputSchema})=>({name,description,inputSchema}));
-    message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Tu peux envoyer une séance dans la bibliothèque COROS.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
+    message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Tu peux envoyer une séance au calendrier ou à la bibliothèque COROS.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
   }
   async function verify(){if(busy)return;busy=true;message='Vérification de COROS…';emit();try{await discover();}catch(e){catalog=null;message=e.message;}finally{busy=false;emit();}}
   function disconnect(){if(busy)return;auth=null;catalog=null;sessionStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-pending');message='Compte déconnecté de Planif.';emit();}
@@ -761,15 +761,23 @@ window.PlanifCoros=(()=>{
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   function settingsHtml(){
-    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ta bibliothèque COROS, après aperçu et confirmation.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi crée une séance dans la bibliothèque COROS, sans modifier ton calendrier ni tes entraînements existants. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
+    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
   }
   const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('');
   const SCHEMA_HASH='d0d0f363f5ad3cc69fd246279a94a8633a0e01b3c1e594376c0c95432f372138';
-  async function checkWriteTool(){
+  const SCHEDULE_SCHEMA_HASH='b4b2ea06b9cf00c821d8e822a6975539cb2fe2a4e28b126112a1d53e99c3f3c5';
+  const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function calendarDate(value){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))fail('Choisis une date de calendrier valide.');
+    const d=new Date(value+'T12:00:00'),today=new Date(),limit=new Date();limit.setDate(limit.getDate()+90);
+    if(!Number.isFinite(+d)||localDate(d)!==value||value<localDate(today)||value>localDate(limit))fail('Choisis une date entre aujourd’hui et les 90 prochains jours. COROS vérifie aussi la date selon le fuseau de ton compte.');
+    return value.replace(/-/g,'');
+  }
+  async function checkWriteTool(name){
     if(!catalog)await discover();
-    const tool=catalog.find(t=>t.name==='createSingleWorkout');
-    if(!tool||await digest(canonical({description:tool.description,inputSchema:tool.inputSchema}))!==SCHEMA_HASH)fail('Le format COROS de ton compte a changé. Exporte les formats dans Réglages pour faire vérifier la compatibilité.');
+    const tool=catalog.find(t=>t.name===name);
+    if(!tool||await digest(canonical({description:tool.description,inputSchema:tool.inputSchema}))!==(name==='createScheduledWorkout'?SCHEDULE_SCHEMA_HASH:SCHEMA_HASH))fail('Le format COROS de ton compte a changé. Exporte les formats dans Réglages pour faire vérifier la compatibilité.');
   }
   function sectionLabel(s){
     if(s.intervalGroup)return `${s.repeats} × (${s.sets.map(sectionLabel).join(' + ')})`;
@@ -783,13 +791,14 @@ window.PlanifCoros=(()=>{
     let d=document.getElementById('corosPreview');if(!d){d=document.createElement('dialog');d.id='corosPreview';d.className='corosDialog';document.body.append(d);d.addEventListener('cancel',e=>{if(busy)e.preventDefault();});d.addEventListener('click',e=>{if(e.target.closest('[data-coros-close]')&&!busy)d.close();});d.addEventListener('submit',e=>{e.preventDefault();sendFromPreview(d);});}
     let reason=snapshot.unsupported||'';currentDraft=null;
     try{if(!reason)currentDraft=PlanifCorosAdapter.plan(snapshot);}catch(e){reason=e.message;}
-    const draft=currentDraft;
-    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Enregistrement dans la bibliothèque COROS. Le calendrier COROS reste inchangé.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm">${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?'<label class="corosConfirm"><input type="checkbox" name="free" required><span>Je termine les récupérations libres avec le bouton Tour de la montre.</span></label>':''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Enregistrer dans la bibliothèque COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
+    const draft=currentDraft;currentDate=snapshot.date||localDate(new Date());const limit=new Date();limit.setDate(limit.getDate()+90);
+    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?'<label class="corosConfirm"><input type="checkbox" name="free" required><span>Je termine les récupérations libres avec le bouton Tour de la montre.</span></label>':''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
     d.addEventListener('input',updatePreviewSteps,{once:true});if(draft)updatePreviewSteps();d.showModal();
   }
   function previewValues(draft,form){return Object.fromEntries(draft.choices.map(c=>[c.id,form.elements.namedItem(c.id).value]));}
   function updatePreviewSteps(){
     const d=document.getElementById('corosPreview'),form=d?.querySelector('form');if(!form||!currentDraft)return;
+    const scheduled=form.elements.namedItem('destination').value==='calendar';form.elements.namedItem('scheduledDate').required=scheduled;form.elements.namedItem('scheduledDate').disabled=!scheduled;d.querySelector('#corosDateField').hidden=!scheduled;d.querySelector('#corosDateField').style.display=scheduled?'':'none';form.querySelector('button[type="submit"]').textContent=scheduled?'Ajouter au calendrier COROS':'Enregistrer dans la bibliothèque COROS';
     try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true});d.querySelector('#corosStepList').innerHTML=c.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('');}catch(_){}
     form.oninput=updatePreviewSteps;
   }
@@ -803,20 +812,30 @@ window.PlanifCoros=(()=>{
     try{
       if(!navigator.onLine)fail('L’envoi nécessite Internet.');
       const draft=cloneDraft(currentDraft),course=PlanifCorosAdapter.course(draft,previewValues(draft,form),{noIntensity:form.elements.namedItem('noIntensity')?.checked,free:form.elements.namedItem('free')?.checked});
-      status.textContent='Vérification de COROS…';await checkWriteTool();await access();
-      fingerprint=await digest(canonical({issuer:auth.issuer,course}));
+      const scheduled=form.elements.namedItem('destination').value==='calendar',date=scheduled?calendarDate(form.elements.namedItem('scheduledDate').value):null,name=scheduled?'createScheduledWorkout':'createSingleWorkout',args=scheduled?{date,course}:{course};
+      for(const field of form.querySelectorAll?.('input,select')||[])field.disabled=true;
+      status.textContent='Vérification de COROS…';await checkWriteTool(name);await access();
+      fingerprint=await digest(canonical(scheduled?{issuer:auth.issuer,course,date,destination:'calendar'}:{issuer:auth.issuer,course}));
       const previous=(read(localStorage,ledgerKey)||{})[fingerprint];
-      if(previous)fail(previous.status==='saved'?'Cette séance a déjà été envoyée depuis ce navigateur. Retrouve-la dans la bibliothèque COROS.':'Un envoi de cette séance a déjà été tenté. Vérifie la bibliothèque COROS avant toute nouvelle tentative ; Planif évite un doublon.');
+      if(previous)fail(previous.status==='saved'?'Cette séance a déjà été envoyée depuis ce navigateur. Retrouve-la dans COROS.':'Un envoi de cette séance a déjà été tenté. Vérifie COROS avant toute nouvelle tentative ; Planif évite un doublon.');
       record(fingerprint,{status:'pending',date:new Date().toISOString()});started=true;
       status.textContent='Envoi à COROS…';
       /* Aucun nouvel essai automatique d’écriture, même en cas d’expiration ou de timeout. */
-      const result=await rpc('tools/call',{name:'createSingleWorkout',arguments:{course}},true);
+      const result=await rpc('tools/call',{name,arguments:args},true);
       if(result.isError){record(fingerprint,{status:'rejected',date:new Date().toISOString()});fail('COROS a refusé cette séance. Aucun nouvel envoi automatique ne sera tenté.');}
-      if(!result.structuredContent&&!result.content?.some(c=>c.type==='text'&&c.text?.trim()))fail('La confirmation COROS est incomplète. Vérifie la bibliothèque avant de réessayer.');
-      record(fingerprint,{status:'saved',date:new Date().toISOString()});
-      status.textContent='COROS a confirmé l’enregistrement. Ouvre la bibliothèque d’entraînements dans COROS pour vérifier la séance et la synchroniser avec la montre.';
+      if(!result.structuredContent&&!result.content?.some(c=>c.type==='text'&&c.text?.trim()))fail('La confirmation COROS est incomplète. Vérifie COROS avant de réessayer.');
+      const reply=scheduled?scheduledReply(result,course.courseName):{names:[]};
+      record(fingerprint,{status:'saved',date:new Date().toISOString(),...(reply.idInPlan!==undefined?{idInPlan:reply.idInPlan}:{}),...(scheduled?{scheduledDate:date}:{})});
+      status.textContent=scheduled?'COROS a confirmé l’ajout au calendrier le '+date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6)+'. Vérifie ce jour dans COROS, y compris les autres séances déjà présentes, puis synchronise la montre.':'COROS a confirmé l’enregistrement. Ouvre la bibliothèque d’entraînements dans COROS pour vérifier la séance et la synchroniser avec la montre.';
+      if(reply.names.length)status.textContent+=' Autres séances signalées par COROS : '+reply.names.join(' ; ')+'.';
     }catch(e){status.textContent=started?'L’envoi ne sera pas répété automatiquement. '+e.message:e.message;}
-    finally{busy=false;dialog.querySelector('[data-coros-close]').disabled=false;if(!started)form.querySelector('button[type="submit"]').disabled=!auth;}
+    finally{busy=false;dialog.querySelector('[data-coros-close]').disabled=false;if(!started){for(const field of form.querySelectorAll?.('input,select')||[])field.disabled=false;updatePreviewSteps();form.querySelector('button[type="submit"]').disabled=!auth;}}
+  }
+  function scheduledReply(result,courseName){
+    const names=new Set();let idInPlan;
+    const walk=(v,depth=0)=>{if(!v||typeof v!=='object'||depth>12)return;if(typeof v.courseName==='string'&&v.courseName!==courseName)names.add(v.courseName.slice(0,100));if(depth===0&&idInPlan===undefined&&['string','number'].includes(typeof v.idInPlan))idInPlan=v.idInPlan;for(const x of Object.values(v))walk(x,depth+1);};
+    walk(result.structuredContent);for(const c of result.content||[])if(c.type==='text'){try{walk(JSON.parse(c.text));}catch(_){}}
+    return{names:[...names],idInPlan};
   }
   const cloneDraft=draft=>JSON.parse(JSON.stringify(draft));
   document.addEventListener('click',async e=>{
@@ -4234,7 +4253,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.15';
+const APP_VERSION='2026.10.04.16';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4619,6 +4638,7 @@ function corosSessionSnapshot(){
   if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd};}
   const w=lastPlan?.weeks?.[r.w],day=w?.days?.[r.d];let it=day?.items?.[r.i];if(r.q!==undefined&&w?.sessions?.[r.q])it={kind:'q',s:w.sessions[r.q]};
   if(!it)throw new Error('Cette séance n’est plus disponible.');
+  if(day?.date){const d=day.date;base.date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd};}
   if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:efBand(it.f.type,st)};
   if(it.kind==='sl')return{...base,kind:'long',long:{totalMin:w.sl,s1Min:w.slS1,active:w.slEA}};
