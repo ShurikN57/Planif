@@ -469,7 +469,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 :root[data-theme="dark"] #scr-ref .libVisual .homeArt{opacity:.18}
 /* Chronos : motif discret dans l’en-tête et référence saisie mise en évidence. */
 #scr-ref .chronoCard{position:relative;isolation:isolate}
-.chronoArt{position:absolute;right:3.9rem;top:.35rem;width:76px;height:76px;color:var(--accent);opacity:.11;pointer-events:none;z-index:-1}
+.chronoArt{position:absolute;right:5.1rem;top:.2rem;width:58px;height:58px;color:var(--accent);opacity:.11;pointer-events:none;z-index:-1}
 .chronoCard .kv{column-gap:0}
 .chronoCard .kv>span{padding-left:.4rem;padding-right:.4rem;min-width:0;overflow-wrap:anywhere}
 .chronoCard .predRef{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
@@ -3899,7 +3899,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.09';
+const APP_VERSION='2026.10.04.10';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
