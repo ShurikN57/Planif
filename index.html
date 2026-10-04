@@ -460,6 +460,13 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-ref .legend{gap:.4rem .8rem;font-size:.78rem}
 #scr-ref .libEntry{background:var(--surface-2);border-color:color-mix(in srgb,var(--accent) 18%,var(--line))}
 .srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Accès à la bibliothèque illustré, comme les cartes de l’accueil. */
+#scr-ref .libVisual{position:relative;isolation:isolate;overflow:hidden;border-left:4px solid var(--accent);gap:.7rem}
+#scr-ref .libVisual .homeArt{width:62%;opacity:.6;z-index:0}
+.libVisual .libCopy{position:relative;z-index:1;min-width:0}
+.libVisual .libArrow{position:relative;z-index:1;flex-shrink:0;color:var(--accent);font-size:1.5rem}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #scr-ref .libVisual .homeArt{opacity:.18}}
+:root[data-theme="dark"] #scr-ref .libVisual .homeArt{opacity:.18}
 </style>
 </head>
 <body data-ui="app">
@@ -3884,7 +3891,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.07';
+const APP_VERSION='2026.10.04.08';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3973,13 +3980,13 @@ function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>$
 function appRefHtml(){
   const st=lastSt,C=lastPlan;if(!st)return'';
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big">${fmtPace(v)}</div><div class="lbl">${sub||fmtSpd(v)+' km/h'}</div></div>`;
-  let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('VMA',st.vma)}${c('Second seuil',st.s2)}${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}</div></div>`;
+  let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div></div>`;
   if(lastPred){h+=`<div class="card">${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span>${p.lab}${p.isRef?' (réf.)':''}</span><span class="v">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
   if(C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
     h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
       '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
-  h+=`<button type="button" class="libEntry" data-openlib="1" style="margin-top:.8rem"><span>Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span aria-hidden="true">›</span></button>`;
+  h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
 /* ---------- Études : bibliothèque scientifique ---------- */
