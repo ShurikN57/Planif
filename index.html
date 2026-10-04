@@ -437,6 +437,29 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-cal .cwFoot{font-size:.8rem;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);margin-top:.2rem;padding-top:.55rem;gap:.5rem;flex-wrap:wrap}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #scr-cal .calHero>.homeArt{opacity:.14}}
 :root[data-theme="dark"] #scr-cal .calHero>.homeArt{opacity:.14}
+/* Repères : informations au niveau des en-têtes, sans cartes explicatives séparées. */
+#scr-ref .card,#scr-ref .libEntry{border-radius:20px;border-color:color-mix(in srgb,var(--line) 65%,transparent);box-shadow:0 3px 9px #23213b0c}
+#scr-ref>.card{padding:.85rem 1rem;margin-bottom:.85rem}
+.refOverview{margin-bottom:.85rem}
+.refHelp{margin:0 0 .65rem}
+.refHelp>summary{display:flex;align-items:center;justify-content:space-between;gap:.6rem;min-height:44px;cursor:pointer;list-style:none}
+.refHelp>summary::-webkit-details-marker{display:none}
+#scr-ref .refHelp h2{margin:0;font-size:1.4rem;color:var(--ink)}
+.refInfoIcon{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;border-radius:50%;color:var(--accent);font-size:1.15rem;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.refHelp[open] .refInfoIcon{background:var(--accent);color:var(--accent-ink)}
+.refHelp>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
+.refHelpBody{padding:.55rem .7rem;background:var(--surface-2);border-radius:12px;color:var(--muted);font-size:.9rem;line-height:1.45;margin:.35rem 0 .65rem}
+.refHelpBody p{margin:.2rem 0 .5rem}
+.refHelpBody p:last-child{margin-bottom:.2rem}
+.refOverview>.refHelp{margin-bottom:.35rem;padding:0 .15rem}
+#scr-ref .refgrid{gap:.55rem}
+#scr-ref .refgrid .card{border-top:3px solid color-mix(in srgb,var(--accent) 55%,var(--line));padding:.8rem .35rem}
+#scr-ref .refgrid .lbl:first-child{font-size:.8rem}
+#scr-ref .vbar .bar{border-radius:6px}
+#scr-ref .vbar{padding:.12rem 0}
+#scr-ref .legend{gap:.4rem .8rem;font-size:.78rem}
+#scr-ref .libEntry{background:var(--surface-2);border-color:color-mix(in srgb,var(--accent) 18%,var(--line))}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
 <body data-ui="app">
@@ -3861,7 +3884,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.06';
+const APP_VERSION='2026.10.04.07';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3946,18 +3969,16 @@ function appBlockWeeks(C,st){
     h+='</div>';});
   return h;
 }
+function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;}
 function appRefHtml(){
   const st=lastSt,C=lastPlan;if(!st)return'';
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big">${fmtPace(v)}</div><div class="lbl">${sub||fmtSpd(v)+' km/h'}</div></div>`;
-  let h=`<div class="refgrid">${c('VMA',st.vma)}${c('Second seuil',st.s2)}${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}</div>`;
-  h+=`<div class="card" style="margin-top:.8rem"><details class="info"><summary>ⓘ Repères et zones</summary><p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p></details></div>`;
-  if(lastPred){h+='<div class="card"><h2>Chronos estimés</h2><div class="kv">'+lastPred.map(p=>`<span>${p.lab}${p.isRef?' (réf.)':''}</span><span class="v">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+
-    `</div><details class="info" style="margin-top:.4rem"><summary>ⓘ Méthode</summary><p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p></details></div>`;}
+  let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('VMA',st.vma)}${c('Second seuil',st.s2)}${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}</div></div>`;
+  if(lastPred){h+=`<div class="card">${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span>${p.lab}${p.isRef?' (réf.)':''}</span><span class="v">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
   if(C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
-    h+=`<div class="card"><h2>Volume et charge</h2><div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
+    h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
-      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+
-      `</div><details class="info" style="margin-top:.4rem"><summary>ⓘ Charge</summary><p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p></details></div>`;}
+      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
   h+=`<button type="button" class="libEntry" data-openlib="1" style="margin-top:.8rem"><span>Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span aria-hidden="true">›</span></button>`;
   return h;
 }
