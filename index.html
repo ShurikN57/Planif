@@ -467,6 +467,14 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .libVisual .libArrow{position:relative;z-index:1;flex-shrink:0;color:var(--accent);font-size:1.5rem}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #scr-ref .libVisual .homeArt{opacity:.18}}
 :root[data-theme="dark"] #scr-ref .libVisual .homeArt{opacity:.18}
+/* Chronos : motif discret dans l’en-tête et référence saisie mise en évidence. */
+#scr-ref .chronoCard{position:relative;isolation:isolate}
+.chronoArt{position:absolute;right:3.9rem;top:.35rem;width:76px;height:76px;color:var(--accent);opacity:.11;pointer-events:none;z-index:-1}
+.chronoCard .kv{column-gap:0}
+.chronoCard .kv>span{padding-left:.4rem;padding-right:.4rem;min-width:0;overflow-wrap:anywhere}
+.chronoCard .predRef{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.chronoCard .predRefLabel{border-radius:8px 0 0 8px}
+.chronoCard .predRefValue{border-radius:0 8px 8px 0}
 </style>
 </head>
 <body data-ui="app">
@@ -3891,7 +3899,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.08';
+const APP_VERSION='2026.10.04.09';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3981,7 +3989,7 @@ function appRefHtml(){
   const st=lastSt,C=lastPlan;if(!st)return'';
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big">${fmtPace(v)}</div><div class="lbl">${sub||fmtSpd(v)+' km/h'}</div></div>`;
   let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div></div>`;
-  if(lastPred){h+=`<div class="card">${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span>${p.lab}${p.isRef?' (réf.)':''}</span><span class="v">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
+  if(lastPred){h+=`<div class="card chronoCard"><svg class="chronoArt" viewBox="0 0 80 80" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="40" cy="45" r="26"/><path d="M34 7h12M40 7v12M58 22l6-6m-2-2 4 4M40 45V29m0 16 12 7"/></g></svg>${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
   if(C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
     h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
