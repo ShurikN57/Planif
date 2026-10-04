@@ -382,37 +382,37 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .tabbar .tabs{gap:.2rem;padding:.3rem .3rem}
 .tabbar button{border-radius:13px;min-height:64px;font-weight:600}
 .tabbar button[aria-current="page"]{background:color-mix(in srgb,var(--accent) 15%,var(--surface));color:var(--accent)}
-#scr-today .card{position:relative;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:22px;padding:1.15rem 1.2rem;box-shadow:0 3px 9px #23213b0c}
-#scr-today>.card+.card{margin-top:1rem}
+#scr-today .card{position:relative;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:22px;padding:.85rem 1.2rem;box-shadow:0 3px 9px #23213b0c}
+#scr-today>.card+.card{margin-top:.65rem}
 #scr-today .lbl{font-size:.96rem;line-height:1.4;color:var(--muted)}
-#scr-today .todayCountdown{border-left:5px solid var(--accent);background:var(--surface);overflow:hidden;min-height:182px}
+#scr-today .todayCountdown{border-left:5px solid var(--accent);background:var(--surface);overflow:hidden;min-height:160px}
 #scr-today .todayCountdown .homeCopy{position:relative;z-index:1;max-width:76%}
-#scr-today .todayCountdown .big{font-family:"Source Sans 3",system-ui,sans-serif;font-size:clamp(3rem,12vw,4.1rem);letter-spacing:-.04em;margin:.55rem 0;color:var(--accent)}
+#scr-today .todayCountdown .big{font-family:"Source Sans 3",system-ui,sans-serif;font-size:clamp(2.8rem,10.5vw,3.6rem);letter-spacing:-.04em;margin:.35rem 0;color:var(--accent)}
 #scr-today .todayCountdown .lbl{color:var(--ink)}
 .homeArt{mask-image:linear-gradient(to right,transparent,#000 45%);pointer-events:none;position:absolute;right:0;bottom:0;width:58%;height:100%;opacity:.48}
 .homeLock{position:relative;z-index:2;display:inline-flex;gap:.3rem;align-items:center;color:var(--accent);background:var(--surface-2);border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line));border-radius:999px;font-size:.75rem;padding:.25rem .55rem;margin-bottom:.2rem}
 .homeLock svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}
-#scr-today .homeDay{min-height:145px}
-.homeRest{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-top:.4rem}
+#scr-today .homeDay{min-height:112px}
+.homeRest{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-top:.2rem}
 .homeRest .big{font-size:2.9rem;color:var(--ink)}
-.homeRest svg{width:112px;height:94px;flex-shrink:0}
-#scr-today .homeKey .homeSession{position:relative;isolation:isolate;overflow:hidden;min-height:125px;background:var(--surface-2);border-left-color:var(--accent);border-radius:15px;padding:.85rem 1rem}
+.homeRest svg{width:96px;height:72px;flex-shrink:0}
+#scr-today .homeKey .homeSession{position:relative;isolation:isolate;overflow:hidden;min-height:104px;background:var(--surface-2);border-left-color:var(--accent);border-radius:15px;padding:.7rem 1rem}
 .homeSession>span:not(.go){position:relative;z-index:1;max-width:70%;overflow-wrap:anywhere}
 .homeSession .homeArt{width:70%;opacity:.55;z-index:-1}
 .homeSession .k{font-size:1.4rem;font-family:"Barlow Condensed",system-ui,sans-serif}
 .homeSession .t{color:var(--ink);margin-top:.2rem}
 .homeSession .go{position:absolute;right:.7rem;top:.65rem;z-index:1;color:var(--accent);font-size:1.7rem}
-.homeWeekHead{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin:.3rem 0 .85rem}
+.homeWeekHead{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin:.2rem 0 .55rem}
 #scr-today .homeWeekHead h2{font-size:1.5rem;margin:0}
-.homeProgress{width:48px;height:48px;flex-shrink:0;transform:rotate(-90deg)}
+.homeProgress{width:42px;height:42px;flex-shrink:0;transform:rotate(-90deg)}
 .homeProgress circle{fill:none;stroke:var(--surface-2);stroke-width:7}
 .homeProgress circle+circle{stroke:var(--accent);stroke-linecap:round}
-#scr-today .homeWeek .kv{font-size:1.05rem;align-items:center;gap:.65rem .8rem}
+#scr-today .homeWeek .kv{font-size:1.05rem;align-items:center;gap:.45rem .8rem}
 .homeLoad{display:flex;align-items:center;gap:.6rem;justify-content:flex-end;flex-wrap:wrap}
 .homeLoad svg{width:64px;height:27px;color:var(--accent)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .homeArt{opacity:.2}}
 :root[data-theme="dark"] .homeArt{opacity:.2}
-@media(max-width:360px){#scr-today .card{padding:1rem}.homeLock{font-size:.7rem}.homeRest svg{width:90px}.homeSession>span:not(.go){max-width:82%}}
+@media(max-width:360px){#scr-today .card{padding:.8rem 1rem}.homeLock{font-size:.7rem}.homeRest svg{width:90px}.homeSession>span:not(.go){max-width:82%}}
 </style>
 </head>
 <body data-ui="app">
@@ -3837,7 +3837,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.02';
+const APP_VERSION='2026.10.04.03';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
