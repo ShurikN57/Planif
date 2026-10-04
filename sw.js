@@ -1,4 +1,4 @@
-const CACHE = 'planif-v4';
+const CACHE = 'planif-v5';
 const APP_SHELL = [
   './',
   './index.html',
@@ -20,7 +20,8 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  /* Les échanges COROS restent hors du cache PWA, y compris leurs métadonnées. */
+  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
 
   const req = event.request;
   const isNavigation = req.mode === 'navigate' ||

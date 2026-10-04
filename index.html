@@ -501,6 +501,13 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .chronoPanel .panelArt{width:55%;opacity:.55}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .panelCard .panelArt{opacity:.16}}
 :root[data-theme="dark"] .panelCard .panelArt{opacity:.16}
+
+/* Liaison COROS : aperçu et état de connexion, dans les deux thèmes. */
+.corosStatus{margin-top:.65rem;overflow-wrap:anywhere}
+.corosDialog{width:min(92vw,520px);max-height:85dvh;overflow:auto;box-sizing:border-box;border:1px solid var(--line);border-radius:20px;padding:1.15rem;background:var(--surface);color:var(--ink)}
+.corosDialog::backdrop{background:#10142480}
+.corosDialog h2{margin:0 0 .6rem}.corosDialog h3{margin:.5rem 0}
+.corosPreviewText{white-space:pre-line;line-height:1.5}
 </style>
 </head>
 <body data-ui="app">
@@ -651,6 +658,123 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
     <section id="auditSec" hidden></section>
   </div>
 </div>
+
+<script>
+/* COROS : client OAuth public avec PKCE. Les formats sont découverts après connexion.
+   Cette première étape ne crée ni ne modifie aucune séance COROS. */
+window.PlanifCoros=(()=>{
+  'use strict';
+  const KEY='planif-coros-v1',SCOPES='openid offline_access mcp.tools';
+  const REGIONS={eu:'https://mcpeu.coros.com',us:'https://mcpus.coros.com',cn:'https://mcpcn.coros.com'};
+  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0;
+  const callback=new URL(location.href).searchParams.get('coros_callback')==='1';
+  const read=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null');}catch(_){return null;}};
+  const write=(store,key,value)=>{store.setItem(key,JSON.stringify(value));};
+  const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const emit=()=>document.dispatchEvent(new Event('planif-coros-change'));
+  const base64=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const random=()=>base64(crypto.getRandomValues(new Uint8Array(32)));
+  const redirect=()=>{const u=new URL('./index.html',location.href);u.search='?coros_callback=1';u.hash='';return u.href;};
+  const safeIssuer=i=>Object.values(REGIONS).includes(i);
+  const fail=t=>{throw new Error(t);};
+  async function request(url,options={}){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+    try{
+      const r=await fetch(url,{...options,signal:controller.signal,cache:'no-store',credentials:'omit',redirect:'error'});
+      if(!r.ok){const e=new Error(r.status===401?'Connexion COROS expirée. Reconnecte ton compte.':`COROS ne peut pas terminer cette étape (HTTP ${r.status}).`);e.status=r.status;throw e;}
+      const raw=await r.text();
+      if((r.headers.get('content-type')||'').includes('text/event-stream')){
+        for(const event of raw.split(/\r?\n\r?\n/)){const data=event.split(/\r?\n/).filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n');if(data){const p=JSON.parse(data);if(p.id!==undefined)return p;}}
+        fail('Réponse COROS incomplète. Réessaie la vérification.');
+      }
+      return JSON.parse(raw);
+    }catch(e){if(e instanceof SyntaxError)fail('Réponse COROS illisible. Réessaie la vérification.');if(e.name==='AbortError'||e instanceof TypeError)fail('COROS est momentanément inaccessible. Vérifie la connexion Internet et réessaie.');throw e;}
+    finally{clearTimeout(timer);}
+  }
+  const form=values=>({method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values).toString()});
+  function tokenSet(p,clientId,issuer,previous){
+    if(typeof p.access_token!=='string'||!p.access_token||!Number.isFinite(+p.expires_in)||+p.expires_in<=0)fail('COROS n’a pas fourni de connexion valide.');
+    if(p.token_type&&p.token_type.toLowerCase()!=='bearer')fail('Ce type de connexion COROS n’est pas pris en charge.');
+    return{issuer,clientId,accessToken:p.access_token,refreshToken:p.refresh_token||previous?.refreshToken,expiresAt:Date.now()+p.expires_in*1000};
+  }
+  function saveAuth(value){write(sessionStorage,KEY+'-auth',value);auth=value;}
+  async function connect(region){
+    if(busy)return;busy=true;message='Ouverture de COROS…';emit();
+    try{
+      if(!navigator.onLine)fail('La connexion COROS nécessite Internet.');
+      const issuer=REGIONS[region];if(!issuer)fail('Choisis la région de ton compte COROS.');
+      const meta=await request(issuer+'/.well-known/oauth-authorization-server');
+      if(meta.issuer!==issuer||meta.authorization_endpoint!==issuer+'/oauth2/authorize'||meta.token_endpoint!==issuer+'/oauth2/token'||meta.registration_endpoint!==issuer+'/connect/register'||!meta.code_challenge_methods_supported?.includes('S256')||!meta.token_endpoint_auth_methods_supported?.includes('none'))fail('La connexion COROS a changé. Une mise à jour de Planif est nécessaire.');
+      const callbackUrl=redirect(),clientKey=KEY+'-client-'+region;
+      let client=read(localStorage,clientKey);
+      if(!client||client.redirect!==callbackUrl){
+        const registered=await request(meta.registration_endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_name:'Planif',redirect_uris:[callbackUrl],grant_types:['authorization_code','refresh_token'],response_types:['code'],scope:SCOPES,token_endpoint_auth_method:'none'})});
+        if(typeof registered.client_id!=='string'||!registered.client_id||registered.token_endpoint_auth_method&&registered.token_endpoint_auth_method!=='none')fail('COROS n’a pas accepté la connexion de Planif.');
+        client={id:registered.client_id,redirect:callbackUrl};write(localStorage,clientKey,client);
+      }
+      const verifier=random(),state=random(),challenge=base64(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
+      write(localStorage,KEY+'-pending',{issuer,clientId:client.id,verifier,state,redirect:callbackUrl,created:Date.now()});
+      const u=new URL(meta.authorization_endpoint);u.search=new URLSearchParams({response_type:'code',client_id:client.id,redirect_uri:callbackUrl,scope:SCOPES,code_challenge:challenge,code_challenge_method:'S256',resource:issuer+'/mcp',state}).toString();
+      location.assign(u.href);
+    }catch(e){message=e.message;busy=false;emit();}
+  }
+  async function finish(){
+    const u=new URL(location.href),pending=read(localStorage,KEY+'-pending');
+    const code=u.searchParams.get('code'),state=u.searchParams.get('state'),error=u.searchParams.get('error');
+    history.replaceState(null,'',new URL('./index.html',location.href).pathname);
+    if(!pending||!safeIssuer(pending.issuer)||pending.state!==state||Date.now()-pending.created>15*60*1000||Date.now()<pending.created||pending.redirect!==redirect())fail('La connexion a expiré ou a été ouverte dans un autre navigateur. Relance « Connecter COROS » dans ce navigateur.');
+    localStorage.removeItem(KEY+'-pending');
+    if(error)fail('La connexion COROS a été annulée ou refusée. Tu peux la relancer.');
+    if(!code)fail('Le retour de COROS est incomplet. Relance la connexion.');
+    const p=await request(pending.issuer+'/oauth2/token',form({grant_type:'authorization_code',client_id:pending.clientId,code,redirect_uri:pending.redirect,code_verifier:pending.verifier}));
+    saveAuth(tokenSet(p,pending.clientId,pending.issuer));
+  }
+  async function access(){
+    if(!auth)fail('Connecte ton compte COROS dans Réglages.');
+    if(auth.expiresAt>Date.now()+60000)return auth.accessToken;
+    if(!refreshing)refreshing=(async()=>{try{if(!auth.refreshToken)fail('Reconnecte ton compte COROS.');const old=auth,p=await request(old.issuer+'/oauth2/token',form({grant_type:'refresh_token',client_id:old.clientId,refresh_token:old.refreshToken}));saveAuth(tokenSet(p,old.clientId,old.issuer,old));return auth.accessToken;}finally{refreshing=null;}})();
+    return refreshing;
+  }
+  async function rpc(method,params,retried=false){
+    const token=await access();
+    try{
+      const p=await request(auth.issuer+'/mcp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream','Authorization':'Bearer '+token},body:JSON.stringify({jsonrpc:'2.0',id:++requestId,method,params})});
+      if(p.error||!p.result)fail('COROS n’a pas accepté la vérification des fonctionnalités.');return p.result;
+    }catch(e){if(e.status===401&&!retried&&auth?.refreshToken){auth.expiresAt=0;return rpc(method,params,true);}throw e;}
+  }
+  async function discover(){
+    await rpc('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'Planif',version:'1.0.0'}});
+    const tools=[],seen=new Set();let cursor;
+    do{const r=await rpc('tools/list',cursor?{cursor}:{});if(!Array.isArray(r.tools))fail('COROS n’a pas fourni ses formats.');tools.push(...r.tools);cursor=r.nextCursor;if(cursor){if(seen.has(cursor)||seen.size>=20)fail('La liste des fonctionnalités COROS est incomplète.');seen.add(cursor);}}while(cursor);
+    catalog=tools.map(({name,description,inputSchema})=>({name,description,inputSchema}));
+    message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Les formats COROS sont prêts à être validés avant le premier envoi.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
+  }
+  async function verify(){if(busy)return;busy=true;message='Vérification de COROS…';emit();try{await discover();}catch(e){catalog=null;message=e.message;}finally{busy=false;emit();}}
+  function disconnect(){if(busy)return;auth=null;catalog=null;sessionStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-pending');message='Compte déconnecté de Planif.';emit();}
+  function downloadCatalog(){
+    if(!catalog) return;
+    const data={format:'planif-coros-capabilities-v1',date:new Date().toISOString(),region:Object.keys(REGIONS).find(k=>REGIONS[k]===auth?.issuer),tools:catalog};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }
+  function settingsHtml(){
+    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Préparer tes séances pour la montre. Aucun entraînement n’est envoyé automatiquement.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et premier envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>Cette première étape prépare la liaison : les formats doivent encore être validés avant d’activer l’envoi. L’export des formats contient uniquement la description technique des fonctionnalités, sans jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
+  }
+  function preview(title,lines){
+    let d=document.getElementById('corosPreview');if(!d){d=document.createElement('dialog');d.id='corosPreview';d.className='corosDialog';document.body.append(d);d.addEventListener('click',e=>{if(e.target.closest('[data-coros-close]'))d.close();});}
+    d.innerHTML=`<h2>Préparer pour COROS</h2><h3>${escape(title)}</h3>${lines.map(l=>`<p class="corosPreviewText">${escape(l)}</p>`).join('')}<p class="lbl">Aperçu de l’option affichée. Les plages de durée et de récupération devront être choisies avant l’envoi. Le fartlek et les côtes garderont leurs consignes au ressenti.</p><p class="lbl">L’envoi n’est pas encore activé : connecte COROS dans Réglages pour faire vérifier ses formats.</p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;d.showModal();
+  }
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest('[data-coros]');if(!b||busy)return;
+    const act=b.dataset.coros;if(act==='connect')await connect(document.getElementById('corosRegion')?.value||'eu');else if(act==='verify')await verify();else if(act==='formats')downloadCatalog();else if(act==='disconnect')disconnect();
+  });
+  async function start(){
+    const saved=read(sessionStorage,KEY+'-auth');if(saved&&safeIssuer(saved.issuer)&&typeof saved.accessToken==='string'&&typeof saved.clientId==='string'&&Number.isFinite(saved.expiresAt))auth=saved;
+    if(callback){busy=true;message='Finalisation de la connexion COROS…';emit();try{await finish();await discover();}catch(e){message=e.message;}finally{busy=false;emit();}}else emit();
+  }
+  return{start,settingsHtml,preview,get busy(){return busy;},get callback(){return callback;}};
+})();
+
+</script>
 
 <script>
 (function(){
@@ -3926,7 +4050,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.13';
+const APP_VERSION='2026.10.04.14';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4124,6 +4248,8 @@ function appSetHtml(){
   h+=`<p class="lbl" id="setProfileHint"></p></div></details>`;
 
   h+=`<details class="card settingsFold" data-settings-section="physio"${settingsSections.physio?' open':''}><summary><h2>Physiologie</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent"><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p></div></details>`;
+
+  h+=PlanifCoros.settingsHtml();
 
   h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button></div>`;
   return h;
@@ -4323,6 +4449,7 @@ function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
     ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml();
+    if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Préparer pour COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
   $('scr-session').hidden=true;
@@ -4339,6 +4466,7 @@ function renderApp(){
 const setUi=u=>{document.body.dataset.ui=u;setBuilt=false;try{localStorage.setItem('calc-allures-ui',u);}catch(e){}if(u==='app')renderApp();window.scrollTo(0,0);};
 document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;appSession=null;appLib=false;setBuilt=false;appTab=b.dataset.tab;try{localStorage.setItem('calc-allures-tab',appTab);}catch(_){}renderApp();window.scrollTo(0,0);});
 $('appShell').addEventListener('click',e=>{
+  if(e.target.closest('[data-coros-preview]')){const root=$('scr-session');PlanifCoros.preview(root.querySelector('.sHead h2').textContent,Array.from(root.querySelectorAll('.card')).slice(0,2).map(c=>c.innerText));return;}
   const ss=e.target.closest('[data-studyscope]');if(ss){studyScope=ss.dataset.studyscope;studyFilter='Toutes';renderApp();return;}
   const sf=e.target.closest('[data-studyfilter]');if(sf){studyFilter=sf.dataset.studyfilter;renderApp();return;}
   const tl=e.target.closest('[data-timeline]');if(tl){calendarTimelineOpen=!calendarTimelineOpen;renderApp();return;}
@@ -4354,7 +4482,9 @@ $('appShell').addEventListener('click',e=>{
 $('appBack').addEventListener('click',()=>{if(appSession){const fromLib=!!appSession.lib;appSession=null;if(!fromLib)appLib=false;}else appLib=false;renderApp();window.scrollTo(0,0);});
 $('toApp').addEventListener('click',()=>setUi('app'));
 $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEventListener('change',()=>renderApp());
+document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){appSession=null;appLib=false;appTab='set';setUi('app');}else{setBuilt=false;if(appTab==='set'&&!appSession&&!appLib)renderApp();}document.querySelectorAll('[data-coros]').forEach(b=>b.disabled=PlanifCoros.busy);});
 load();syncQualityPrereqs();render();renderApp();
+PlanifCoros.start();
 })();
 
 if ('serviceWorker' in navigator) {
