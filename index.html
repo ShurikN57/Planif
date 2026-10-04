@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Planif</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#EEF1F4">
+<meta name="theme-color" content="#F7F5F0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Planif">
@@ -15,8 +15,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#13202E; --muted:#5B6878; --line:#D3DAE2;
-  --accent:#2348A8; --accent-ink:#FFFFFF;
+  --bg:#F7F5F0; --surface:#FFFFFF; --surface-2:#F1EFF8; --ink:#242631; --muted:#666675; --line:#E5E2EA;
+  --accent:#6463B6; --accent-ink:#FFFFFF;
   --z1:#7FAE9B; --z2:#E0B341; --z3:#E07B2E; --z4:#C2334A;
   --ef-rec:#A8D8BE; --ef-std:#64A982; --ef-active:#2F7656;
   --warn-bg:#FFF2DC; --warn-ink:#7A4A00; --ok:#2E7D5B;
@@ -362,6 +362,42 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .studyCard a{color:var(--accent);font-weight:600;text-decoration:none}
 @media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s ease}}
 @media print{aside,.actions{display:none}.app{grid-template-columns:1fr}body{background:#fff}}
+/* Accueil illustré : éléments décoratifs locaux, sans requête réseau. */
+body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,transparent)}
+.tabbar .tabs{gap:.2rem;padding:.3rem .3rem}
+.tabbar button{border-radius:13px;min-height:64px;font-weight:600}
+.tabbar button[aria-current="page"]{background:color-mix(in srgb,var(--accent) 15%,var(--surface));color:var(--accent)}
+#scr-today .card{position:relative;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:22px;padding:1.15rem 1.2rem;box-shadow:0 3px 9px #23213b0c}
+#scr-today>.card+.card{margin-top:1rem}
+#scr-today .lbl{font-size:.96rem;line-height:1.4;color:var(--muted)}
+#scr-today .todayCountdown{border-left:5px solid var(--accent);background:var(--surface);overflow:hidden;min-height:182px}
+#scr-today .todayCountdown .homeCopy{position:relative;z-index:1;max-width:76%}
+#scr-today .todayCountdown .big{font-family:"Source Sans 3",system-ui,sans-serif;font-size:clamp(3rem,12vw,4.1rem);letter-spacing:-.04em;margin:.55rem 0;color:var(--accent)}
+#scr-today .todayCountdown .lbl{color:var(--ink)}
+.homeArt{mask-image:linear-gradient(to right,transparent,#000 45%);pointer-events:none;position:absolute;right:0;bottom:0;width:58%;height:100%;opacity:.48}
+.homeLock{position:relative;z-index:2;display:inline-flex;gap:.3rem;align-items:center;color:var(--accent);background:var(--surface-2);border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line));border-radius:999px;font-size:.75rem;padding:.25rem .55rem;margin-bottom:.2rem}
+.homeLock svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}
+#scr-today .homeDay{min-height:145px}
+.homeRest{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-top:.4rem}
+.homeRest .big{font-size:2.9rem;color:var(--ink)}
+.homeRest svg{width:112px;height:94px;flex-shrink:0}
+#scr-today .homeKey .homeSession{position:relative;isolation:isolate;overflow:hidden;min-height:125px;background:var(--surface-2);border-left-color:var(--accent);border-radius:15px;padding:.85rem 1rem}
+.homeSession>span:not(.go){position:relative;z-index:1;max-width:70%;overflow-wrap:anywhere}
+.homeSession .homeArt{width:70%;opacity:.55;z-index:-1}
+.homeSession .k{font-size:1.4rem;font-family:"Barlow Condensed",system-ui,sans-serif}
+.homeSession .t{color:var(--ink);margin-top:.2rem}
+.homeSession .go{position:absolute;right:.7rem;top:.65rem;z-index:1;color:var(--accent);font-size:1.7rem}
+.homeWeekHead{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin:.3rem 0 .85rem}
+#scr-today .homeWeekHead h2{font-size:1.5rem;margin:0}
+.homeProgress{width:48px;height:48px;flex-shrink:0;transform:rotate(-90deg)}
+.homeProgress circle{fill:none;stroke:var(--surface-2);stroke-width:7}
+.homeProgress circle+circle{stroke:var(--accent);stroke-linecap:round}
+#scr-today .homeWeek .kv{font-size:1.05rem;align-items:center;gap:.65rem .8rem}
+.homeLoad{display:flex;align-items:center;gap:.6rem;justify-content:flex-end;flex-wrap:wrap}
+.homeLoad svg{width:64px;height:27px;color:var(--accent)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .homeArt{opacity:.2}}
+:root[data-theme="dark"] .homeArt{opacity:.2}
+@media(max-width:360px){#scr-today .card{padding:1rem}.homeLock{font-size:.7rem}.homeRest svg{width:90px}.homeSession>span:not(.go){max-width:82%}}
 </style>
 </head>
 <body data-ui="app">
@@ -3786,7 +3822,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.03.19';
+const APP_VERSION='2026.10.04.01';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3794,6 +3830,14 @@ const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${c.t}</span>`}`;
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
+/* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
+function homeArt(kind){
+  const open='<svg class="homeArt" viewBox="0 0 300 190" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">';
+  if(kind==='track')return open+'<path fill="#C5DEC9" d="M0 0h300v190H0z"/><g transform="rotate(-23 150 95)" fill="none"><rect x="-25" y="16" width="365" height="165" rx="82" stroke="#ABB6CE" stroke-width="35"/><rect x="-15" y="31" width="345" height="135" rx="67" stroke="#D8C5B9" stroke-width="19"/><rect x="-9" y="42" width="333" height="112" rx="56" stroke="#E6D3AD" stroke-width="9"/><rect x="-4" y="52" width="323" height="92" rx="46" stroke="#C9ADBD" stroke-width="7"/><path d="M130 55v84m-20-84v84m40-84v84" stroke="white" stroke-width="2" opacity=".7"/></g></svg>';
+  return open+'<path fill="#EFF0E9" d="M0 0h300v190H0z"/><path fill="#C9DFC6" d="m182 0 75 0-10 65-59 19-26-33zm-62 115 62-18 85 57-18 36H101z"/><g fill="none" stroke="#FFFFFF" stroke-width="6"><path d="m-10 27 310 77M20-15l78 220M109-15l94 210M230-15l-79 210M-10 150l310-118"/></g><path d="m106 45 27-25 47 38-17 22 59 38-25 37-57-16-14-41-50-23z" fill="none" stroke="#797AC0" stroke-width="5" stroke-linejoin="round"/><path d="M105 47V13" stroke="#323444" stroke-width="4"/><path d="M107 13h26v18h-26z" fill="#FFFFFF"/><path d="M107 13h8v9h9v9h9v-9h-9v-9z" fill="#323444"/></svg>';
+}
+function homeRestArt(){return '<svg viewBox="0 0 140 115" aria-hidden="true" focusable="false"><path d="M16 92C0 65 23 10 66 8s71 39 57 84" fill="#D9EFF0"/><path d="M11 102h122" stroke="#6E986C" stroke-width="3"/><g fill="#BDD88E" stroke="#7C9B6A" stroke-width="2"><ellipse cx="24" cy="70" rx="14" ry="20"/><ellipse cx="114" cy="56" rx="18" ry="25"/></g><path d="M24 69v34m90-48v47" stroke="#7C9B6A" stroke-width="2"/><circle cx="71" cy="37" r="9" fill="#EDC8A7"/><path d="m60 50 21-2 7 28-29 1z" fill="#DB9B82"/><path d="m64 77-8 27m22-26 14 25" fill="none" stroke="#768EB6" stroke-width="10"/><path d="m62 51-7-17 14-19m11 37 12 13-16 3" fill="none" stroke="#C68E70" stroke-width="6" stroke-linecap="round"/><path d="m66 14 13-1m-27 94h10m26-1h12" stroke="#4B5967" stroke-width="4" stroke-linecap="round"/></svg>';}
+function homeSessionHtml(it,w,ref){return tileHtml(it,w,ref).replace('class="tile','class="tile homeSession').replace('</button>',homeArt('track')+'</button>');}
 function appTodayHtml(){
   const C=lastPlan,st=lastSt;
   if(!C||!st||(st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${st&&st.mode==='cal'&&lastCalError?warnText(lastCalError):'Renseigne tes repères dans les réglages.'}</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
@@ -3802,15 +3846,17 @@ function appTodayHtml(){
   let h='';
   const cur=days.find(o=>+o.x.date===+t),first=days[0],last=days[days.length-1];
   const dleft=dayDiff(t,C.race.date);
-  if(dleft>=0)h+=`<div class="card todayCountdown"><div class="lbl">Course ${DIST[C.race.distance].lab}, ${fmtD(C.race.date)}</div><div class="big">J−${dleft}</div><p class="lbl">${C.race.goal?'Objectif':'Estimation'} ${fmtTime(DIST[C.race.distance].km/C.race.speed*3600)}, ${fmtPace(C.race.speed)}/km</p></div>`;
-  if(cur){const it=cur.x.items;h+=`<div class="card"><div class="lbl">${fmtD(t)}</div>${it.length?it.map((i,k)=>tileHtml(i,cur.w,refOf(cur.w,cur.x,k))).join(''):'<div class="big" style="margin-top:.3rem">Repos</div>'}</div>`;}
+  if(dleft>=0)h+=`<div class="card todayCountdown">${homeArt('map')}<div class="homeCopy"><div class="lbl">Course ${DIST[C.race.distance].lab}, ${fmtD(C.race.date)}</div><div class="big">J−${dleft}</div>${activePlan&&!structureEditing?'<span class="homeLock"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>Structure verrouillée</span>':''}<p class="lbl">${C.race.goal?'Objectif':'Estimation'} ${fmtTime(DIST[C.race.distance].km/C.race.speed*3600)}, ${fmtPace(C.race.speed)}/km</p></div></div>`;
+  if(cur){const it=cur.x.items;h+=`<div class="card homeDay"><div class="lbl">${fmtD(t)}</div>${it.length?it.map((i,k)=>tileHtml(i,cur.w,refOf(cur.w,cur.x,k))).join(''):`<div class="homeRest"><div class="big">Repos</div>${homeRestArt()}</div>`}</div>`;}
   else if(t<first.x.date)h+=`<div class="card"><div class="lbl">Avant le début</div><div class="big">J−${dayDiff(t,first.x.date)}</div><p class="lbl">La préparation commence le ${fmtD(first.x.date)}.</p></div>`;
   else if(t>last.x.date)h+='<div class="card"><h2>Préparation terminée</h2><p class="lbl">Crée un nouveau calendrier dans les réglages.</p></div>';
   const next=days.find(o=>o.x.date>t&&o.x.items.some(i=>i.kind==='q'||i.kind==='race'));
-  if(next){const k=next.x.items.findIndex(i=>i.kind==='q'||i.kind==='race');h+=`<div class="card"><div class="lbl">Prochaine séance clé, ${fmtD(next.x.date)}</div>${tileHtml(next.x.items[k],next.w,refOf(next.w,next.x,k))}</div>`;}
+  if(next){const k=next.x.items.findIndex(i=>i.kind==='q'||i.kind==='race');h+=`<div class="card homeKey"><div class="lbl">Prochaine séance clé, ${fmtD(next.x.date)}</div>${homeSessionHtml(next.x.items[k],next.w,refOf(next.w,next.x,k))}</div>`;}
   const w=(cur&&cur.w)||(t<first.x.date?first.w:null);
   if(w){const pos=w.phase!=='assim'&&w.segLen?` (${w.segK+1}/${w.segLen})`:'';
-    h+=`<div class="card"><div class="lbl">Semaine ${w.index+1} sur ${C.weeks.length}</div><h2 style="margin:.2rem 0 .6rem">${phaseLab(w.phase,C.race.distance)}${pos}</h2><div class="kv"><span>Volume prévu</span><span class="v">${fmtDur(w.vol)}</span><span>Charge</span><span class="v">${pts(w.load)}</span></div></div>`;}
+    const progress=(w.index+1)/C.weeks.length,loads=C.weeks.map(x=>Math.max(0,x.load||0)),maxLoad=Math.max(1,...loads);
+    const bars=loads.map((v,i)=>{const height=4+v/maxLoad*22;return `<rect x="${i*64/loads.length}" y="${27-height}" width="${Math.max(1,64/loads.length-2)}" height="${height}" rx="1" fill="currentColor" opacity="${i===w.index?1:.25}"/>`;}).join('');
+    h+=`<div class="card homeWeek"><div class="lbl">Semaine ${w.index+1} sur ${C.weeks.length}</div><div class="homeWeekHead"><h2>${phaseLab(w.phase,C.race.distance)}${pos}</h2><svg class="homeProgress" viewBox="0 0 56 56" role="img" aria-label="Semaine ${w.index+1} sur ${C.weeks.length}"><circle cx="28" cy="28" r="21"/><circle cx="28" cy="28" r="21" stroke-dasharray="${progress*132} 132"/></svg></div><div class="kv"><span>Volume prévu</span><span class="v">${fmtDur(w.vol)}</span><span>Charge</span><span class="v homeLoad"><svg viewBox="0 0 64 27" aria-hidden="true">${bars}</svg>${pts(w.load)}</span></div></div>`;}
   return h;
 }
 /* ---------- Calendrier mobile (v9.1) : semaines repliables, lecture directe de w.days ---------- */
