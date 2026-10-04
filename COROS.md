@@ -1,35 +1,58 @@
-# Liaison Planif / COROS — première étape
+# Liaison Planif / COROS
 
-Version 2026.10.04.14 : connexion OAuth avec PKCE, découverte des fonctionnalités et aperçu de la séance affichée. **L’envoi de séances n’est pas encore activé.** Aucune lecture d’activité personnelle et aucune écriture de séance n’est effectuée lors du test de connexion.
+Version 2026.10.04.15 : connexion OAuth avec PKCE et envoi explicite d’une séance neuve dans la bibliothèque COROS. Le calendrier COROS, les entraînements existants et le moteur Planif ne sont pas modifiés.
 
-## Validation avec le compte COROS
+## Premier envoi réel
 
-1. Ouvrir Réglages → COROS, sélectionner la région du compte et cliquer sur « Connecter COROS ».
-2. Se connecter sur le site officiel COROS et autoriser Planif. Le mot de passe n’est jamais saisi dans Planif.
-3. Vérifier le message « Connexion vérifiée » puis utiliser « Exporter les formats COROS ».
-4. Faire vérifier les descriptions et schémas réels de `createSingleWorkout` et `createScheduledWorkout` avant de coder l’adaptateur. Ce fichier JSON ne contient ni jeton ni activité personnelle.
+1. Faire MAJ dans Planif. Si nécessaire, reconnecter le compte dans Réglages → COROS.
+2. Ouvrir une séance puis cliquer sur « Envoyer vers COROS ». L’option A ou B affichée est copiée ; elle reste figée dans cet aperçu.
+3. Choisir les durées et récupérations variables. Confirmer les phases au ressenti sans alerte d’allure, et, pour les côtes, les récupérations libres terminées avec le bouton Tour.
+4. Vérifier la structure, puis cliquer sur « Enregistrer dans la bibliothèque COROS ».
+5. Ouvrir la bibliothèque d’entraînements dans COROS, vérifier la copie et la synchroniser avec la montre.
 
-Le premier test d’envoi devra sauvegarder une seule séance dans la bibliothèque et vérifier sa réception avant de proposer la programmation à une date. Les options A/B, durées variables, récupérations libres, progressions, séries, fartlek et côtes devront être explicitement traités ; aucun format ne doit être simplifié silencieusement. Les règles et séances passées de Planif restent inchangées.
+Le premier essai conseillé pour valider l’intégration est une séance simple, par exemple 7 × 5 minutes de S1. La réussite simulée des tests ne remplace pas la réception réelle dans l’application et sur la montre.
+
+## Transcription
+
+Le schéma réel exporté par le compte utilisateur le 4 octobre 2026 a été vérifié. Avant une écriture, Planif compare l’empreinte de la description et du schéma actuels de `createSingleWorkout` avec ceux qui ont été relus. Une différence bloque l’envoi et demande un nouvel export des formats.
+
+- Course à pied : `sportType: 1`.
+- Distances en mètres ; durées en secondes entières.
+- Allures absolues en secondes/km, calculées à partir des vitesses déjà prescrites. Aucun pourcentage de VMA/LT1 n’est envoyé comme un pourcentage des seuils COROS.
+- Groupes non imbriqués, vingt répétitions au maximum par groupe. Une série plus longue est répartie entre plusieurs groupes sans changer le nombre de fractions.
+- Pas de récupération après la dernière fraction, sauf lorsqu’elle fait explicitement partie de la structure, comme la descente avant les sprints en côte.
+- Les phases sans cible d’intensité nécessitent une confirmation dans l’aperçu. Les phases ouvertes nécessitent aussi la confirmation du passage manuel avec le bouton Tour.
+- Les choix de durée n’affectent que la copie COROS, jamais les données ni les séances passées de Planif.
+
+Formats pris en charge : intervalles temps/distance, continu, progression par tiers ou fractions, pyramides, blocs et séances mixtes, fartlek structuré au ressenti, côtes avec récupération libre, footings simples ou actifs continus, sorties longues simples ou terminées au S1, sortie longue marathon continue et course.
+
+Formats refusés explicitement pour cette première version : fartlek libre ; footings avec lignes droites ou côtes courtes ; sortie longue avec bloc actif libre ; sortie longue marathon fractionnée dont la fin facile n’est pas décrite explicitement. Aucun de ces éléments n’est supprimé pour forcer un envoi. La programmation à une date et la modification d’un entraînement COROS existant ne sont pas proposées.
+
+## Résultats et doublons
+
+L’envoi est suivi localement par une empreinte du contenu et du serveur régional. Une séance déjà enregistrée ne sera pas recréée depuis ce navigateur. Une tentative interrompue ou rejetée est également bloquée jusqu’à vérification manuelle ; il n’y a aucun nouvel essai automatique de création, même après une erreur 401. Le suivi est conservateur entre comptes utilisant le même navigateur. Il ne garantit pas l’absence de doublons entre navigateurs ou appareils différents.
+
+Les retours bruts, jetons et identifiants internes ne sont pas affichés. Le message d’enregistrement demande toujours de vérifier la bibliothèque COROS et la réception sur la montre. Aucun appel de création n’est exécuté en arrière-plan.
 
 ## Connexion et stockage
 
-- Client OAuth public, enregistré à la demande auprès du serveur régional ; aucun secret embarqué.
-- PKCE S256, `state` aléatoire et transaction limitée à quinze minutes.
-- Retour vers `index.html?coros_callback=1`, nettoyage des paramètres de connexion dans l’adresse.
-- Jetons d’accès et de renouvellement conservés dans `sessionStorage` ; une nouvelle session de navigateur nécessite une reconnexion. La transaction temporaire et l’identifiant public du client utilisent des clés locales dédiées.
-- Initialisation MCP et liste paginée des outils uniquement. Pas d’appel `tools/call` dans cette étape.
-- Les appels COROS restent hors du cache service worker. Les erreurs n’affichent jamais le contenu brut des réponses de connexion.
-- Sur iPhone, le stockage peut être distinct entre Safari et la PWA. Si le retour arrive dans Safari sans transaction correspondante, relancer la connexion depuis Planif ouvert dans Safari.
+- Client OAuth public enregistré à la demande, sans secret embarqué ; PKCE S256 et `state` aléatoire.
+- Transaction de connexion limitée à quinze minutes ; nettoyage des paramètres de retour dans l’adresse.
+- Jetons dans `sessionStorage` uniquement. Identifiant public de client, transaction temporaire et suivi des envois dans des clés locales dédiées.
+- Échanges COROS exclus du cache PWA.
+- Sur iPhone, si le retour arrive dans Safari sans transaction correspondante, relancer la connexion depuis Planif ouvert dans Safari.
 - « Déconnecter de Planif » efface l’accès local ; la révocation de l’autorisation se fait dans le compte COROS.
+- L’export des formats ne contient ni jeton ni activité personnelle.
 
-## Vérification
+## Tests
 
-`node tests/coros.test.cjs` teste avec un serveur simulé : PKCE, validation du retour, stockage, découverte paginée et SSE, renouvellement, refus et absence de connexion Internet. Ces tests ne remplacent pas un essai réel dans Safari et sur la montre.
+- `node tests/coros.test.cjs` : OAuth PKCE, validation du retour, pagination/SSE, renouvellement, refus, connexion hors ligne, envoi simulé, double clic, doublon, modification du schéma, refus/401/coupure sans nouvel essai automatique.
+- `node tests/coros-workouts.test.cjs` : unités et inversion des allures, volumes de travail et récupération, séries de 30/45 fractions, progressions, blocs, fartlek sans cible d’allure, côtes libres, choix de durée, immutabilité et refus des formats incomplets.
 
-Documentation officielle consultée le 4 octobre 2026 :
+Documentation officielle :
 
 - https://support.coros.com/hc/en-us/articles/53181619102996-Build-on-COROS-MCP
 - https://github.com/coroslab/COROS-MCP
 - https://github.com/coroslab/COROS-MCP/blob/main/skill/coros_mcp_login_gateway/scripts/coros_mcp_login.py
 
-La documentation précise que les schémas et limites des outils de création doivent être découverts sur le serveur connecté, avant toute utilisation. Les métadonnées OAuth et les requêtes CORS de découverte, d’enregistrement, d’échange de jeton et de MCP ont été vérifiées pour l’origine `https://shurikn57.github.io` sur le serveur européen. L’authentification réelle reste à tester par le titulaire du compte.
+Le schéma de création relu est conservé dans `tests/fixtures/coros-workout-tool.json` pour les tests de compatibilité. L’export complet des fonctionnalités et les données personnelles du compte ne sont pas enregistrés dans le dépôt.

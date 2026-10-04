@@ -20,6 +20,44 @@ function respond(u,opts){
  assert.equal(p.method,'tools/list');
  return p.params.cursor?{sse:`event: message\ndata: ${JSON.stringify({jsonrpc:'2.0',id:p.id,result:{tools:[{name:'createScheduledWorkout',inputSchema:{type:'object'}}]}})}\n\n`}:{body:{jsonrpc:'2.0',id:p.id,result:{tools:[{name:'createSingleWorkout',description:'Test schema',inputSchema:{type:'object'}}],nextCursor:'page2'}}};
 }
+
+function fakeDialog(context){
+ const nodes={status:{textContent:''},close:{disabled:false},submit:{disabled:false},steps:{innerHTML:''}};
+ const fields={};let content='';
+ const form={elements:{namedItem:k=>fields[k]},reportValidity:()=>true,querySelector:()=>nodes.submit};
+ const handlers={};
+ const dialog={id:'',className:'',addEventListener:(n,f)=>handlers[n]=f,showModal:()=>{},close:()=>{},querySelector:s=>s==='form'?form:s==='#corosSendStatus'?nodes.status:s==='#corosStepList'?nodes.steps:nodes.close};
+ Object.defineProperty(dialog,'innerHTML',{get:()=>content,set:s=>{content=s;for(const k of Object.keys(fields))delete fields[k];for(const m of s.matchAll(/<input name="([^"]+)"[^>]*value="([^"]+)"/g))fields[m[1]]={value:m[2]};fields.noIntensity={checked:true};fields.free={checked:true};}});
+ const document=context.document;document.createElement=()=>dialog;document.body={append:()=>{}};document.getElementById=id=>id==='corosPreview'?(dialog.id?dialog:null):{value:'eu'};
+ return{dialog,nodes,fields,submit:()=>handlers.submit({preventDefault:()=>{}})};
+}
+async function finishSend(e){for(let i=0;i<300&&e.api.busy;i++)await new Promise(r=>setTimeout(r,2));assert(!e.api.busy,'send did not finish');}
+async function sendCase(outcome,changedSchema=false){
+ const fixture=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));
+ if(changedSchema)fixture.description+=' changed';
+ const session=storage();session.setItem('planif-coros-v1-auth',JSON.stringify({issuer,clientId:'test-public-client',accessToken:'PRIVATE_ACCESS',refreshToken:'PRIVATE_REFRESH',expiresAt:Date.now()+3600000}));
+ const e=env({session,responder:async(u,opts)=>{
+  const p=JSON.parse(opts.body);
+  if(p.method==='initialize')return{body:{result:{protocolVersion:'2025-06-18'}}};
+  if(p.method==='tools/list')return{body:{result:{tools:[fixture]}}};
+  assert.equal(p.method,'tools/call');assert.equal(p.params.name,'createSingleWorkout');
+  assert.equal(p.params.arguments.course.sections[0].targetValue,1200);
+  if(outcome==='timeout')throw new TypeError('network unavailable PRIVATE_ACCESS');
+  if(outcome==='401')return{status:401};
+  if(outcome==='reject')return{body:{result:{isError:true,content:[{type:'text',text:'rejected internal id 123'}]}}};
+  return{body:{result:{isError:false,content:[{type:'text',text:'saved internal id 123'}]}}};
+ }});
+ await e.api.start();const ui=fakeDialog(e.context);
+ const snapshot={title:'Test S1',description:'7 × 5 minutes',kind:'quality',warmupMin:20,cooldownMin:10,variant:{structure:{type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]},intensity:{minKmh:12,maxKmh:12.5}}};
+ e.api.preview(snapshot);ui.submit();ui.submit();await finishSend(e);
+ const writes=()=>e.calls.filter(c=>JSON.parse(c.opts.body).method==='tools/call').length;
+ assert.equal(writes(),changedSchema?0:1);assert(!ui.nodes.status.textContent.includes('PRIVATE'));assert(!ui.nodes.status.textContent.includes('123'));
+ if(!changedSchema){assert(e.local.getItem('planif-coros-v1-send-ledger'));e.api.preview(snapshot);ui.submit();await finishSend(e);assert.equal(writes(),1,'duplicate write');}
+ if(outcome==='saved'&&!changedSchema)assert(ui.nodes.status.textContent.includes('déjà été envoyée'));
+ if(outcome==='401')assert.equal(e.calls.filter(c=>c.u.endsWith('/oauth2/token')).length,0,'write automatically retried after auth failure');
+ if(changedSchema)assert(ui.nodes.status.textContent.includes('format COROS'));
+}
+
 (async()=>{
  const a=env();assert(a.api.settingsHtml().includes('À connecter'));
  await a.click('connect');assert.equal(a.assigned.length,1);const u=new URL(a.assigned[0]),p=JSON.parse(a.local.getItem('planif-coros-v1-pending'));
@@ -34,6 +72,7 @@ function respond(u,opts){
  const off=env({online:false});await off.click('connect');assert.equal(off.calls.length,0);assert(off.api.settingsHtml().includes('Internet'));
  const expiredSession=storage();expiredSession.setItem('planif-coros-v1-auth',JSON.stringify({issuer,clientId:'test-public-client',accessToken:'PRIVATE_ACCESS',refreshToken:'PRIVATE_REFRESH',expiresAt:0}));const expired=env({session:expiredSession});await expired.api.start();await expired.click('verify');assert.equal(expired.calls.filter(c=>c.u.endsWith('/oauth2/token')).length,1);assert(expired.api.settingsHtml().includes('Connexion vérifiée'));
  const denied=env({responder:()=>({status:400})});await denied.click('connect');assert.equal(denied.assigned.length,0);assert(denied.api.settingsHtml().includes('HTTP 400'));
- assert(!source.includes("'tools/call'"));assert(!source.includes('client_secret'));
- console.log('OK : OAuth PKCE, retour/state, nettoyage URL, jetons limités à la session, découverte paginée/SSE, refresh, refus et hors connexion ; aucune écriture COROS.');
+ assert(a.calls.concat(b.calls).every(c=>!c.opts.body||!c.opts.body.includes('tools/call')));assert(!source.includes('client_secret'));
+ for(const outcome of ['saved','timeout','401','reject'])await sendCase(outcome);await sendCase('saved',true);
+ console.log('OK : OAuth PKCE, retour/state, nettoyage URL, jetons limités à la session, découverte paginée/SSE, refresh, refus et hors connexion ; aucune écriture lors de la connexion ; envoi simulé, double clic, doublon, schéma changé et erreur sans répétition automatique.');
 })();

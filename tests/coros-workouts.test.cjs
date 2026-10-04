@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const source=html.match(/<script>\s*(\/\* COROS :[\s\S]*?)<\/script>/)[1];
+const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));
+const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('/* Transcription')),ctx);const adapter=ctx.window.PlanifCorosAdapter;
+const base={title:'Planif · Premier seuil',description:'Séance de test',kind:'quality',warmupMin:20,cooldownMin:10,easyBand:[9.8,10.7]};
+const quality=(S,I={type:'speed_range',minKmh:14,maxKmh:14.5},extras={})=>({...base,variant:{structure:S,intensity:I,...extras}});
+function make(snapshot){const before=JSON.stringify(snapshot),d=adapter.plan(snapshot);const c=adapter.course(d,Object.fromEntries(d.choices.map(x=>[x.id,x.value])),{noIntensity:true,free:true});assert.equal(JSON.stringify(snapshot),before);validate(c);return{d,c};}
+const expand=c=>c.sections.flatMap(s=>s.intervalGroup?Array.from({length:s.repeats},()=>s.sets).flat():[s]);
+function validate(c){assert.equal(c.sportType,1);assert(c.courseName&&c.courseName.length<=100);assert(c.courseDescription);assert.deepEqual(Object.keys(c).sort(),fixture.inputSchema.properties.course.required.slice().sort());
+ for(const s of c.sections){if(s.intervalGroup){assert(s.repeats>=1&&s.repeats<=20);assert.deepEqual(Object.keys(s).sort(),['intervalGroup','repeats','sets']);assert(s.sets.every(x=>[2,3].includes(x.sectionType)&&!x.intervalGroup));}
+ for(const p of s.intervalGroup?s.sets:[s]){assert([1,2,3,4].includes(p.sectionType));assert([1,2,4].includes(p.targetType));if(p.targetType!==4)assert(Number.isInteger(p.targetValue)&&p.targetValue>0);else assert(!('targetValue'in p));assert(!('intensityPercentStart'in p));assert(!('sectionIntensity'in p));if(p.intensityType){assert.equal(p.intensityType,2);assert(p.intensityValueStart>=120&&p.intensityValueEnd<=1499);assert(p.intensityValueStart<=p.intensityValueEnd);}}}
+}
+let c=make(quality({type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]})).c;
+let rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).length,7);assert.equal(rows.filter(x=>x.sectionType===3).length,6);assert.equal(rows.filter(x=>x.sectionType===2).reduce((a,s)=>a+s.targetValue,0),2100);assert.equal(rows.filter(x=>x.sectionType===3).reduce((a,s)=>a+s.targetValue,0),450);assert.equal(rows.at(-1).sectionType,4);assert.equal(rows[1].intensityValueStart,Math.round(3600/14.5));assert.equal(rows[1].intensityValueEnd,Math.round(3600/14));
+c=make(quality({type:'intervals',reps:5,distanceM:1000,recoveryMin:1.5},{type:'race_pace',refKmh:14.7})).c;rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).reduce((a,s)=>a+s.targetValue,0),5000);assert(rows.filter(x=>x.sectionType===2).every(x=>x.targetType===1));
+c=make(quality({type:'intermittent',reps:30,sets:3,perSet:10,workMin:.5,recoveryMin:.375,recoveryRangeMin:[.25,.5],recoveryBetweenSetsMin:2.5,recoveryBetweenSetsRangeMin:[2,3]},{type:'pct_vma_range',minKmh:17,maxKmh:17.5,minPct:100,maxPct:103})).c;rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).length,30);assert.equal(rows.filter(x=>x.sectionType===3).length,29);assert.equal(rows.filter(x=>x.sectionType===3&&x.targetValue===150).length,2);assert(rows.every(x=>!('intensityPercentStart'in x)));
+c=make(quality({type:'intervals',reps:45,distanceM:200,recoveryMin:.5})).c;assert(c.sections.filter(s=>s.intervalGroup).every(s=>s.repeats<=20));assert.equal(expand(c).filter(s=>s.sectionType===2).length,45);
+c=make(quality({type:'continuous',progression:'thirds',durationMin:16.25},{type:'progression',speedsKmh:[12,12.5,13]})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).reduce((a,s)=>a+s.targetValue,0),975);
+c=make(quality({type:'intervals',progression:'increasing',reps:3,durationMin:5,recoveryMin:1},{type:'progression_range'},{corosBands:[[12,12],[12.5,12.5],[13,13]]})).c;assert.equal(JSON.stringify(expand(c).filter(s=>s.sectionType===2).map(s=>s.intensityValueStart)),JSON.stringify([300,288,277]));
+c=make(quality({type:'ladder',durationsMin:[3,5,3],recoveryRangeMin:[1,2]},{type:'by_duration',bands:[{durationsMin:[3],minKmh:14,maxKmh:14.5},{durationsMin:[5],minKmh:13.8,maxKmh:14.1}]},{recEach:1.5})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).reduce((a,s)=>a+s.targetValue,0),660);
+c=make(quality({type:'sets',sets:3,durationsMin:[5,3],recoveryBetweenFractionsMin:1,recoveryBetweenSetsMin:2})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).length,6);assert.equal(expand(c).filter(s=>s.sectionType===3).length,5);
+c=make(quality({type:'sets',sets:2,segments:[{distanceM:1000,target:'s2'},{distanceM:500,target:'race'}],linked:true,recoveryBetweenSetsMin:2},{type:'mixed',s2Kmh:14,raceKmh:15})).c;assert.equal(expand(c).filter(s=>s.sectionType===3).length,1);
+c=make(quality({type:'fartlek_structured',reps:6,durationMin:2,recoveryMin:1},{type:'feel',paceTarget:false})).c;assert(expand(c).every(s=>!('intensityType'in s)));
+let d=adapter.plan(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'}));assert(d.free);assert.throws(()=>adapter.course(d,{}, {noIntensity:true}),/Tour/);c=make(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'})).c;assert.equal(expand(c).filter(s=>s.targetType===4).length,11);
+const foot={title:'EF normale',description:'Footing de test',kind:'foot',foot:{type:'std',min:55},footBand:[9.9,10.7]};d=adapter.plan(foot);c=adapter.course(d,{c0:50},{});assert.equal(c.sections[0].targetValue,3000);assert.throws(()=>adapter.course(d,{c0:66},{}),/plage/);
+c=make({...foot,foot:{type:'active',wu:20,cd:10,activeRange:[15,45]},activeBand:[11.2,11.8],hrCue:'Ne pas dépasser 160 bpm.'}).c;assert.equal(expand(c)[1].targetValue,1800);assert(c.courseDescription.includes('160 bpm'));
+assert.throws(()=>adapter.plan({...foot,foot:{type:'std',min:55,ld:'strides'}}),/lignes droites/);
+assert.throws(()=>adapter.plan(quality({type:'fartlek_free',workMin:16},{type:'feel'})),/fartlek libre/);
+assert.throws(()=>adapter.course(adapter.plan(quality({type:'intervals',reps:2,durationMin:4,recoveryMin:1})),{},{}),/ressenti/);
+assert.throws(()=>adapter.pace([0,14]),/plage/);
+assert.throws(()=>adapter.pace([31,32]),/limites/);
+console.log('OK : distances, allures inversées, choix de durée/récupération, absence de récup finale, séries de 30/45 fractions, progressions, pyramides, blocs, fartlek au ressenti, côtes libres, immutabilité et refus explicites.');

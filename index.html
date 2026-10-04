@@ -508,6 +508,10 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .corosDialog::backdrop{background:#10142480}
 .corosDialog h2{margin:0 0 .6rem}.corosDialog h3{margin:.5rem 0}
 .corosPreviewText{white-space:pre-line;line-height:1.5}
+
+.corosDialog .sf{display:grid;gap:.35rem;margin:.65rem 0}.corosDialog input[type="number"]{width:100%;min-width:0;box-sizing:border-box;font-size:16px;padding:.65rem;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink)}
+.corosConfirm{display:flex;align-items:flex-start;gap:.5rem;margin:.8rem 0;font-size:.9rem;line-height:1.4}.corosConfirm input{width:20px;height:20px;flex:0 0 20px;accent-color:var(--accent)}
+.corosSteps{padding-left:1.3rem;font-size:.9rem;line-height:1.5}.corosSteps li{margin:.3rem 0}.corosDialog .cta{white-space:normal}
 </style>
 </head>
 <body data-ui="app">
@@ -661,12 +665,12 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 
 <script>
 /* COROS : client OAuth public avec PKCE. Les formats sont découverts après connexion.
-   Cette première étape ne crée ni ne modifie aucune séance COROS. */
+   La création est limitée à une séance neuve dans la bibliothèque, après aperçu et confirmation. */
 window.PlanifCoros=(()=>{
   'use strict';
   const KEY='planif-coros-v1',SCOPES='openid offline_access mcp.tools';
   const REGIONS={eu:'https://mcpeu.coros.com',us:'https://mcpus.coros.com',cn:'https://mcpcn.coros.com'};
-  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0;
+  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0,currentDraft=null;
   const callback=new URL(location.href).searchParams.get('coros_callback')==='1';
   const read=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null');}catch(_){return null;}};
   const write=(store,key,value)=>{store.setItem(key,JSON.stringify(value));};
@@ -740,14 +744,14 @@ window.PlanifCoros=(()=>{
     try{
       const p=await request(auth.issuer+'/mcp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream','Authorization':'Bearer '+token},body:JSON.stringify({jsonrpc:'2.0',id:++requestId,method,params})});
       if(p.error||!p.result)fail('COROS n’a pas accepté la vérification des fonctionnalités.');return p.result;
-    }catch(e){if(e.status===401&&!retried&&auth?.refreshToken){auth.expiresAt=0;return rpc(method,params,true);}throw e;}
+    }catch(e){if(method!=='tools/call'&&e.status===401&&!retried&&auth?.refreshToken){auth.expiresAt=0;return rpc(method,params,true);}throw e;}
   }
   async function discover(){
     await rpc('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'Planif',version:'1.0.0'}});
     const tools=[],seen=new Set();let cursor;
     do{const r=await rpc('tools/list',cursor?{cursor}:{});if(!Array.isArray(r.tools))fail('COROS n’a pas fourni ses formats.');tools.push(...r.tools);cursor=r.nextCursor;if(cursor){if(seen.has(cursor)||seen.size>=20)fail('La liste des fonctionnalités COROS est incomplète.');seen.add(cursor);}}while(cursor);
     catalog=tools.map(({name,description,inputSchema})=>({name,description,inputSchema}));
-    message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Les formats COROS sont prêts à être validés avant le premier envoi.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
+    message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Tu peux envoyer une séance dans la bibliothèque COROS.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
   }
   async function verify(){if(busy)return;busy=true;message='Vérification de COROS…';emit();try{await discover();}catch(e){catalog=null;message=e.message;}finally{busy=false;emit();}}
   function disconnect(){if(busy)return;auth=null;catalog=null;sessionStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-pending');message='Compte déconnecté de Planif.';emit();}
@@ -757,12 +761,64 @@ window.PlanifCoros=(()=>{
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   function settingsHtml(){
-    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Préparer tes séances pour la montre. Aucun entraînement n’est envoyé automatiquement.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et premier envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>Cette première étape prépare la liaison : les formats doivent encore être validés avant d’activer l’envoi. L’export des formats contient uniquement la description technique des fonctionnalités, sans jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
+    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ta bibliothèque COROS, après aperçu et confirmation.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi crée une séance dans la bibliothèque COROS, sans modifier ton calendrier ni tes entraînements existants. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
   }
-  function preview(title,lines){
-    let d=document.getElementById('corosPreview');if(!d){d=document.createElement('dialog');d.id='corosPreview';d.className='corosDialog';document.body.append(d);d.addEventListener('click',e=>{if(e.target.closest('[data-coros-close]'))d.close();});}
-    d.innerHTML=`<h2>Préparer pour COROS</h2><h3>${escape(title)}</h3>${lines.map(l=>`<p class="corosPreviewText">${escape(l)}</p>`).join('')}<p class="lbl">Aperçu de l’option affichée. Les plages de durée et de récupération devront être choisies avant l’envoi. Le fartlek et les côtes garderont leurs consignes au ressenti.</p><p class="lbl">L’envoi n’est pas encore activé : connecte COROS dans Réglages pour faire vérifier ses formats.</p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;d.showModal();
+  const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
+  const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('');
+  const SCHEMA_HASH='d0d0f363f5ad3cc69fd246279a94a8633a0e01b3c1e594376c0c95432f372138';
+  async function checkWriteTool(){
+    if(!catalog)await discover();
+    const tool=catalog.find(t=>t.name==='createSingleWorkout');
+    if(!tool||await digest(canonical({description:tool.description,inputSchema:tool.inputSchema}))!==SCHEMA_HASH)fail('Le format COROS de ton compte a changé. Exporte les formats dans Réglages pour faire vérifier la compatibilité.');
   }
+  function sectionLabel(s){
+    if(s.intervalGroup)return `${s.repeats} × (${s.sets.map(sectionLabel).join(' + ')})`;
+    const names={1:'Échauffement',2:'Travail',3:'Récupération',4:'Retour au calme'};
+    let target=s.targetType===4?'libre, bouton Tour':s.targetType===1?`${s.targetValue} m`:typeof s.targetValue==='object'?'durée à choisir':`${Math.floor(s.targetValue/60)} min${s.targetValue%60?' '+s.targetValue%60+' s':''}`;
+    if(s.intensityType===2){const pace=n=>`${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;target+=` · ${pace(s.intensityValueStart)}${s.intensityValueStart===s.intensityValueEnd?'':'–'+pace(s.intensityValueEnd)}/km`;}else target+=' · au ressenti';
+    return `${names[s.sectionType]} : ${target}`;
+  }
+  function preview(snapshot){
+    if(busy)return;
+    let d=document.getElementById('corosPreview');if(!d){d=document.createElement('dialog');d.id='corosPreview';d.className='corosDialog';document.body.append(d);d.addEventListener('cancel',e=>{if(busy)e.preventDefault();});d.addEventListener('click',e=>{if(e.target.closest('[data-coros-close]')&&!busy)d.close();});d.addEventListener('submit',e=>{e.preventDefault();sendFromPreview(d);});}
+    let reason=snapshot.unsupported||'';currentDraft=null;
+    try{if(!reason)currentDraft=PlanifCorosAdapter.plan(snapshot);}catch(e){reason=e.message;}
+    const draft=currentDraft;
+    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Enregistrement dans la bibliothèque COROS. Le calendrier COROS reste inchangé.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm">${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?'<label class="corosConfirm"><input type="checkbox" name="free" required><span>Je termine les récupérations libres avec le bouton Tour de la montre.</span></label>':''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Enregistrer dans la bibliothèque COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
+    d.addEventListener('input',updatePreviewSteps,{once:true});if(draft)updatePreviewSteps();d.showModal();
+  }
+  function previewValues(draft,form){return Object.fromEntries(draft.choices.map(c=>[c.id,form.elements.namedItem(c.id).value]));}
+  function updatePreviewSteps(){
+    const d=document.getElementById('corosPreview'),form=d?.querySelector('form');if(!form||!currentDraft)return;
+    try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true});d.querySelector('#corosStepList').innerHTML=c.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('');}catch(_){}
+    form.oninput=updatePreviewSteps;
+  }
+  async function sendFromPreview(dialog){
+    if(busy||!currentDraft)return;
+    const form=dialog.querySelector('form');if(!form||!form.reportValidity())return;
+    const status=dialog.querySelector('#corosSendStatus');let fingerprint=null,started=false;
+    const ledgerKey=KEY+'-send-ledger';
+    const record=(key,value)=>{const ledger=read(localStorage,ledgerKey)||{};ledger[key]=value;write(localStorage,ledgerKey,ledger);};
+    busy=true;form.querySelector('button[type="submit"]').disabled=true;dialog.querySelector('[data-coros-close]').disabled=true;
+    try{
+      if(!navigator.onLine)fail('L’envoi nécessite Internet.');
+      const draft=cloneDraft(currentDraft),course=PlanifCorosAdapter.course(draft,previewValues(draft,form),{noIntensity:form.elements.namedItem('noIntensity')?.checked,free:form.elements.namedItem('free')?.checked});
+      status.textContent='Vérification de COROS…';await checkWriteTool();await access();
+      fingerprint=await digest(canonical({issuer:auth.issuer,course}));
+      const previous=(read(localStorage,ledgerKey)||{})[fingerprint];
+      if(previous)fail(previous.status==='saved'?'Cette séance a déjà été envoyée depuis ce navigateur. Retrouve-la dans la bibliothèque COROS.':'Un envoi de cette séance a déjà été tenté. Vérifie la bibliothèque COROS avant toute nouvelle tentative ; Planif évite un doublon.');
+      record(fingerprint,{status:'pending',date:new Date().toISOString()});started=true;
+      status.textContent='Envoi à COROS…';
+      /* Aucun nouvel essai automatique d’écriture, même en cas d’expiration ou de timeout. */
+      const result=await rpc('tools/call',{name:'createSingleWorkout',arguments:{course}},true);
+      if(result.isError){record(fingerprint,{status:'rejected',date:new Date().toISOString()});fail('COROS a refusé cette séance. Aucun nouvel envoi automatique ne sera tenté.');}
+      if(!result.structuredContent&&!result.content?.some(c=>c.type==='text'&&c.text?.trim()))fail('La confirmation COROS est incomplète. Vérifie la bibliothèque avant de réessayer.');
+      record(fingerprint,{status:'saved',date:new Date().toISOString()});
+      status.textContent='COROS a confirmé l’enregistrement. Ouvre la bibliothèque d’entraînements dans COROS pour vérifier la séance et la synchroniser avec la montre.';
+    }catch(e){status.textContent=started?'L’envoi ne sera pas répété automatiquement. '+e.message:e.message;}
+    finally{busy=false;dialog.querySelector('[data-coros-close]').disabled=false;if(!started)form.querySelector('button[type="submit"]').disabled=!auth;}
+  }
+  const cloneDraft=draft=>JSON.parse(JSON.stringify(draft));
   document.addEventListener('click',async e=>{
     const b=e.target.closest('[data-coros]');if(!b||busy)return;
     const act=b.dataset.coros;if(act==='connect')await connect(document.getElementById('corosRegion')?.value||'eu');else if(act==='verify')await verify();else if(act==='formats')downloadCatalog();else if(act==='disconnect')disconnect();
@@ -772,6 +828,134 @@ window.PlanifCoros=(()=>{
     if(callback){busy=true;message='Finalisation de la connexion COROS…';emit();try{await finish();await discover();}catch(e){message=e.message;}finally{busy=false;emit();}}else emit();
   }
   return{start,settingsHtml,preview,get busy(){return busy;},get callback(){return callback;}};
+})();
+
+
+/* Transcription de séances Planif vers le schéma COROS vérifié sur le compte utilisateur.
+   Unités COROS : secondes, mètres, secondes/km. Aucune règle du moteur n'est modifiée. */
+window.PlanifCorosAdapter=(()=>{
+  'use strict';
+  const fail=t=>{throw new Error(t);};
+  const sec=m=>Math.round(m*60);
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  function pace(band){
+    if(!Array.isArray(band)||band.length!==2||band.some(v=>!Number.isFinite(v)||v<=0))fail('Cette plage d’allure ne peut pas être envoyée.');
+    const values=band.map(v=>Math.round(3600/v)).sort((a,b)=>a-b);
+    if(values.some(v=>v<120||v>1499))fail('Cette allure sort des limites acceptées par COROS.');
+    return{intensityType:2,intensityValueStart:values[0],intensityValueEnd:values[1]};
+  }
+  function plan(snapshot){
+    const x=clone(snapshot),draft={name:x.title,description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
+    if(!x.title||!x.description)fail('La séance affichée est incomplète.');
+    const choice=(label,range,value,unit='s')=>{
+      const r=range.map(Math.round);if(r.length!==2||r.some(v=>!Number.isFinite(v)||v<=0)||r[0]>r[1])fail('Une durée proposée est invalide.');
+      if(r[0]===r[1])return r[0];
+      const id='c'+draft.choices.length;draft.choices.push({id,label,min:r[0],max:r[1],value:Math.min(r[1],Math.max(r[0],Math.round(value))),unit});return{choice:id};
+    };
+    const time=(type,minutes,band)=>plain(type,2,sec(minutes),band);
+    function plain(type,targetType,value,band){
+      const out={sectionType:type,targetType};if(targetType!==4)out.targetValue=value;else draft.free=true;
+      if(band)Object.assign(out,pace(band));else draft.noIntensity=true;
+      return out;
+    }
+    const rec=(minutes,range,label='Récupération')=>plain(3,2,range?choice(label,range.map(sec),sec(minutes)):sec(minutes));
+    const pushRecovery=(minutes,range,label)=>{if(minutes>0||range?.[1]>0)draft.sections.push(rec(minutes,range,label));};
+    const repeat=(n,work,recovery,tailRecovery=false)=>{
+      if(!Number.isInteger(n)||n<1||n>100)fail('Nombre de répétitions non pris en charge.');
+      if(!recovery){for(let i=0;i<n;i++)draft.sections.push(clone(work));return;}
+      let pairs=tailRecovery?n:n-1;while(pairs>0){const count=Math.min(20,pairs);draft.sections.push({intervalGroup:true,repeats:count,sets:[clone(work),clone(recovery)]});pairs-=count;}
+      if(!tailRecovery)draft.sections.push(clone(work));
+    };
+    const bandsFor=(v,duration,index)=>{
+      const I=v.intensity||{};
+      if(I.paceTarget===false||I.type==='feel'||I.type==='effort')return null;
+      if(v.corosBands)return v.corosBands[index];
+      if(I.minKmh&&I.maxKmh)return[I.minKmh,I.maxKmh];
+      if(I.refKmh)return[I.refKmh,I.refKmh];
+      if(I.type==='by_duration'){const b=I.bands.find(b=>b.durationsMin.includes(duration));if(b)return[b.minKmh,b.maxKmh];}
+      fail('Les allures de ce format ne sont pas encore transcrites fidèlement. Choisis un autre format.');
+    };
+    function variant(v){
+      const S=v.structure||{},I=v.intensity||{};
+      if(S.type==='fartlek_free')fail('Le fartlek libre dépend du terrain et du ressenti. Il ne peut pas être envoyé comme une suite de fractions fixes. Choisis l’option structurée.');
+      if(S.type==='continuous'){
+        if(S.progression==='thirds'){
+          if(!I.speedsKmh||I.speedsKmh.length!==3)fail('Progression non prise en charge.');
+          const total=sec(S.durationMin),first=Math.round(total/3);I.speedsKmh.forEach((speed,i)=>draft.sections.push(plain(2,2,i===2?total-2*first:first,[speed,speed])));
+        }else draft.sections.push(time(2,S.durationMin,bandsFor(v,S.durationMin,0)));
+      }else if(['intervals','intermittent','fartlek_structured'].includes(S.type)){
+        const n=S.reps,d=S.durationMin??S.workMin,band=bandsFor(v,d,0),work=S.distanceM?plain(2,1,Math.round(S.distanceM),band):time(2,d,band);
+        const recovery=n>1?rec(S.recoveryMin,S.recoveryRangeMin):null;
+        if(S.progression==='increasing'){
+          if(!v.corosBands||v.corosBands.length!==n)fail('Progression non prise en charge.');
+          for(let i=0;i<n;i++){draft.sections.push(time(2,d,v.corosBands[i]));if(i<n-1&&recovery)draft.sections.push(clone(recovery));}
+        }else if(S.sets){
+          if(!Number.isInteger(S.perSet)||S.sets*S.perSet!==n)fail('Cette répartition en séries est incomplète.');
+          for(let i=0;i<S.sets;i++){repeat(S.perSet,work,recovery);if(i<S.sets-1)pushRecovery(S.recoveryBetweenSetsMin,S.recoveryBetweenSetsRangeMin,'Récupération entre séries');}
+        }else repeat(n,work,recovery);
+      }else if(S.type==='ladder'){
+        const L=S.durationsMin||S.distancesM;if(!L?.length)fail('Pyramide incomplète.');
+        const recovery=L.length>1?rec(v.recEach,S.recoveryRangeMin):null;
+        L.forEach((value,i)=>{draft.sections.push(S.durationsMin?time(2,value,bandsFor(v,value,i)):plain(2,1,Math.round(value),bandsFor(v,null,i)));if(i<L.length-1&&recovery)draft.sections.push(clone(recovery));});
+      }else if(S.type==='sets'){
+        const L=S.durationsMin||S.distancesM||S.segments;if(!L?.length||!Number.isInteger(S.sets))fail('Blocs incomplets.');
+        for(let i=0;i<S.sets;i++){
+          L.forEach((value,j)=>{
+            const band=S.segments?[(value.target==='s2'?I.s2Kmh:I.raceKmh),(value.target==='s2'?I.s2Kmh:I.raceKmh)]:bandsFor(v,S.durationsMin?value:null,j);
+            draft.sections.push(S.durationsMin?time(2,value,band):plain(2,1,Math.round(S.segments?value.distanceM:value),band));
+            if(j<L.length-1&&!S.linked)pushRecovery(S.recoveryBetweenFractionsMin,S.recoveryBetweenFractionsRangeMin,'Récupération entre fractions');
+          });
+          if(i<S.sets-1)pushRecovery(S.recoveryBetweenSetsMin,S.recoveryBetweenSetsRangeMin,'Récupération entre blocs');
+        }
+      }else if(S.type==='mixed_zones'){
+        S.components.forEach((c,i)=>{variant(c.variant);if(i<S.components.length-1)pushRecovery(S.recoveryBetweenBlocksMin,S.recoveryBetweenBlocksRangeMin,'Récupération entre qualités');});
+      }else if(S.type==='hill_reps'){
+        repeat(S.reps,time(2,S.durationMin),plain(3,4),true);
+        if(S.sprints?.reps)repeat(S.sprints.reps,plain(2,2,S.sprints.seconds),plain(3,4));
+        draft.notes.push('Côtes au ressenti, récupération en descente et récupération complète entre sprints : termine chaque récupération avec le bouton Tour.');
+      }else if(S.type==='long_run'&&!S.reps&&S.cooldownMin!==undefined){
+        draft.sections.push(time(2,S.easyMin,x.easyBand),plain(2,1,Math.round(S.distanceKm*1000),bandsFor(v,null,0)),time(4,S.cooldownMin));
+      }else fail('Ce format n’est pas encore exportable sans modifier sa structure. Aucune séance ne sera envoyée.');
+    }
+    if(x.kind==='quality'){
+      if(x.warmupMin>0)draft.sections.push(time(1,x.warmupMin));variant(x.variant);if(x.cooldownMin>0)draft.sections.push(time(4,x.cooldownMin));
+    }else if(x.kind==='foot'){
+      if(x.foot.ld||x.foot.shortHills)fail('Ce footing comporte des lignes droites ou des côtes à choisir librement. L’envoi de ce format complet n’est pas encore disponible.');
+      if(x.foot.type==='active'){
+        const block=choice('Bloc actif',x.foot.activeRange,(x.foot.activeRange[0]+x.foot.activeRange[1])/2,'min');
+        draft.sections.push(time(1,x.foot.wu),plain(2,2,{minutes:block},x.activeBand),time(4,x.foot.cd));draft.notes.push('Le bloc actif est envoyé en continu. '+x.hrCue);
+      }else{
+        const center=Math.round(x.foot.min),value=choice('Durée du footing',[Math.max(1,center-5),center+5],center,'min');draft.sections.push(plain(2,2,{minutes:value},x.footBand));
+      }
+    }else if(x.kind==='long'){
+      if(x.long.active)fail('Cette sortie longue comprend un bloc actif de durée libre. L’envoi de ce format complet n’est pas encore disponible.');
+      if(x.long.s1Min){draft.sections.push(time(2,x.long.totalMin-x.long.s1Min,x.easyBand),time(2,x.long.s1Min,x.s1Band));}
+      else draft.sections.push(time(2,x.long.totalMin,x.easyBand));
+    }else if(x.kind==='race'){
+      if(x.race.wu>0)draft.sections.push(time(1,x.race.wu));draft.sections.push(plain(2,1,Math.round(x.race.distance*1000),[x.race.targetPace,x.race.targetPace]));if(x.race.cd>0)draft.sections.push(time(4,x.race.cd));
+    }else fail('Cette séance n’est pas encore exportable.');
+    if(!draft.sections.length||draft.sections.length>200)fail('Cette séance dépasse la structure prise en charge par Planif pour COROS.');
+    return draft;
+  }
+  function course(draft,values={},consent={}){
+    if(draft.noIntensity&&!consent.noIntensity)fail('Confirme les phases au ressenti, sans alerte d’allure.');
+    if(draft.free&&!consent.free)fail('Confirme les récupérations libres terminées avec le bouton Tour.');
+    const resolve=v=>{
+      if(v&&typeof v==='object'){
+        if(v.minutes!==undefined)return Math.round(resolve(v.minutes)*60);
+        if(v.choice){const c=draft.choices.find(c=>c.id===v.choice),number=Number(values[v.choice]);if(!c||!Number.isInteger(number)||number<c.min||number>c.max)fail('Choisis une valeur dans chaque plage proposée.');return number;}
+      }return v;
+    };
+    const sections=clone(draft.sections);const walk=s=>{
+      if(s.intervalGroup){if(!Number.isInteger(s.repeats)||s.repeats<1||s.repeats>20||!s.sets?.length)fail('Groupe de répétitions invalide.');s.sets.forEach(walk);return;}
+      if(s.targetType!==4){s.targetValue=resolve(s.targetValue);if(!Number.isInteger(s.targetValue)||s.targetValue<=0)fail('Durée ou distance invalide.');}
+      if(![1,2,3,4].includes(s.sectionType)||![1,2,4].includes(s.targetType))fail('Section invalide.');
+    };sections.forEach(walk);
+    const choices=draft.choices.map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
+    const description=[draft.description,'Allures absolues calculées dans Planif, en min/km. Les phases au ressenti n’ont pas d’alerte d’allure.',choices,...draft.notes].filter(Boolean).join(' ');
+    return{sportType:1,courseName:draft.name.slice(0,100),courseDescription:description,sections};
+  }
+  return{plan,course,pace};
 })();
 
 </script>
@@ -4050,7 +4234,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.14';
+const APP_VERSION='2026.10.04.15';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4418,6 +4602,30 @@ function libSessionHtml(r){
   h+=`<div class="card"><details class="info"><summary>ⓘ Pourquoi ce format</summary><p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p></details></div>`;
   return h;
 }
+/* Copie de la séance affichée : la conversion ne modifie ni le plan ni ses variantes. */
+function corosSessionSnapshot(){
+  const st=lastSt,r=appSession;if(!st||!r)throw new Error('Ouvre une séance pour la préparer.');
+  const copy=v=>{
+    const out=JSON.parse(JSON.stringify(v)),S=out.structure,I=out.intensity||{};
+    if(I.type==='pct_by_duration')out.corosBands=S.durationsMin.map(d=>vo2Band(d,v.work,st).slice(0,2));
+    else if(I.type==='race_pace_by_length')out.corosBands=S.distancesM.map(m=>p10Band(m/1000/I.refKmh,I.refKmh));
+    else if(I.type==='progression_range')out.corosBands=v.parts.map(part=>[part[1],part[1]]);
+    if(S.components)S.components=S.components.map(c=>({...c,variant:copy(c.variant)}));
+    return out;
+  };
+  const root=$('scr-session'),title=root.querySelector('.sHead h2')?.textContent||'Séance';
+  const description=Array.from(root.querySelectorAll('.card')).slice(0,2).map(c=>c.innerText).join(' ').replace(/\s+/g,' ').trim();
+  const base={title:'Planif · '+title,description,easyBand:efBand('std',st),s1Band:[st.s1lo,st.s1hi],activeBand:efBand('active',st),hrCue:st.lt1Hr?`Ne pas dépasser ${Math.round(st.lt1Hr)} bpm.`:'Ne pas dépasser le premier seuil.'};
+  if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd};}
+  const w=lastPlan?.weeks?.[r.w],day=w?.days?.[r.d];let it=day?.items?.[r.i];if(r.q!==undefined&&w?.sessions?.[r.q])it={kind:'q',s:w.sessions[r.q]};
+  if(!it)throw new Error('Cette séance n’est plus disponible.');
+  if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd};}
+  if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:efBand(it.f.type,st)};
+  if(it.kind==='sl')return{...base,kind:'long',long:{totalMin:w.sl,s1Min:w.slS1,active:w.slEA}};
+  if(it.kind==='race')return{...base,kind:'race',race:JSON.parse(JSON.stringify(it.s))};
+  throw new Error('Ce format libre n’est pas encore exportable sans modifier ses consignes.');
+}
+
 function sessionScreenHtml(){
   if(appSession&&appSession.lib)return libSessionHtml(appSession.lib);
   const C=lastPlan,st=lastSt,r=appSession;const w=C&&C.weeks&&C.weeks[r.w];
@@ -4449,7 +4657,7 @@ function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
     ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml();
-    if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Préparer pour COROS</button>');
+    if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
   $('scr-session').hidden=true;
@@ -4466,7 +4674,7 @@ function renderApp(){
 const setUi=u=>{document.body.dataset.ui=u;setBuilt=false;try{localStorage.setItem('calc-allures-ui',u);}catch(e){}if(u==='app')renderApp();window.scrollTo(0,0);};
 document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;appSession=null;appLib=false;setBuilt=false;appTab=b.dataset.tab;try{localStorage.setItem('calc-allures-tab',appTab);}catch(_){}renderApp();window.scrollTo(0,0);});
 $('appShell').addEventListener('click',e=>{
-  if(e.target.closest('[data-coros-preview]')){const root=$('scr-session');PlanifCoros.preview(root.querySelector('.sHead h2').textContent,Array.from(root.querySelectorAll('.card')).slice(0,2).map(c=>c.innerText));return;}
+  if(e.target.closest('[data-coros-preview]')){try{PlanifCoros.preview(corosSessionSnapshot());}catch(error){PlanifCoros.preview({title:'Séance',description:'',unsupported:error.message});}return;}
   const ss=e.target.closest('[data-studyscope]');if(ss){studyScope=ss.dataset.studyscope;studyFilter='Toutes';renderApp();return;}
   const sf=e.target.closest('[data-studyfilter]');if(sf){studyFilter=sf.dataset.studyfilter;renderApp();return;}
   const tl=e.target.closest('[data-timeline]');if(tl){calendarTimelineOpen=!calendarTimelineOpen;renderApp();return;}
