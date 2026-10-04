@@ -398,7 +398,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .homeRest svg{width:96px;height:72px;flex-shrink:0}
 #scr-today .homeKey .homeSession{position:relative;isolation:isolate;overflow:hidden;min-height:104px;background:var(--surface-2);border-left-color:var(--accent);border-radius:15px;padding:.7rem 1rem}
 .homeSession>span:not(.go){position:relative;z-index:1;max-width:70%;overflow-wrap:anywhere}
-.homeSession .homeArt{width:70%;opacity:.55;z-index:-1}
+.homeSession .homeArt{width:70%;opacity:.72;z-index:-1}
 .homeSession .k{font-size:1.4rem;font-family:"Barlow Condensed",system-ui,sans-serif}
 .homeSession .t{color:var(--ink);margin-top:.2rem}
 .homeSession .go{position:absolute;right:.7rem;top:.65rem;z-index:1;color:var(--accent);font-size:1.7rem}
@@ -3837,7 +3837,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.03';
+const APP_VERSION='2026.10.04.04';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
