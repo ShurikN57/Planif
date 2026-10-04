@@ -469,7 +469,6 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 :root[data-theme="dark"] #scr-ref .libVisual .homeArt{opacity:.18}
 /* Chronos : motif discret dans l’en-tête et référence saisie mise en évidence. */
 #scr-ref .chronoCard{position:relative;isolation:isolate}
-.chronoArt{position:absolute;right:5.1rem;top:.2rem;width:58px;height:58px;color:var(--accent);opacity:.11;pointer-events:none;z-index:-1}
 .chronoCard .kv{column-gap:0}
 .chronoCard .kv>span{padding-left:.4rem;padding-right:.4rem;min-width:0;overflow-wrap:anywhere}
 .chronoCard .predRef{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
@@ -491,6 +490,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .physioSpeeds .sf>span,.physioHr .sf>span{text-align:center;white-space:nowrap;font-size:.8rem}
 .s1Hint{margin:0 0 .8rem;font-size:.78rem}
 .speedUnit{max-width:11rem}
+/* Fonds personnalisés : motifs pastel avec protection de la zone de lecture. */
+.panelCard{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(120deg,var(--surface) 45%,color-mix(in srgb,var(--accent) 6%,var(--surface)))}
+.panelArt{position:absolute;right:0;top:0;width:55%;height:100%;opacity:.65;z-index:-1;pointer-events:none;mask-image:linear-gradient(to right,transparent,#000 48%)}
+#scr-study .studyIntro{border-radius:20px;border-left:4px solid var(--accent);box-shadow:0 3px 9px #23213b0c}
+#scr-set .activePlanCard{border-left:4px solid var(--accent)}
+#scr-set .activePlanCard .cta{background:color-mix(in srgb,var(--surface) 92%,transparent)}
+#scr-set .activePlanCard .lockTag{background:var(--surface)}
+#scr-ref .chronoPanel{background:linear-gradient(120deg,var(--surface) 45%,color-mix(in srgb,var(--accent) 6%,var(--surface)))}
+.chronoPanel .panelArt{width:55%;opacity:.55}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .panelCard .panelArt{opacity:.16}}
+:root[data-theme="dark"] .panelCard .panelArt{opacity:.16}
 </style>
 </head>
 <body data-ui="app">
@@ -3916,7 +3926,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.12';
+const APP_VERSION='2026.10.04.13';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -3925,6 +3935,13 @@ function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calenda
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
+/* Fonds SVG décoratifs propres à chaque rubrique, disponibles hors connexion. */
+function panelArt(kind){
+  const open='<svg class="panelArt" viewBox="0 0 300 190" preserveAspectRatio="xMaxYMin meet" aria-hidden="true" focusable="false">';
+  if(kind==='plan')return open+'<path d="M138 0h162v190H100c40-30-10-65 12-99s50-44 26-91" fill="#DDECDD"/><path d="m135 171 29-40 34 12 26-39 55-5" fill="none" stroke="#A6A6D2" stroke-width="5" stroke-dasharray="7 8" stroke-linecap="round"/><g transform="rotate(9 212 68)"><rect x="147" y="19" width="116" height="98" rx="13" fill="#F4F1FA" stroke="#A3A0D0" stroke-width="3"/><path d="M147 47h116" stroke="#A3A0D0" stroke-width="3"/><path d="M173 10v19m62-19v19" stroke="#8885BD" stroke-width="6" stroke-linecap="round"/><g fill="#C7C3E6"><rect x="162" y="59" width="20" height="15" rx="4"/><rect x="191" y="59" width="20" height="15" rx="4"/><rect x="220" y="59" width="20" height="15" rx="4"/><rect x="162" y="84" width="20" height="15" rx="4"/></g><path d="m194 91 6 6 13-16" fill="none" stroke="#7CA88F" stroke-width="5" stroke-linecap="round"/></g></svg>';
+  if(kind==='science')return open+'<path d="M120 0h180v190h-98c-39-32-91-31-72-76s-35-48-10-114" fill="#E4EBF4"/><circle cx="244" cy="55" r="48" fill="#D9EBDD"/><g transform="rotate(-9 203 98)"><rect x="138" y="30" width="105" height="135" rx="9" fill="#E3DFF1"/><rect x="154" y="17" width="108" height="133" rx="9" fill="#FAF8FC" stroke="#AAA5CD" stroke-width="3"/><path d="M173 39h64m-64 13h48" stroke="#B4AFD4" stroke-width="4" stroke-linecap="round"/><path d="M175 112V76m0 36h64" fill="none" stroke="#B8B5D2" stroke-width="2"/><path d="m184 99 15-10 14 5 17-23" fill="none" stroke="#8CAF9E" stroke-width="4" stroke-linecap="round"/><path d="M173 130h62" stroke="#D5CDAF" stroke-width="4" stroke-linecap="round"/></g></svg>';
+  return open+'<path d="M124 0h176v190H206c-47-35-61-73-99-89s34-57 17-101" fill="#E8E4F3"/><path d="M234 0h66v127c-34-7-53-39-80-40s-4-54 14-87" fill="#DFEDDF"/><g transform="translate(-35 -12)" fill="none" stroke="#AAA3CF" stroke-linecap="round" stroke-linejoin="round"><circle cx="182" cy="70" r="35" fill="#F8F6FC" stroke-width="4"/><path d="M175 21h14m-7 0v14m25 8 8-8m-3-3 6 6" stroke-width="5"/><path d="M182 70V49m0 21 18 11" stroke="#9087BB" stroke-width="4"/></g><path d="m225 127 38 0m-54 14h62m-35 14h36" stroke="#BDD6C6" stroke-width="4" stroke-linecap="round"/></svg>';
+}
 function homeArt(kind){
   const open='<svg class="homeArt" viewBox="0 0 300 190" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">';
   if(kind==='track')return open+'<path fill="#C5DEC9" d="M0 0h300v190H0z"/><g transform="rotate(-23 150 95)" fill="none"><rect x="-25" y="16" width="365" height="165" rx="82" stroke="#ABB6CE" stroke-width="35"/><rect x="-15" y="31" width="345" height="135" rx="67" stroke="#D8C5B9" stroke-width="19"/><rect x="-9" y="42" width="333" height="112" rx="56" stroke="#E6D3AD" stroke-width="9"/><rect x="-4" y="52" width="323" height="92" rx="46" stroke="#C9ADBD" stroke-width="7"/><path d="M130 55v84m-20-84v84m40-84v84" stroke="white" stroke-width="2" opacity=".7"/></g></svg>';
@@ -4006,7 +4023,7 @@ function appRefHtml(){
   const st=lastSt,C=lastPlan;if(!st)return'';
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big">${fmtPace(v)}</div><div class="lbl">${sub||fmtSpd(v)+' km/h'}</div></div>`;
   let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${fmtPace(st.s1lo)}/km.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div></div>`;
-  if(lastPred){h+=`<div class="card chronoCard"><svg class="chronoArt" viewBox="0 0 80 80" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="40" cy="45" r="26"/><path d="M34 7h12M40 7v12M58 22l6-6m-2-2 4 4M40 45V29m0 16 12 7"/></g></svg>${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
+  if(lastPred){h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${fmtPace(p.v)}/km</span>`).join('')+'</div></div>';}
   if(C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
     h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
@@ -4028,7 +4045,7 @@ function appStudyHtml(){
   const scoped=SOURCES.filter(x=>studyScope==='all'||sourceScope(x.id)===studyScope);
   const themes=['Toutes',...Array.from(new Set(scoped.flatMap(x=>x.themes||[]))).sort()];
   const rows=studyFilter==='Toutes'?scoped:scoped.filter(x=>(x.themes||[]).includes(studyFilter));
-  let h='<div class="card"><div class="big" style="font-size:1.65rem">'+SOURCES.length+' publications</div><p class="lbl">Références vérifiées utilisées pour documenter ou challenger les règles de Planif. Les choix purement heuristiques restent identifiés comme tels dans l’audit.</p></div>';
+  let h='<div class="card panelCard studyIntro">'+panelArt('science')+'<div class="big" style="font-size:1.65rem">'+SOURCES.length+' publications</div><p class="lbl">Références vérifiées utilisées pour documenter ou challenger les règles de Planif. Les choix purement heuristiques restent identifiés comme tels dans l’audit.</p></div>';
   h+='<div class="studyFilters" role="group" aria-label="Portée des publications">'+[['engine','Moteur'],['context','Contexte'],['all','Toutes']].map(([v,label])=>`<button type="button" data-studyscope="${v}" aria-pressed="${v===studyScope}">${label} (${v==='all'?SOURCES.length:SOURCES.filter(x=>sourceScope(x.id)===v).length})</button>`).join('')+'</div><p class="lbl">Contexte : connaissances complémentaires, sans prescription correspondante dans le moteur. Les liens éventuels restent indirects.</p>';
   h+='<div class="studyFilters">'+themes.map(t=>`<button type="button" data-studyfilter="${t}" aria-pressed="${t===studyFilter}">${t}</button>`).join('')+'</div>';
   h+=rows.map(x=>`<article class="card studyCard"><div class="lbl">${x.authors[0]} et al., ${x.year}</div><h2>${x.title}</h2><div class="studyMeta"><span>${scopeLabel(x.id)}</span><span>${x.studyType}</span><span>${x.journal}</span>${x.population&&x.population.n?'<span>n = '+x.population.n+'</span>':''}</div><p><b>Ce qu’on retient :</b> ${x.result}</p><details class="info"><summary>ⓘ Limites et référence</summary><p>${x.limitations}</p>${studyEvidenceHtml(x.id)}<p>DOI : ${x.doi}</p><p><a href="${x.url}" target="_blank" rel="noopener">Ouvrir la publication</a></p></details></article>`).join('');
@@ -4084,7 +4101,7 @@ function appSetHtml(){
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
   if(cal&&activePlan){
-    h+=`<div class="card"><div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+    h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
   }
 
   if(cal&&(!activePlan||structureEditing)){
