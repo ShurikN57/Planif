@@ -792,14 +792,16 @@ window.PlanifCoros=(()=>{
     let reason=snapshot.unsupported||'';currentDraft=null;
     try{if(!reason)currentDraft=PlanifCorosAdapter.plan(snapshot);}catch(e){reason=e.message;}
     const draft=currentDraft;currentDate=snapshot.date||localDate(new Date());const limit=new Date();limit.setDate(limit.getDate()+90);
-    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?'<label class="corosConfirm"><input type="checkbox" name="free" required><span>Je termine les récupérations libres avec le bouton Tour de la montre.</span></label>':''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
+    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.preparation?.activation?`<label class="sf"><span>Activation : cible en km/h (S2 par défaut, ou légèrement plus lent)</span><input name="activationKmh" type="text" inputmode="decimal" required value="${draft.preparation.s2Kmh}"></label>`:''}${draft.preparation?'<label class="sf"><span>Récupérations entre les lignes droites</span><select name="strideRecovery"><option value="auto">Chronométrées : 48 s</option><option value="manual">Manuelles : bouton Tour</option></select></label><label class="sf"><span>Récupérations du cœur de séance</span><select name="coreRecovery"><option value="auto">Durées définies par Planif</option><option value="manual">Manuelles : bouton Tour</option></select></label>':''}${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?'<label class="corosConfirm"><input type="checkbox" name="free" required><span>Je termine les récupérations libres avec le bouton Tour de la montre.</span></label>':''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
     d.addEventListener('input',updatePreviewSteps,{once:true});if(draft)updatePreviewSteps();d.showModal();
   }
+  function previewOptions(form){return{coreRecovery:form.elements.namedItem('coreRecovery')?.value||'auto',strideRecovery:form.elements.namedItem('strideRecovery')?.value||'auto',activationKmh:form.elements.namedItem('activationKmh')?Number(form.elements.namedItem('activationKmh').value.replace(',','.')):undefined};}
   function previewValues(draft,form){return Object.fromEntries(draft.choices.map(c=>[c.id,form.elements.namedItem(c.id).value]));}
   function updatePreviewSteps(){
     const d=document.getElementById('corosPreview'),form=d?.querySelector('form');if(!form||!currentDraft)return;
     const scheduled=form.elements.namedItem('destination').value==='calendar';form.elements.namedItem('scheduledDate').required=scheduled;form.elements.namedItem('scheduledDate').disabled=!scheduled;d.querySelector('#corosDateField').hidden=!scheduled;d.querySelector('#corosDateField').style.display=scheduled?'':'none';form.querySelector('button[type="submit"]').textContent=scheduled?'Ajouter au calendrier COROS':'Enregistrer dans la bibliothèque COROS';
-    try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true});d.querySelector('#corosStepList').innerHTML=c.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('');}catch(_){}
+    try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true},previewOptions(form));const labels=PlanifCorosAdapter.labels(currentDraft);d.querySelector('#corosStepList').innerHTML=c.sections.map((s,i)=>`<li>${labels[i]?'<strong>'+escape(labels[i])+'</strong><br>':''}${escape(sectionLabel(s))}</li>`).join('');}catch(e){d.querySelector('#corosStepList').innerHTML=`<li>${escape(e.message)}</li>`;}
+    for(const choice of currentDraft.choices){const field=form.elements.namedItem(choice.id);if(choice.label.startsWith('Récupération')){const manual=!!currentDraft.preparation&&previewOptions(form).coreRecovery==='manual';field.disabled=manual;const label=field.closest?.('label');if(label)label.style.display=manual?'none':'';}}
     form.oninput=updatePreviewSteps;
   }
   async function sendFromPreview(dialog){
@@ -811,7 +813,7 @@ window.PlanifCoros=(()=>{
     busy=true;form.querySelector('button[type="submit"]').disabled=true;dialog.querySelector('[data-coros-close]').disabled=true;
     try{
       if(!navigator.onLine)fail('L’envoi nécessite Internet.');
-      const draft=cloneDraft(currentDraft),course=PlanifCorosAdapter.course(draft,previewValues(draft,form),{noIntensity:form.elements.namedItem('noIntensity')?.checked,free:form.elements.namedItem('free')?.checked});
+      const draft=cloneDraft(currentDraft),course=PlanifCorosAdapter.course(draft,previewValues(draft,form),{noIntensity:form.elements.namedItem('noIntensity')?.checked,free:form.elements.namedItem('free')?.checked},previewOptions(form));
       const scheduled=form.elements.namedItem('destination').value==='calendar',date=scheduled?calendarDate(form.elements.namedItem('scheduledDate').value):null,name=scheduled?'createScheduledWorkout':'createSingleWorkout',args=scheduled?{date,course}:{course};
       for(const field of form.querySelectorAll?.('input,select')||[])field.disabled=true;
       status.textContent='Vérification de COROS…';await checkWriteTool(name);await access();
@@ -866,6 +868,7 @@ window.PlanifCorosAdapter=(()=>{
   function plan(snapshot){
     const x=clone(snapshot),draft={name:x.title,description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
     if(!x.title||!x.description)fail('La séance affichée est incomplète.');
+    if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push('Préparation personnelle COROS : 20 min faciles, transitions manuelles, 3 lignes droites de 12 s, puis le cœur de séance et 10 min faciles. Les lignes droites restent au ressenti.');if(x.activation)draft.notes.push('Avant les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2, entre deux récupérations manuelles.');}
     const choice=(label,range,value,unit='s')=>{
       const r=range.map(Math.round);if(r.length!==2||r.some(v=>!Number.isFinite(v)||v<=0)||r[0]>r[1])fail('Une durée proposée est invalide.');
       if(r[0]===r[1])return r[0];
@@ -956,7 +959,7 @@ window.PlanifCorosAdapter=(()=>{
     if(!draft.sections.length||draft.sections.length>200)fail('Cette séance dépasse la structure prise en charge par Planif pour COROS.');
     return draft;
   }
-  function course(draft,values={},consent={}){
+  function course(draft,values={},consent={},options={}){
     if(draft.noIntensity&&!consent.noIntensity)fail('Confirme les phases au ressenti, sans alerte d’allure.');
     if(draft.free&&!consent.free)fail('Confirme les récupérations libres terminées avec le bouton Tour.');
     const resolve=v=>{
@@ -965,16 +968,34 @@ window.PlanifCorosAdapter=(()=>{
         if(v.choice){const c=draft.choices.find(c=>c.id===v.choice),number=Number(values[v.choice]);if(!c||!Number.isInteger(number)||number<c.min||number>c.max)fail('Choisis une valeur dans chaque plage proposée.');return number;}
       }return v;
     };
-    const sections=clone(draft.sections);const walk=s=>{
+    let sections=clone(draft.sections);
+    if(draft.preparation){
+      if(!['auto','manual'].includes(options.coreRecovery||'auto')||!['auto','manual'].includes(options.strideRecovery||'auto'))fail('Choisis un mode de récupération valide.');
+      const core=sections.filter((s,i)=>!(i===0&&s.sectionType===1)&&!(i===sections.length-1&&s.sectionType===4));
+      const free=()=>({sectionType:3,targetType:4}),stride=()=>({sectionType:2,targetType:2,targetValue:12});
+      if(options.coreRecovery==='manual'){const manual=s=>{if(s.intervalGroup)s.sets.forEach(manual);else if(s.sectionType===3){s.targetType=4;delete s.targetValue;}};core.forEach(manual);}
+      sections=[{sectionType:1,targetType:2,targetValue:1200},free()];
+      if(draft.preparation.activation){const speed=options.activationKmh??draft.preparation.s2Kmh;if(!Number.isFinite(speed)||speed<=0||speed>draft.preparation.s2Kmh)fail('La cible d’activation doit être au second seuil ou plus lente.');sections.push({sectionType:2,targetType:2,targetValue:105,...pace([speed,speed])},free());}
+      sections.push({intervalGroup:true,repeats:2,sets:[stride(),options.strideRecovery==='manual'?free():{sectionType:3,targetType:2,targetValue:48}]},stride(),free(),...core,free(),{sectionType:4,targetType:2,targetValue:600});
+    }
+    const walk=s=>{
       if(s.intervalGroup){if(!Number.isInteger(s.repeats)||s.repeats<1||s.repeats>20||!s.sets?.length)fail('Groupe de répétitions invalide.');s.sets.forEach(walk);return;}
       if(s.targetType!==4){s.targetValue=resolve(s.targetValue);if(!Number.isInteger(s.targetValue)||s.targetValue<=0)fail('Durée ou distance invalide.');}
       if(![1,2,3,4].includes(s.sectionType)||![1,2,4].includes(s.targetType))fail('Section invalide.');
     };sections.forEach(walk);
-    const choices=draft.choices.map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
-    const description=[draft.description,'Allures absolues calculées dans Planif, en min/km. Les phases au ressenti n’ont pas d’alerte d’allure.',choices,...draft.notes].filter(Boolean).join(' ');
+    const choices=draft.choices.filter(c=>!(draft.preparation&&options.coreRecovery==='manual'&&c.label.startsWith('Récupération'))).map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
+    const description=[draft.description,draft.preparation&&options.coreRecovery==='manual'?'Les récupérations manuelles remplacent les durées de récupération indiquées dans le résumé du cœur.':null,draft.preparation?.activation?`Activation de 1 min 45 à ${options.activationKmh??draft.preparation.s2Kmh} km/h, au plus au second seuil.`:null,'Allures absolues calculées dans Planif, en min/km. Les phases au ressenti n’ont pas d’alerte d’allure.',choices,...draft.notes,draft.preparation?`Récupérations du cœur : ${options.coreRecovery==='manual'?'manuelles, bouton Tour':'selon Planif'}. Récupérations entre lignes droites : ${options.strideRecovery==='manual'?'manuelles, bouton Tour':'48 s'}.`:null].filter(Boolean).join(' ');
     return{sportType:1,courseName:draft.name.slice(0,100),courseDescription:description,sections};
   }
-  return{plan,course,pace};
+  function labels(draft){
+    if(!draft.preparation)return[];
+    const labels=['Échauffement','Transition manuelle'];
+    if(draft.preparation.activation)labels.push('Activation au S2 ou légèrement plus lent','Transition manuelle');
+    labels.push('Lignes droites 1 et 2 avec récupérations','Ligne droite 3','Transition avant le cœur de séance');
+    const core=draft.sections.filter((s,i)=>!(i===0&&s.sectionType===1)&&!(i===draft.sections.length-1&&s.sectionType===4));
+    labels.push(...core.map(()=>null),'Transition après le cœur de séance','Retour au calme');return labels;
+  }
+  return{plan,course,pace,labels};
 })();
 
 </script>
@@ -4253,7 +4274,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.16';
+const APP_VERSION='2026.10.04.17';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4622,6 +4643,13 @@ function libSessionHtml(r){
   return h;
 }
 /* Copie de la séance affichée : la conversion ne modifie ni le plan ni ses variantes. */
+function corosActivation(v,s={}){
+  const S=v.structure||{},I=v.intensity||{};
+  if(['vma','vmaShort','fartlek'].includes(s.fam)||v.sector==='vo2'||v.sector==='spec10k'||S.type==='fartlek_structured')return true;
+  if(['spec','taper'].includes(s.fam)&&[0,1].includes(s.dist))return true;
+  if(['5 km','10 km'].includes(I.race))return true;
+  return (S.components||[]).some(c=>corosActivation(c.variant));
+}
 function corosSessionSnapshot(){
   const st=lastSt,r=appSession;if(!st||!r)throw new Error('Ouvre une séance pour la préparer.');
   const copy=v=>{
@@ -4633,13 +4661,14 @@ function corosSessionSnapshot(){
     return out;
   };
   const root=$('scr-session'),title=root.querySelector('.sHead h2')?.textContent||'Séance';
+  const qualityDescription=(root.querySelector('.card')?.innerText||'').replace(/\s+/g,' ').trim();
   const description=Array.from(root.querySelectorAll('.card')).slice(0,2).map(c=>c.innerText).join(' ').replace(/\s+/g,' ').trim();
-  const base={title:'Planif · '+title,description,easyBand:efBand('std',st),s1Band:[st.s1lo,st.s1hi],activeBand:efBand('active',st),hrCue:st.lt1Hr?`Ne pas dépasser ${Math.round(st.lt1Hr)} bpm.`:'Ne pas dépasser le premier seuil.'};
-  if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd};}
+  const base={title:'Planif · '+title,description,s2Kmh:st.s2,easyBand:efBand('std',st),s1Band:[st.s1lo,st.s1hi],activeBand:efBand('active',st),hrCue:st.lt1Hr?`Ne pas dépasser ${Math.round(st.lt1Hr)} bpm.`:'Ne pas dépasser le premier seuil.'};
+  if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd,description:o.c.structure.type==='long_run'?description:qualityDescription,preparation:o.c.structure.type!=='long_run',activation:corosActivation(o.c)};}
   const w=lastPlan?.weeks?.[r.w],day=w?.days?.[r.d];let it=day?.items?.[r.i];if(r.q!==undefined&&w?.sessions?.[r.q])it={kind:'q',s:w.sessions[r.q]};
   if(!it)throw new Error('Cette séance n’est plus disponible.');
   if(day?.date){const d=day.date;base.date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-  if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd};}
+  if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd,description:s.isLong?description:qualityDescription,preparation:!s.isLong,activation:corosActivation(v,s)};}
   if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:efBand(it.f.type,st)};
   if(it.kind==='sl')return{...base,kind:'long',long:{totalMin:w.sl,s1Min:w.slS1,active:w.slEA}};
   if(it.kind==='race')return{...base,kind:'race',race:JSON.parse(JSON.stringify(it.s))};
