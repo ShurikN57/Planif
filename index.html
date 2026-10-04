@@ -475,6 +475,21 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .chronoCard .predRef{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .chronoCard .predRefLabel{border-radius:8px 0 0 8px}
 .chronoCard .predRefValue{border-radius:0 8px 8px 0}
+/* Réglages : sections compactes et saisie des repères dans l’ordre d’intensité. */
+#scr-set .card{border-radius:20px;border-color:color-mix(in srgb,var(--line) 65%,transparent);box-shadow:0 3px 9px #23213b0c}
+.settingsFold>summary{display:flex;align-items:center;justify-content:space-between;gap:.6rem;cursor:pointer;list-style:none;min-height:44px}
+.settingsFold>summary::-webkit-details-marker{display:none}
+#scr-set .settingsFold>summary h2{margin:0}
+.settingsFold>summary>span{font-size:1.4rem;color:var(--accent);line-height:1}
+.settingsFold[open]>summary>span{transform:rotate(180deg)}
+.settingsFold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.settingsContent{padding-top:.7rem}
+.physioSpeeds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+.physioHr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.35rem}
+#scr-set .physioSpeeds input,#scr-set .physioHr input{font-size:16px;padding:.45rem .25rem;text-align:center}
+.physioSpeeds .sf>span,.physioHr .sf>span{text-align:center;white-space:nowrap;font-size:.8rem}
+.s1Hint{margin:0 0 .8rem;font-size:.78rem}
+.speedUnit{max-width:11rem}
 </style>
 </head>
 <body data-ui="app">
@@ -558,9 +573,10 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
             <label>LT1 estimé haut<input id="s1hi" inputmode="decimal" value="12"></label>
           </div>
           <div class="row">
-            <label>FC LT1 (bpm)<input id="lt1Hr" inputmode="numeric" placeholder="ex. 158"></label>
-            <label>&nbsp;<span></span></label>
+            <label>FC S1 (bpm)<input id="lt1Hr" inputmode="numeric" placeholder="ex. 158"></label>
+            <label>FC S2 (bpm)<input id="lt2Hr" inputmode="numeric"></label>
           </div>
+          <div class="row"><label>FC min (bpm)<input id="hrMin" inputmode="numeric"></label><label>FC max (bpm)<input id="hrMax" inputmode="numeric"></label></div>
         </fieldset>
 
         <fieldset>
@@ -2397,7 +2413,7 @@ function fmtMin(x){const m=Math.floor(x),s=Math.round((x-m)*60);return s?`${m}'$
 const fmtKm=k=>(Math.round(k*10)/10).toString().replace('.',',');
 
 /* ---------- état ---------- */
-const IDS=['vma','s2','s1lo','s1hi','lt1Hr','refDist','refTime','profile','penalty','ref2Dist','ref2Time','block','specDist','specGoal','weeks','vol','runs','qualityCount','assimQ2','modeBloc','modeCal','calStart','calRace','calDist','calGoal','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','q3Day','slDay'];
+const IDS=['vma','s2','s1lo','s1hi','lt1Hr','hrMin','lt2Hr','hrMax','refDist','refTime','profile','penalty','ref2Dist','ref2Time','block','specDist','specGoal','weeks','vol','runs','qualityCount','assimQ2','modeBloc','modeCal','calStart','calRace','calDist','calGoal','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','q3Day','slDay'];
 const isCheck=el=>el.type==='checkbox'||el.type==='radio';
 /* jours (sélecteurs) et dates par défaut : début aujourd'hui, course un dimanche environ 12 semaines plus tard */
 ['q1Day','q2Day','q3Day','slDay'].forEach(id=>{const sel=$(id);[['','Auto'],...['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map((x,i)=>[String(i),x])].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});});
@@ -2412,7 +2428,7 @@ const STORE={
   history:'planif-plan-history-v1',
   mode:'planif-mode-v1'
 };
-const GLOBAL_IDS=['vma','s2','s1lo','s1hi','lt1Hr','refDist','refTime','profile','penalty','ref2Dist','ref2Time'];
+const GLOBAL_IDS=['vma','s2','s1lo','s1hi','lt1Hr','hrMin','lt2Hr','hrMax','refDist','refTime','profile','penalty','ref2Dist','ref2Time'];
 const BLOCK_IDS=['block','specDist','specGoal','weeks','vol','runs','qualityCount','assimQ2'];
 const CAL_IDS=['calStart','calRace','calDist','calGoal','vol','runs','qualityCount','av0','av1','av2','av3','av4','av5','av6','q1Day','q2Day','q3Day','slDay'];
 const STRUCT_IDS=['calDist','calRace','calStart','runs','vol','qualityCount','q1Day','q2Day','q3Day','slDay','av0','av1','av2','av3','av4','av5','av6'];
@@ -3899,7 +3915,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.04.10';
+const APP_VERSION='2026.10.04.11';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4034,19 +4050,35 @@ function timeWheelHtml(target,dist){
     (long?`<label>h<select data-timepart="h">${range(0,9,h)}</select></label><span class="timeSep">:</span>`:'')+
     `<label>min<select data-timepart="m">${range(0,long?59:99,m)}</select></label><span class="timeSep">:</span><label>sec<select data-timepart="s">${range(0,59,ss)}</select></label></div>`;
 }
+/* Conversion de saisie uniquement : le moteur conserve ses repères en km/h. */
+const settingsSections={chrono:false,physio:false};
+let speedUnit='kmh';try{if(localStorage.getItem('planif-speed-unit')==='pace')speedUnit='pace';}catch(_){}
+function speedInputValue(id){
+  const ids=id==='s1'?['s1lo','s1hi']:[id];
+  return ids.map(key=>{const v=num($(key).value);if(!Number.isFinite(v)||v<=0)return '';
+    if(speedUnit==='kmh')return String(Math.round(v*1000)/1000).replace('.',',');
+    const seconds=Math.round(3600/v);return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+  }).join('–');
+}
+function parseSpeedValue(text,unit){
+  const value=String(text).trim();
+  if(unit==='kmh'){if(!/^\d+(?:[.,]\d+)?$/.test(value))return null;const v=num(value);return v>0&&Number.isFinite(v)?v:null;}
+  const m=/^(\d+)[:'’](\d{2})$/.exec(value);if(!m||+m[2]>=60)return null;
+  const seconds=+m[1]*60+(+m[2]);return seconds>0?3600/seconds:null;
+}
+function speedField(label,id){return `<label class="sf"><span>${label}</span><input data-speed="${id}" value="${escA(speedInputValue(id))}" inputmode="${speedUnit==='kmh'&&id!=='s1'?'decimal':'text'}" autocomplete="off" aria-label="${label}, ${speedUnit==='pace'?'min/km':'km/h'}"></label>`;}
+function commitSpeedInput(input){
+  const id=input.dataset.speed,parts=input.value.trim().split(/\s*(?:–|—|-|à)\s*/);
+  const values=parts.map(x=>parseSpeedValue(x,speedUnit)),valid=(id==='s1'?parts.length<=2:parts.length===1)&&values.every(v=>v!==null);
+  input.setCustomValidity(valid?'':speedUnit==='pace'?'Saisis une allure min:sec, par exemple 5:13.':'Saisis une vitesse positive en km/h.');
+  if(!valid)return false;
+  if(id==='s1'){const low=Math.min(...values),high=Math.max(...values);$('s1lo').value=String(low);$('s1hi').value=String(high);}else $(id).value=String(values[0]);
+  $('f').dispatchEvent(new Event('input'));return true;
+}
+function syncSpeedInputs(){document.querySelectorAll('#scr-set [data-speed]').forEach(input=>{input.value=speedInputValue(input.dataset.speed);input.setCustomValidity('');input.setAttribute('inputmode',speedUnit==='kmh'&&input.dataset.speed!=='s1'?'decimal':'text');input.setAttribute('aria-label',`${input.dataset.speed==='s1'?'S1':input.dataset.speed==='s2'?'S2':'VMA'}, ${speedUnit==='pace'?'min/km':'km/h'}`);});}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   let h='';
-
-  h+=`<div class="card"><div class="settingsTitle"><h2>Physiologie</h2></div><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><div class="sf2">${fText('VMA (km/h)','vma','decimal')}${fText('Second seuil (km/h)','s2','decimal')}</div><div class="sf2">${fText('LT1 bas (km/h)','s1lo','decimal')}${fText('LT1 haut (km/h)','s1hi','decimal')}</div><div class="sf2">${fText('FC LT1 (bpm)','lt1Hr','numeric')}<span></span></div></div>`;
-
-  h+=`<div class="card"><div class="settingsTitle"><h2>Chronos de référence</h2></div>${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
-  if(!ref2Open){
-    h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
-  }else{
-    h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
-  }
-  h+=`<p class="lbl" id="setProfileHint"></p></div>`;
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
@@ -4064,6 +4096,16 @@ function appSetHtml(){
   }else if(!cal){
     h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
   }
+
+  h+=`<details class="card settingsFold" data-settings-section="chrono"${settingsSections.chrono?' open':''}><summary><h2>Chronos de référence</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent">${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
+  if(!ref2Open){
+    h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
+  }else{
+    h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
+  }
+  h+=`<p class="lbl" id="setProfileHint"></p></div></details>`;
+
+  h+=`<details class="card settingsFold" data-settings-section="physio"${settingsSections.physio?' open':''}><summary><h2>Physiologie</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent"><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p></div></details>`;
 
   h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button></div>`;
   return h;
@@ -4087,7 +4129,9 @@ function updateSet(){
   const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
 }
+$('scr-set').addEventListener('toggle',e=>{const key=e.target.dataset.settingsSection;if(key in settingsSections)settingsSections[key]=e.target.open;},true);
 $('scr-set').addEventListener('input',e=>{
+  const speed=e.target.closest('[data-speed]');if(speed){commitSpeedInput(speed);return;}
   const tp=e.target.closest('[data-timepart]');if(tp){
     const box=tp.closest('[data-time-target]'),target=$(box.dataset.timeTarget),long=box.dataset.timeLong==='1';
     const h=long?+(box.querySelector('[data-timepart="h"]').value):0,m=+(box.querySelector('[data-timepart="m"]').value),ss=+(box.querySelector('[data-timepart="s"]').value);
@@ -4095,12 +4139,15 @@ $('scr-set').addEventListener('input',e=>{
     $('f').dispatchEvent(new Event('input'));return;
   }
   const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
-  if(isCheck(src))src.checked=el.checked;else src.value=el.value;$('f').dispatchEvent(new Event('input'));
+  if(isCheck(src))src.checked=el.checked;else src.value=el.value;if(['hrMin','lt2Hr','hrMax'].includes(el.dataset.bind)){save();return;}$('f').dispatchEvent(new Event('input'));
 });
 $('scr-set').addEventListener('change',e=>{
+  const unit=e.target.closest('[data-speed-unit]');if(unit){speedUnit=unit.value==='pace'?'pace':'kmh';try{localStorage.setItem('planif-speed-unit',speedUnit);}catch(_){}syncSpeedInputs();return;}
+  const speed=e.target.closest('[data-speed]');if(speed){if(!commitSpeedInput(speed))speed.reportValidity();return;}
   const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));return;}
   const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;
+  if(['hrMin','lt2Hr','hrMax'].includes(el.dataset.bind)){save();return;}
   $('f').dispatchEvent(new Event('input'));
   if(el.dataset.bind==='refDist'||el.dataset.bind==='ref2Dist'||el.dataset.bind==='qualityCount'){setBuilt=false;renderApp();}
 });
