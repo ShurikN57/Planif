@@ -923,7 +923,8 @@ window.PlanifCorosAdapter=(()=>{
         const L=S.durationsMin||S.distancesM||S.segments;if(!L?.length||!Number.isInteger(S.sets))fail('Blocs incomplets.');
         for(let i=0;i<S.sets;i++){
           L.forEach((value,j)=>{
-            const band=S.segments?[(value.target==='s2'?I.s2Kmh:I.raceKmh),(value.target==='s2'?I.s2Kmh:I.raceKmh)]:bandsFor(v,S.durationsMin?value:null,j);
+            const targetKmh=S.segments?(value.target==='s1'?I.s1Kmh:value.target==='s2'?I.s2Kmh:I.raceKmh):null;
+            const band=S.segments?[targetKmh,targetKmh]:bandsFor(v,S.durationsMin?value:null,j);
             draft.sections.push(S.durationsMin?time(2,value,band):plain(2,1,Math.round(S.segments?value.distanceM:value),band));
             if(j<L.length-1&&!S.linked)pushRecovery(S.recoveryBetweenFractionsMin,S.recoveryBetweenFractionsRangeMin,'Récupération entre fractions');
           });
@@ -1134,6 +1135,8 @@ const RULES={
       mixedBetweenSets:3
     }
   },
+  alternating10k:{distanceM:400,reps:[8,10],s1OffsetKmh:0.5,targetMinutes:[30,36],maxMinutes:38,fromProgress:0.67},
+  weeklyFormats:{longFractionMinutes:6,complementMaxFractionMinutes:4},
   progression:{
     /* Surcharge progressive : faire progresser d'abord le volume ciblé ; intensité ou densité ensuite, sans cumuler les leviers. */
     priority:['volume','intensity','density'],
@@ -1199,7 +1202,7 @@ const RULES={
       formats:['continuous','blocks']
     },
     warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],fartlek:[20,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
-    longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,105,130,160]}}
+    longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,90,130,160]}}
   },
   library:{
     /* pertinence de chaque famille selon la phase du bloc : [début, milieu, fin, assimilation] */
@@ -1211,7 +1214,7 @@ const RULES={
       'vo2.int':[1,0.8,0.6,0.8],'vo2.shortDist':[0.9,0.8,0.5,0.6],'vo2.medDist':[0.7,1,0.8,0.6],'vo2.medTime':[0.7,1,0.8,0.6],
       'vo2.longDist':[0.4,0.7,1,0.6],'vo2.longTime':[0.4,0.7,1,0.6],'vo2.pyr':[0.3,0.9,0.8,0.3],
       'p10.short':[1,0.6,0.4,0.7],'p10.med':[0.7,1,0.7,0.9],'p10.long':[0.3,0.7,1,0.4],'p10.xlong':[0,0,0.3,0],'p10.time':[0.9,0.8,0.6,0.8],
-      'p10.pyr':[0.4,0.9,0.7,0.2],'p10.prog':[0.3,0.8,0.9,0.2],'p10.deg':[0.3,0.7,1,0.2],'p10.blocs':[0.3,0.8,1,0.5],'p10.mix':[0.6,0.9,0.6,0.3]
+      'p10.pyr':[0.4,0.9,0.7,0.2],'p10.prog':[0.3,0.8,0.9,0.2],'p10.deg':[0.3,0.7,1,0.2],'p10.blocs':[0.3,0.8,1,0.5],'p10.mix':[0.6,0.9,0.6,0.3],'p10.alternating':[0,0.4,1,0]
     },
     phaseBoundaries:[0.34,0.67],
     selection:{phaseWeight:3,volumeGap:4,sameFormat:4,sameSize:1.2,sameFamily:0.6,tieBreak:0.15,
@@ -1267,6 +1270,8 @@ const RULES={
     segment:{preferredWeeks:3,lengthTiers:[[2,4],[2,5],[1,5],[1,6]],maxBlocksWhenExtending:8},
     assimilationAfterLoadWeeks:3,
     minSpecificWeeks:{fromWeeks:9,weeks:3},
+    specific10k:{preferredWeeks:4,fallbackWeeks:5},
+    longRun10k:{capMinutes:90,preRaceDays:7,preRaceCapMinutes:60},
     maxConsecutiveLoadWeeks:5,
     /* enveloppe de volume (fractions du volume moyen saisi) */
     envelope:{loadStart:0.92,loadSpan:0.16,assimilation:0.78,taper:0.62,intro:0.6,peakCap:1.10},
@@ -2568,6 +2573,10 @@ const RULE_META=(()=>{
   'calendar.introFooting':m('Q_PERIODIZATION','organizational'),
   'calendar.introWeekMinDays':m('Q_PERIODIZATION','organizational'),
   'calendar.maxConsecutiveLoadWeeks':m('Q_ASSIMILATION','organizational'),
+  'alternating10k':m('Q_SESSION_COMBINATION','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Format choisi avec l’utilisateur : 8–10 alternances de 400 m S1 légèrement au-dessus de LT1 / 400 m AS10, sans récupération. Durée cible et marge de vitesse heuristiques ; tout le bloc est compté dans la charge.'}),
+  'weeklyFormats':m('Q_SESSION_COMBINATION','organizational',{origin:'product_choice',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Complémentarité psychologique : éviter deux séances à fractions longues dans une semaine spécifique 10 km. Seuils 6 et 4 minutes heuristiques ; le volume de travail reste contrôlé séparément.'}),
+  'calendar.specific10k':m('Q_PERIODIZATION','organizational',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-06',reviewSummary:'Priorité utilisateur : quatre semaines de charge spécifique AS10, cinq si nécessaire. L’affûtage est distinct ; comprimer les phases précédentes avant de raccourcir le spécifique.'}),
+  'calendar.longRun10k':m('Q_LONG_RUN','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',findings:['FND_027'],lastReview:'2026-10-06',reviewSummary:'Plafonds pratiques 10 km : 90 min, puis 60 min à sept jours ou moins de la course, sans compensation par une sortie longue. L’étude soutient l’affûtage global, pas ces plafonds numériques.'}),
   'calendar.minSpecificWeeks':m('Q_PERIODIZATION','organizational'),
   'calendar.phaseSequence':m('Q_PERIODIZATION','organizational'),
   'calendar.placement':m('Q_SESSION_SPACING','organizational'),
@@ -3109,6 +3118,35 @@ function p10Mix(W,st,ctx){const v0=ctx.v;if(v0<st.s2+RULES.spec10k.formats.mixed
   return RULES.spec10k.formats.mixedS2.map(([n,a,b])=>{const vs=st.s2,ra=a/1000/vs*60,rb=b/1000/v0*60,MB=RULES.spec10k.recovery.mixedBetweenSets,work=n*(ra+rb),rec=(n-1)*MB;
     return cand({sector:'spec10k',fam:'p10.mix',kind:'mix',key:`p10:mix:${n}-${a}-${b}`,size:'mix',structure:{type:'sets',sets:n,segments:[{distanceM:a,target:'s2'},{distanceM:b,target:'race'}],linked:true,recoveryBetweenSetsMin:MB},intensity:{type:'mixed',s2Kmh:vs,raceKmh:v0},cues:['s2_to_race_no_recovery'],parts:[[n*ra,vs],[n*rb,v0]],rec,recEach:MB,work});});}
 
+/* Alternance clé : toute la durée est du travail, y compris les portions S1. */
+function p10Alternating(W,st,ctx){
+  const A=RULES.alternating10k,v=ctx.v,vs=lt1Ref(st)+A.s1OffsetKmh;
+  if(!v||vs>=st.s2||vs>=v)return[];
+  const slow=A.distanceM/1000/vs*60,fast=A.distanceM/1000/v*60;
+  return Array.from({length:A.reps[1]-A.reps[0]+1},(_,i)=>A.reps[0]+i).map(n=>cand({
+    sector:'spec10k',fam:'p10.alternating',kind:'alternating',key:`p10:alternating:${n}`,size:'alternating',
+    structure:{type:'sets',sets:n,segments:[{distanceM:A.distanceM,target:'s1'},{distanceM:A.distanceM,target:'race'}],linked:true,recoveryBetweenSetsMin:0},
+    intensity:{type:'mixed',s1Kmh:vs,raceKmh:v,refKmh:v,race:'10 km'},
+    parts:[[n*slow,vs],[n*fast,v]],work:n*(slow+fast),raceWork:n*fast,rec:0,recEach:0
+  })).filter(c=>c.work<=A.maxMinutes);
+}
+function makeAlternatingSession(target,st,ctx){
+  const pool=p10Alternating(target,st,ctx).filter(c=>c.work<=target+RULES.safeguards.capTolerance&&!capsFor('spec10k',c,st).length);
+  if(!pool.length)return null;
+  const c=pool.sort((a,b)=>b.work-a.work)[0];c.ruleRefs=variantRuleRefs(c,'spec10k');
+  const [wu,cd]=RULES.organization.warmup.spec;
+  return withLoad({fam:'alternating',dist:1,zone:zoneForSpeed(ctx.v,st),variants:[c,{...c}],work:c.work,total:r5(wu+c.total+cd),wu,cd,libSector:'spec10k'},st);
+}
+/* Durée maximale réelle d'une fraction, y compris les options B et les pyramides. */
+function maxFractionMinutes(c){
+  const S=c.structure||{},I=c.intensity||{},v=I.refKmh||I.minKmh||I.bands?.[0]?.minKmh;
+  if(S.components)return Math.max(...S.components.map(x=>maxFractionMinutes(x.variant)));
+  const durations=S.durationsMin||[];
+  const distances=S.distancesM||S.segments?.map(x=>x.distanceM)||[];
+  return Math.max(S.repDurationMin||0,S.durationMin||S.workMin||0,...durations,
+    ...(v?[S.distanceM||0,...distances].map(m=>m/1000/v*60):[0]));
+}
+
 /* ======== Catalogue : familles et pertinence par phase [début, milieu, fin, assimilation] ======== */
 const SESSION_LIBRARY={
   s1:[
@@ -3152,6 +3190,7 @@ const SESSION_LIBRARY={
     {id:'p10.prog',w:RULES.library.phaseWeights['p10.prog'],gen:p10Seq(RULES.spec10k.formats.progressive,'p10.prog','Progressif')},
     {id:'p10.deg',w:RULES.library.phaseWeights['p10.deg'],gen:p10Seq(RULES.spec10k.formats.descending,'p10.deg','Dégressif')},
     {id:'p10.blocs',w:RULES.library.phaseWeights['p10.blocs'],gen:p10Blocs},
+    {id:'p10.alternating',complementOnly:true,w:RULES.library.phaseWeights['p10.alternating'],gen:p10Alternating},
     {id:'p10.mix',w:RULES.library.phaseWeights['p10.mix'],gen:p10Mix}
   ]
 };
@@ -3175,6 +3214,7 @@ const FAMILY_RULES=(()=>{
     'p10.short':p10('short','byFractionDuration'),'p10.med':p10('medium','byFractionDuration'),'p10.long':p10('long','byFractionDuration'),
     'p10.xlong':p10('exceptional','byFractionDuration'),'p10.time':p10('times','byFractionDuration'),'p10.pyr':p10('pyramids','byFractionDuration'),
     'p10.prog':p10('progressive','byFractionDuration'),'p10.deg':p10('descending','byFractionDuration'),'p10.blocs':p10('blocs','blocs'),
+    'p10.alternating':['alternating10k','weeklyFormats'],
     'p10.mix':['spec10k.formats.mixedS2','spec10k.formats.mixedS2MinGap','spec10k.recovery.mixedBetweenSets'],
     'hills.short':['hills.short','hills.totalFactor','hills.descentRecoveryFactor','hills.sprintMinutes'],
     'hills.long':['hills.long','hills.totalFactor','hills.descentRecoveryFactor','hills.sprintMinutes'],
@@ -3195,9 +3235,10 @@ function generateSession(sector,W,st,ctx){
   const PB=RULES.library.phaseBoundaries,SEL=RULES.library.selection;
   const ph=ctx.assim?3:ctx.t<PB[0]?0:ctx.t<PB[1]?1:2;
   const mem=(ctx.memory&&ctx.memory[sector])||{keys:[],sizes:[],fams:[]};
-  const fams=SESSION_LIBRARY[sector].filter(f=>!ctx.shortOnly||f.short);
+  const fams=SESSION_LIBRARY[sector].filter(f=>(!ctx.shortOnly||f.short)&&!f.complementOnly);
   let all=[];
   fams.forEach(f=>f.gen(W,st,ctx).forEach(c=>{
+    if(ctx.maxFractionMinutes&&maxFractionMinutes(c)>ctx.maxFractionMinutes)return;
     c.famW=f.w[ph];c.load=candLoad(c,st);c.capFail=capsFor(sector,c,st);c.ruleRefs=variantRuleRefs(c,sector);
     let sc=(1-c.famW)*SEL.phaseWeight+Math.abs(c.work-W)/W*SEL.volumeGap;
     if(mem.keys.includes(c.key))sc+=SEL.sameFormat;else if(mem.sizes.includes(c.size))sc+=SEL.sameSize;
@@ -3317,7 +3358,7 @@ const capFor=fam=>({s1:RULES.safeguards.caps.s1,s2:RULES.safeguards.caps.s2,vo2:
 /* Garde-fous par intensité, en minutes de travail par séance. La charge pondérée ne les contourne jamais. */
 /* AS10 : zone principale 20–30', 30–35' en fin de bloc, 35' au maximum */
 /* Le spécifique a son propre plafond de travail : les plafonds S2 / VO₂ ne s'appliquent pas à l'allure de course elle-même */
-function capsFor(sector,c,st){if(sector==='spec10k'){const f=checkCaps(c,st,['s1','s2','vo2']);if(c.work>RULES.spec10k.workCap+RULES.safeguards.capTolerance)f.push('spec10k');return f;}return checkCaps(c,st,[]);}
+function capsFor(sector,c,st){if(sector==='spec10k'){const f=checkCaps(c,st,['s1','s2','vo2']);if((c.raceWork??c.work)>RULES.spec10k.workCap+RULES.safeguards.capTolerance)f.push('spec10k');return f;}return checkCaps(c,st,[]);}
 function loadPoints(st){
   const K=RULES.load.intensity,A=RULES.load.anchors,M=A.insertMargin;
   const P=[[st.s1lo*A.recoveryOfS1Low,K.recovery],[st.s1lo*A.easyOfS1Low,K.easy],[st.s1lo*A.easyHighOfS1Low,K.easyHigh],[(st.s1lo+st.s1hi)/2,K.s1],[(st.s1hi+st.s2)/2,K.between],[st.s2,K.s2]];
@@ -3500,7 +3541,8 @@ function roundW(fam,W){if(fam==='s1')return Math.max(5,r5(W));if(fam==='spec')re
 function buildWeek(B,st,o){
   const{k,N,t,assim,vol,memory}=o,warns=[];
   const isMara=o.block==='spec'&&o.specDist===3;
-  const LR=RULES.organization.longRun,slCap=o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default;
+  const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1,
+    slCap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
     const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?1:(assim?(st.assimQ2?2:1):st.qualityCount);
@@ -3551,7 +3593,15 @@ function buildWeek(B,st,o){
         if(m){sessions.push(m);mixedRole='reminder';}
       }
     }
-    if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
+    const longMain=B.id==='spec'&&B.dist===1&&sessions[0].variants.some(c=>maxFractionMinutes(c)>=RULES.weeklyFormats.longFractionMinutes);
+    const secondCtx=longMain&&bDef.fam==='s2'?{...ctx,maxFractionMinutes:RULES.weeklyFormats.complementMaxFractionMinutes}:ctx;
+    if(!assim&&!mixedRole&&B.id==='spec'&&B.dist===1&&bW>0&&bDef.fam==='s2'&&t>=RULES.alternating10k.fromProgress){
+      const A=RULES.alternating10k,target=A.targetMinutes[0]+(A.targetMinutes[1]-A.targetMinutes[0])*t;
+      const remaining=max-sessions[0].work-cW;
+      const alt=makeAlternatingSession(Math.min(A.maxMinutes,remaining,target+2),st,ctx);
+      if(alt){sessions.push(alt);mixedRole='alternating';}
+    }
+    if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
     else if(bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     if(cW>0&&sessions.length<3)sessions.push(makeSession(cDef.fam,cW,k+2,t,st,{...ctx,memory:null}));
     /* règles de bloc et de volume qui ont fixé le volume de travail de chaque séance */
@@ -3568,7 +3618,7 @@ function buildWeek(B,st,o){
     const workLoad=sessions.reduce((a,x)=>a+x.loadBreakdown.z2+x.loadBreakdown.z3+x.loadBreakdown.z4,0);
     const heavy=!assim&&workLoad/vol>=RULES.load.heavyWeek;
     const costly=sessions.slice().sort((a,b)=>b.loadMax-a.loadMax)[0];
-    const fp=planFootings({R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.max(LR.minMinutes,r5(vol*LR.minShare)),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
+    const fp=planFootings({R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.min(slCap,Math.max(LR.minMinutes,r5(vol*LR.minShare))),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
     sl=fp.sl;const foot=fp.foot;warns.push(...fp.warns);
     const aeContext=assim?'assimilation':B.id==='aero'?'aero':null;
     const ae=aeContext?applyActiveEndurance(st,foot,sl,sessions.length,aeContext):{slEA:null};
@@ -3593,7 +3643,7 @@ function buildWeek(B,st,o){
     sessions.forEach(s=>s.variants.forEach((x,i)=>{if(x.capFail.length)warns.push({code:'cap_exceeded',params:{option:i+1,session:sessionKey(s),caps:x.capFail.slice()}});}));
     // minutes par zone, qualité, charge
     const z={z1:0,z2:0,z3:0,z4:0};sessions.forEach(sess=>{
-      if(sess.fam==='mixed'){
+      if(sess.fam==='mixed'||sess.fam==='alternating'){
         /* une séance mixte conserve les minutes de chaque qualité dans leur vraie zone */
         (sess.variants[0].parts||[]).forEach(([m,v])=>{z[loadZone(v,st)]+=m;});
       }else z[sess.zone]+=sess.work;
@@ -3609,7 +3659,7 @@ function buildWeek(B,st,o){
     const loadMin=load-spread,loadMax=load+spread;
     if(Math.abs(volume-vol)>RULES.volume.deviationAlert*vol)warns.push({code:'volume_deviation',params:{volume,target:vol}});
     const reminders=(assim?['strides_optional_week','evaluation']:B.reminders).map(code=>({code,params:{block:B.id,dist:B.dist}}));
-  const ruleRefs=['organization.longRun','recovery.footing','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
+  const ruleRefs=[...(tenK?['calendar.longRun10k']:[]),...(longMain?['weeklyFormats']:[]),'organization.longRun','recovery.footing','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
   return{k,assim,target:vol,vol:volume,volume,ruleRefs:sessions.some(()=>true)?ruleRefs.concat(aeContext?['organization.activeEndurance']:[]):ruleRefs,sessions,sl,slS1,slEA,slLoad:sumBd(slBd),foot,z,pct,qualityMinutes:qWork,qualityPct:pct,load,loadMin,loadMax,heavy,workLoad,loadBreakdown:bd,warns,reminders,budget:B.budget,costly:costly&&sessionKey(costly)};
 }
 function buildPlan(st,pred){
@@ -3647,7 +3697,7 @@ function tiePref(types,N){const n=types.length,w=types.map(()=>0),T=RULES.calend
   if(N>=E.fromWeeks&&N<=E.toWeeks&&n===E.blocks){E.weights.forEach((x,i)=>{w[i]=x;});}else{w[n-1]=T.default.last;if(n>1)w[n-2]=T.default.beforeLast;}return w;}
 /* Une assimilation s'insère avant un bloc dès que l'enchaînement de charge précédent atteint 3 semaines.
    Pas d'assimilation avant l'affûtage : la semaine de course joue ce rôle. */
-function countWeeks(len){const AF=RULES.calendar.assimilationAfterLoadWeeks;let run=0,tot=0,maxRun=0;const ass=[];len.forEach((L,i)=>{if(i>0&&run>=AF){tot++;run=0;ass[i]=true;}run+=L;tot+=L;maxRun=Math.max(maxRun,run);});return{tot,ass,maxRun};}
+function countWeeks(len,opt={}){const AF=RULES.calendar.assimilationAfterLoadWeeks;let run=0,tot=0,maxRun=0;const ass=[];len.forEach((L,i)=>{if(i>0&&(run>=AF||(opt.exactLast&&opt.maxRun&&run+L>opt.maxRun)||(opt.assimBeforeSpecific&&i===len.length-1))){tot++;run=0;ass[i]=true;}run+=L;tot+=L;maxRun=Math.max(maxRun,run);});return{tot,ass,maxRun};}
 /* Recherche exhaustive (petite) de la répartition la plus proche de 3 semaines par bloc qui remplit exactement le temps disponible.
    À égalité, on favorise un spécifique puis un S2 plus longs. */
 /* opt.minLast : durée minimale du dernier bloc (spécifique) ; opt.maxRun : semaines de charge consécutives au maximum */
@@ -3655,7 +3705,8 @@ function layoutSegments(types,Nb,pref,opt){
   const n=types.length,SG=RULES.calendar.segment,TD=RULES.calendar.tieBreak.default;opt=opt||{};pref=pref||types.map((_,i)=>i===n-1?TD.last:i===n-2?TD.beforeLast:0);
   for(const[MIN,MAX]of SG.lengthTiers){
     let best=null;const len=[];
-    const rec=i=>{if(i===n){const c=countWeeks(len);if(c.tot!==Nb)return;
+    const rec=i=>{if(i===n){const c=countWeeks(len,opt);if(c.tot!==Nb)return;
+        if(opt.exactLast&&len[n-1]!==opt.exactLast)return;
         if(opt.minLast&&len[n-1]<opt.minLast)return;if(opt.maxRun&&c.maxRun>opt.maxRun)return;
         const cost=len.reduce((a,L,j)=>a+Math.abs(L-SG.preferredWeeks)-pref[j]*L,0);
         if(!best||cost<best.cost-1e-9)best={len:len.slice(),ass:c.ass,cost};return;}
@@ -3664,12 +3715,28 @@ function layoutSegments(types,Nb,pref,opt){
   }
   return null;
 }
-function planPhases(N){
+function planPhases(N,dist){
   const Nb=N-1,list=[];
-  /* au moins 3 semaines de spécifique dès 9 semaines de préparation ; jamais plus de 5 semaines de charge d'affilée */
+  /* 10 km : quatre semaines spécifiques prioritaires, cinq en repli.
+     Autres distances : minimum historique ; limite de cinq semaines de charge consécutives. */
   const CR=RULES.calendar,opt={minLast:N>=CR.minSpecificWeeks.fromWeeks?CR.minSpecificWeeks.weeks:0,maxRun:CR.maxConsecutiveLoadWeeks};
-  if(Nb>0){let types=phaseTypes(N),lay=layoutSegments(types,Nb,tiePref(types,N),opt)||layoutSegments(types,Nb,tiePref(types,N));
-    while(!lay&&types.length<CR.segment.maxBlocksWhenExtending){types=['aero',...types];lay=layoutSegments(types,Nb,tiePref(types,N),opt)||layoutSegments(types,Nb,tiePref(types,N));}
+  if(Nb>0){let types=phaseTypes(N),lay=null;
+    if(dist===1&&Nb>=CR.specific10k.preferredWeeks){
+      const original=types.slice(),choices=[original];
+      // Compress upstream phases when time is short; extend upstream phases when time is long.
+      for(let cut=1;cut<original.length;cut++)choices.push(original.slice(cut));
+      for(let extra=1;extra+original.length<=CR.segment.maxBlocksWhenExtending;extra++)choices.push([...Array(extra).fill('aero'),...original]);
+      for(const L of [CR.specific10k.preferredWeeks,CR.specific10k.fallbackWeeks]){
+        for(const candidate of choices){
+          for(const assimBeforeSpecific of [false,true]){const fit=layoutSegments(candidate,Nb,tiePref(candidate,N),{exactLast:L,maxRun:CR.maxConsecutiveLoadWeeks,assimBeforeSpecific});
+            if(fit){types=candidate;lay=fit;break;}}
+          if(lay)break;}
+        if(lay)break;
+      }
+    }
+    if(!lay){lay=layoutSegments(types,Nb,tiePref(types,N),opt)||layoutSegments(types,Nb,tiePref(types,N));
+      while(!lay&&types.length<CR.segment.maxBlocksWhenExtending){types=['aero',...types];lay=layoutSegments(types,Nb,tiePref(types,N),opt)||layoutSegments(types,Nb,tiePref(types,N));}}
+    if(!lay)throw new Error('Durée de préparation incompatible avec les blocs disponibles.');
     types.forEach((b,i)=>{
       if(lay.ass[i])list.push({kind:'assim',block:types[i-1],segLen:lay.len[i-1]});
       for(let k=0;k<lay.len[i];k++)list.push({kind:'charge',block:b,k,segLen:lay.len[i],t:lay.len[i]>1?k/(lay.len[i]-1):1});
@@ -3782,20 +3849,22 @@ function buildCalendar(st,pred){
   const Nall=Math.ceil((dayDiff(start,race)+1)/7),wins=[];
   for(let i=0;i<Nall;i++){const end=addDays(race,-7*(Nall-1-i));let a=addDays(end,-6);if(a<start)a=start;wins.push({start:a,end});}
   const intro=Nall>1&&dayDiff(wins[0].start,wins[0].end)+1<RULES.calendar.introWeekMinDays;
-  const plan=planPhases(Nall-(intro?1:0));if(intro)plan.unshift({kind:'intro',block:'intro'});
+  const plan=planPhases(Nall-(intro?1:0),st.calDist);if(intro)plan.unshift({kind:'intro',block:'intro'});
   const vols=calendarVolumes(plan,st.vol,wins);
   const memory={},weeks=[];
   plan.forEach((p,i)=>{const win=wins[i],vol=vols[i];let wk;
     if(p.kind==='charge'||p.kind==='assim'){
       const bst={...st,block:p.block,specDist:st.calDist,specGoal:st.calGoal},B=getBlock(bst,pred);
       const nextCharge=plan.slice(i+1).find(x=>x.kind==='charge'),nextBlock=nextCharge?nextCharge.block:null;
-      wk=buildWeek(B,bst,{k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock});
+      const lrDate=(st.slDay!==''?Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).find(d=>wd(d)===+st.slDay&&st.avail[wd(d)]):null)||Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).filter(d=>st.avail[wd(d)]).pop();
+      const longRunCap=st.calDist===1&&lrDate&&dayDiff(lrDate,race)<=RULES.calendar.longRun10k.preRaceDays?RULES.calendar.longRun10k.preRaceCapMinutes:undefined;
+      wk=buildWeek(B,bst,{longRunCap,k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock});
       if(p.kind==='assim')wk.reminders=[{code:'strides_optional_week'}];
     }else if(p.kind==='taper')wk=buildTaperWeek(st,pred,vol);
     else wk=buildIntroWeek(st,vol,win);
     Object.assign(wk,{index:i,k:i,startDate:win.start,endDate:win.end,phase:p.kind==='charge'?p.block:p.kind,block:p.block,assimilation:p.kind==='assim',
       taper:p.kind==='taper',raceWeek:i===plan.length-1,targetVolume:vol,segK:p.k,segLen:p.segLen});
-    wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks','calendar.envelope','calendar.placement'],
+    wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement'],
       p.kind==='taper'?['calendar.taper']:p.kind==='intro'?['calendar.introWeekMinDays','calendar.introFooting']:[]);
     const pl=placeWeek(wk,win,st);wk.days=pl.list;wk.warns=wk.warns.concat(pl.warns);
     /* le volume réel ne compte que les footings placés */
@@ -3868,6 +3937,8 @@ function presentVariantRaw(v){
       chips:[`${mixedComponentLabel(S.components[0].fam)} → ${mixedComponentLabel(S.components[1].fam)}`]};
   }
   if(sec==='p10'){
+    if(f==='p10.alternating')return{text:`${S.sets} × (400 m S1 + 400 m AS10) en continu, sans récupération`,
+      chips:[`S1 légèrement au-dessus du LT1 : ${kmh(I.s1Kmh,I.s1Kmh)}`,`AS10 : ${kmh(I.raceKmh,I.raceKmh)}`,`${fmtTime(v.work*60)} de travail continu`]};
     if(f==='p10.mix'){const[a,b]=S.segments;return{text:`${S.sets} × (${fmtM(a.distanceM)} à S2 enchaînés avec ${fmtM(b.distanceM)} à allure 10 km), ${fmtRec(S.recoveryBetweenSetsMin)} trot entre séries`,
       chips:[`S2 : ${fmtPace(I.s2Kmh)}/km`,`10 km : ${fmtPace(I.raceKmh)}/km`].concat(cues)};}
     if(f==='p10.blocs')return{text:`${S.sets} × (${fmtM(S.distancesM[0])} + ${fmtM(S.distancesM[1])}), ${fmtRec(S.recoveryBetweenFractionsMin)} trot entre les deux, ${fmtRec(S.recoveryBetweenSetsMin)} entre séries`,chips:[`Allure 10 km (${fmtPace(I.refKmh)}/km)`]};
@@ -3878,7 +3949,7 @@ function presentVariantRaw(v){
   }
   return{text:'',chips:[]};
 }
-const SESSION_TITLE={vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',fartlek:'Fartlek',mixed:'Séance mixte',hills:'Côtes et économie'};
+const SESSION_TITLE={alternating:'Alternance continue S1 / AS10',vma:'VO₂max, puissance aérobie',vmaShort:'Rappel VO₂ (intermittent court)',s2:'Second seuil',s1:'Premier seuil',fartlek:'Fartlek',mixed:'Séance mixte',hills:'Côtes et économie'};
 function sessionTitle(x){
   if(x.fam==='spec')return x.isLong?'Sortie longue spécifique marathon':`Allure spécifique ${DIST[x.dist].lab}`;
   if(x.fam==='taper')return`Rappel d'allure ${DIST[x.dist].lab}`;
@@ -3886,6 +3957,7 @@ function sessionTitle(x){
   return SESSION_TITLE[x.fam];
 }
 const PURPOSE={
+  alternating:'Séance clé continue : alterner 400 m légèrement au-dessus du premier seuil et 400 m à allure 10 km, sans récupération. Toutes les portions comptent dans le travail de qualité.',
   vma:'Puissance aérobie : accumuler du temps près de VO₂max.',
   vmaShort:'Rappel VO₂ en intermittent court, sans grosse fatigue.',
   s2:'Endurance à haute fraction aérobie. La fourchette d\'allure dépend de la durée des fractions et du volume total.',
@@ -4089,7 +4161,7 @@ function itemColor(it,w){
 }
 function itemShort(it,w){
   if(it.kind==='race'){const r=it.s;return{k:'Course',s:DIST[C_dist(r)].lab,t:fmtTime(r.targetTime)};}
-  if(it.kind==='q'){const s=it.s,k=s.fam==='taper'?(C_dist2(s)?'Rappel AS10':'Rappel d\'allure'):s.isLong?'SL spécifique':SECT_SHORT[s.sector]||(s.fam==='hills'?'Côtes':s.fam==='spec'?'Spécifique':sessionTitle(s));
+  if(it.kind==='q'){const s=it.s,k=s.fam==='alternating'?'S1 / AS10':s.fam==='taper'?(C_dist2(s)?'Rappel AS10':'Rappel d\'allure'):s.isLong?'SL spécifique':SECT_SHORT[s.sector]||(s.fam==='hills'?'Côtes':s.fam==='spec'?'Spécifique':sessionTitle(s));
     return{k,s:compactTxt(vText(s.variants[0])),t:`≈ ${fmtDur(s.total)}`};}
   if(it.kind==='sl')return{k:'Sortie longue',s:fmtDur(w.sl),t:w.slS1?`dont ${w.slS1}' S1`:w.slEA?`${Math.round(w.slEA.range[0])}–${Math.round(w.slEA.range[1])}' actif`:(lastSt?efBandText('std',lastSt):'EF')};
   if(it.kind==='veille')return{k:'Footing veille',s:`${it.min}'`,t:lastSt?efBandText('rec',lastSt):'Très facile'};
@@ -4274,7 +4346,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.06.01';
+const APP_VERSION='2026.10.06.02';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4584,7 +4656,7 @@ const LIB_SECTORS=[{id:'s1',lab:'Premier seuil'},{id:'s2',lab:'Second seuil'},{i
 const FAM_LAB={'s1.dist':'Distance','s1.time':'Temps','s1.long':'Fractions longues','s1.cont':'Continu','s1.progCont':'Progressif continu','s1.progFrac':'Progressif fractionné','s1.pyr':'Pyramide','s1.desc':'Dégressif','s1.mix':'Blocs mixtes',
   's2.dense':'Dense','s2.dist':'Distance','s2.longDist':'Distance longue','s2.time':'Temps','s2.longTime':'Temps long','s2.pyr':'Pyramide','s2.deg':'Dégressif','s2.prog':'Progressif','s2.blocs':'Blocs',
   'vo2.int':'Intermittent','vo2.shortDist':'Distance courte','vo2.medDist':'Distance moyenne','vo2.medTime':'Temps moyen','vo2.longDist':'Distance longue','vo2.longTime':'Temps long','vo2.pyr':'Pyramide',
-  'p10.short':'Distance courte','p10.med':'Distance moyenne','p10.long':'Distance longue','p10.xlong':'Exceptionnel','p10.time':'Temps','p10.pyr':'Pyramide','p10.prog':'Progressif','p10.deg':'Dégressif','p10.blocs':'Blocs','p10.mix':'Mixte S2 + 10 km',
+  'p10.short':'Distance courte','p10.med':'Distance moyenne','p10.long':'Distance longue','p10.xlong':'Exceptionnel','p10.time':'Temps','p10.pyr':'Pyramide','p10.prog':'Progressif','p10.deg':'Dégressif','p10.blocs':'Blocs','p10.mix':'Mixte S2 + 10 km','p10.alternating':'Alternance continue S1 / AS10',
   'hills.short':'Côtes courtes','hills.long':'Côtes longues'};
 const LIB_WARM={s1:'s1',s2:'s2',vo2:'vma',spec10k:'spec',hills:'hills'};
 const LIB_PURPOSE={s1:'s1',s2:'s2',vo2:'vma',spec10k:'spec',hills:'hills'};

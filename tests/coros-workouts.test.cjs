@@ -21,6 +21,12 @@ c=make(quality({type:'intervals',progression:'increasing',reps:3,durationMin:5,r
 c=make(quality({type:'ladder',durationsMin:[3,5,3],recoveryRangeMin:[1,2]},{type:'by_duration',bands:[{durationsMin:[3],minKmh:14,maxKmh:14.5},{durationsMin:[5],minKmh:13.8,maxKmh:14.1}]},{recEach:1.5})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).reduce((a,s)=>a+s.targetValue,0),660);
 c=make(quality({type:'sets',sets:3,durationsMin:[5,3],recoveryBetweenFractionsMin:1,recoveryBetweenSetsMin:2})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).length,6);assert.equal(expand(c).filter(s=>s.sectionType===3).length,5);
 c=make(quality({type:'sets',sets:2,segments:[{distanceM:1000,target:'s2'},{distanceM:500,target:'race'}],linked:true,recoveryBetweenSetsMin:2},{type:'mixed',s2Kmh:14,raceKmh:15})).c;assert.equal(expand(c).filter(s=>s.sectionType===3).length,1);
+// Continuous 400 m S1 / 400 m AS10: both targets remain work, even with all recoveries manual.
+const alternatingSnapshot=quality({type:'sets',sets:10,segments:[{distanceM:400,target:'s1'},{distanceM:400,target:'race'}],linked:true,recoveryBetweenSetsMin:0},{type:'mixed',s1Kmh:60/4.9,raceKmh:60/4.1});
+c=make(alternatingSnapshot).c;rows=expand(c);assert.equal(rows.filter(s=>s.sectionType===2).length,20);assert.equal(rows.filter(s=>s.sectionType===3).length,0);
+assert.equal(rows[1].intensityValueStart,294);assert.equal(rows[1].intensityValueEnd,294);assert.equal(rows[2].intensityValueStart,246);assert.equal(rows[2].intensityValueEnd,246);
+const alternatingDraft=adapter.plan(alternatingSnapshot),alternatingManual=adapter.course(alternatingDraft,{}, {noIntensity:true,free:true},{coreRecovery:'manual'});
+assert.equal(expand(alternatingManual).filter(s=>s.sectionType===3).length,0);
 c=make(quality({type:'fartlek_structured',reps:6,durationMin:2,recoveryMin:1},{type:'feel',paceTarget:false})).c;assert(expand(c).every(s=>!('intensityType'in s)));
 let d=adapter.plan(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'}));assert(d.free);assert.throws(()=>adapter.course(d,{}, {noIntensity:true}),/Tour/);c=make(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'})).c;assert.equal(expand(c).filter(s=>s.targetType===4).length,11);
 const foot={title:'EF normale',description:'Footing de test',kind:'foot',foot:{type:'std',min:55},footBand:[9.9,10.7]};d=adapter.plan(foot);c=adapter.course(d,{c0:50},{});assert.equal(c.sections[0].targetValue,3000);assert.throws(()=>adapter.course(d,{c0:66},{}),/plage/);
