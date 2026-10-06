@@ -1157,6 +1157,7 @@ const RULES={
     /* Une séance mixte n'est jamais une séance par défaut : uniquement transition, rappel ou assimilation. */
     allowedContexts:['transition','reminder','assimilation'],
     maxQualities:2,
+    fasterFractionsShorter:true,
     allowTripleStandard:false,
     betweenBlocks:[1.5,2.5],
     componentTimes:{s1:{4:[3,6],5:[3,5],6:[2,4],8:[2,3],10:[2,2],12:[2,2]},s2:{3:[2,4],4:[2,3],5:[2,2],6:[2,2]},vo2:{0.5:[4,16],0.75:[4,10],1:[4,8]}},
@@ -2660,6 +2661,7 @@ const RULE_META=(()=>{
   'mixed.maxQualities':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Deux qualités maximum dans une séance mixte standard afin de ne pas additionner plusieurs séances complètes.'}),
   'mixed.allowTripleStandard':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'S1 + S2 + VO₂ n’est pas généré comme format standard.'}),
   'mixed.betweenBlocks':m('Q_MIXED_SESSIONS','physiological',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'La coupure entre deux composantes reste libre et courte ; la valeur exacte est un choix de programmation.'}),
+  'mixed.fasterFractionsShorter':m('Q_MIXED_SESSIONS','organizational',{origin:'product_choice',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Dans chaque option mixte, toutes les fractions du bloc plus intense sont strictement plus courtes que la plus courte fraction du premier bloc. Filtrage des formats réels avant sélection, y compris ceux ajoutés pour les petits budgets. Choix de construction Planif, sans revendication de supériorité universelle.'}),
   'mixed.componentTimes':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Formats courts réservés aux composants mixtes ; leur sélection ne peut dépasser le budget demandé. Les formats dédiés restent inchangés.'}),
   'recovery.calendarContext':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Priorité au footing récupération entre qualité et sortie longue ou deux qualités. Transfert de minutes vers 45 min, avec EF normale vers 50 min avant repos, sans modifier le volume hebdomadaire.'}),
   'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Budgets stricts communs aux deux composants et aux deux options : S1→S2 35 min (S1 ≤25, S2 ≤12), S1→VO₂ 30 min, S2→VO₂ 25 min. Le budget demandé par composant et le budget hebdomadaire réel restent prioritaires. Heuristiques internes, sans revendication de plafond scientifique universel.'}),
@@ -3162,6 +3164,13 @@ function maxFractionMinutes(c){
     ...(v?[S.distanceM||0,...distances].map(m=>m/1000/v*60):[0]));
 }
 
+/* Compare actual fraction durations, including ladders and continuous first blocks. */
+function minFractionMinutes(c){
+  const S=c.structure||{};
+  const values=[S.repDurationMin,S.durationMin,S.workMin,...(S.durationsMin||[])].filter(x=>Number.isFinite(x)&&x>0);
+  return values.length?Math.min(...values):0;
+}
+
 /* ======== Catalogue : familles et pertinence par phase [début, milieu, fin, assimilation] ======== */
 const SESSION_LIBRARY={
   s1:[
@@ -3261,6 +3270,7 @@ function generateSession(sector,W,st,ctx){
     c.score=sc+hash01(c.key+'|'+ctx.k)*SEL.tieBreak;all.push(c);
   }));
   if(ctx.mixedComponent){const table=RULES.mixed.componentTimes[sector],gen=sector==='s1'?s1Time:sector==='s2'?s2Time:vo2Time;gen(table,sector+'.time')(W,st).forEach(c=>{c.famW=1;c.load=candLoad(c,st);c.capFail=capsFor(sector,c,st);c.ruleRefs=variantRuleRefs(c,sector);c.score=Math.abs(c.work-W)/W*SEL.volumeGap+hash01(c.key+'|'+ctx.k)*SEL.tieBreak;all.push(c);});}
+  if(ctx.maxFractionMinutes)all=all.filter(c=>maxFractionMinutes(c)<=ctx.maxFractionMinutes);
   if(Number.isFinite(ctx.maxWorkMinutes)){all=all.filter(c=>c.work<=ctx.maxWorkMinutes+1e-9&&!c.capFail.length);if(!all.length)return[];}
   const safe=all.filter(c=>!c.capFail.length);if(safe.length)all=safe; /* sinon on garde, et l'alerte garde-fou s'affiche */
   const tol=TOL(W);
@@ -3462,12 +3472,18 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
   secondaryW=Math.min(secondaryW,cfg.maxSecondary);
   primaryW=Math.min(primaryW,cfg.maxPrimary,budget-secondaryW);if(primaryW<=0||secondaryW<=0)return null;
   const p=mixedCandidates(primaryFam,primaryW,st,{...ctx,k,t},false);
-  const q=mixedCandidates(secondaryFam,secondaryW,st,{...ctx,k:k+1,t},mixedSector(secondaryFam)==='vo2'&&role!=='transition');
-  if(!p.length||!q.length)return null;
+  if(!p.length)return null;
+  const pairs=p.map((a,i)=>{
+    const maxFraction=RULES.mixed.fasterFractionsShorter?minFractionMinutes(a)-1e-6:undefined;
+    if(maxFraction!==undefined&&maxFraction<=0)return null;
+    const q=mixedCandidates(secondaryFam,secondaryW,st,{...ctx,k:k+1,t,maxFractionMinutes:maxFraction},mixedSector(secondaryFam)==='vo2'&&role!=='transition');
+    return q.length?{a,b:q[Math.min(i,q.length-1)]}:null;
+  }).filter(Boolean);
+  if(!pairs.length)return null;
   const br=RULES.mixed.betweenBlocks,bm=rangeMid(br);
   const variants=[0,1].map(i=>{
-    const a=p[Math.min(i,p.length-1)],b=q[Math.min(i,q.length-1)];
-    const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations','mixed.componentTimes'];
+    const {a,b}=pairs[Math.min(i,pairs.length-1)];
+    const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations','mixed.componentTimes','mixed.fasterFractionsShorter'];
     return cand({
       sector:'mixed',fam:`mixed.${mixedKey(primaryFam,secondaryFam)}`,kind:'mixed',key:`mixed:${role}:${a.key}>${b.key}`,size:'mixed',
       structure:{type:'mixed_zones',role,recoveryType:'free',recoveryBetweenBlocksMin:bm,recoveryBetweenBlocksRangeMin:br,
@@ -3995,11 +4011,12 @@ function presentVariantRaw(v){
     return{text:`${S.reps} × ${fmtMin(S.durationMin)}${rec}`,chips:pct().concat([meters()])};
   }
   if(sec==='mixed'){
-    const role={transition:'Transition',reminder:'Rappel',assimilation:'Assimilation'}[S.role]||'Mixte';
-    const parts=S.components.map(c=>`${mixedComponentLabel(c.fam)} : ${presentVariantRaw(c.variant).text}`);
+    const blocks=S.components.map(c=>({label:mixedComponentLabel(c.fam),display:presentVariantRaw(c.variant)}));
+    const parts=blocks.map(c=>`${c.label} : ${c.display.text.split(', ')[0]}`);
+    const details=blocks.map(c=>{const i=c.display.text.indexOf(', ');return i>=0?`${c.label} : ${c.display.text.slice(i+2)}`:null;}).filter(Boolean);
     const rb=S.recoveryBetweenBlocksRangeMin;
-    return{text:`${role} — ${parts.join(' puis ')}, ${fmtRec(rb[0])}–${fmtRec(rb[1])} libre entre blocs`,
-      chips:S.components.flatMap(c=>presentVariantRaw(c.variant).chips.map(chip=>`${mixedComponentLabel(c.fam)} : ${chip}`))};
+    return{text:`${parts.join(' — ')}, récup ${fmtRec(rb[0])}–${fmtRec(rb[1])} libre entre blocs${details.length?'. '+details.join(' ; '):''}`,
+      chips:blocks.flatMap(c=>c.display.chips.map(chip=>`${c.label} : ${chip}`))};
   }
   if(sec==='p10'){
     if(f==='p10.alternating')return{text:`${S.sets} × (400 m S1 + 400 m AS10) en continu, sans récupération`,
@@ -4411,7 +4428,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.06.04';
+const APP_VERSION='2026.10.06.05';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}

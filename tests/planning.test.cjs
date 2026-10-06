@@ -3,7 +3,7 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 const start=html.indexOf('const RULES='),end=html.indexOf('const CAPLAB=');
-vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek};`,context);
+vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek};`,context);
 const E=context.engine;
 const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
 const pred=E.predict(state);
@@ -46,7 +46,7 @@ for(const option of transition.variants){const [a,b]=option.structure.components
 for(const [key,cfg] of Object.entries(E.RULES.mixed.combinations))for(const role of cfg.contexts)for(const budget of [12,18,25,30,35,50]){
  const [a,b]=key.split('>'),mix=E.makeMixedSession(a,b,60,20,role,1,1,state,{maxMixedWork:budget});
  if(!mix)continue;
- for(const variant of mix.variants){assert(variant.work<=Math.min(cfg.maxWork,budget)+1e-9);assert(variant.structure.components[0].variant.work<=cfg.maxPrimary+1e-9);assert(variant.structure.components[1].variant.work<=cfg.maxSecondary+1e-9);assert.equal(variant.capFail.length,0);}
+ for(const variant of mix.variants){assert(variant.work<=Math.min(cfg.maxWork,budget)+1e-9);assert(variant.structure.components[0].variant.work<=cfg.maxPrimary+1e-9);assert(variant.structure.components[1].variant.work<=cfg.maxSecondary+1e-9);assert.equal(variant.capFail.length,0);const [slow,fast]=variant.structure.components;assert(E.maxFractionMinutes(fast.variant)<E.minFractionMinutes(slow.variant),'faster fractions must be shorter in both options');}
 }
 assert.equal(E.makeMixedSession('s1','s2',25,10,'transition',1,1,state,{maxMixedWork:12}),null,'no oversized fallback when no format fits');
 // Check actual option volumes after replacement, across different athlete volumes and durations.
@@ -70,3 +70,13 @@ const footAt=day=>placed.list.find(d=>(d.date.getDay()+6)%7===day).items[0].f;
 assert.equal(footAt(1).type,'std');assert.equal(footAt(1).min,50);assert.equal(footAt(4).type,'rec');assert.equal(footAt(4).min,45);
 assert.equal(synthetic.foot.reduce((sum,f)=>sum+f.min,0),95);assert.equal(synthetic.foot.reduce((sum,f)=>sum+f.load,0),38);
 console.log('OK: mixed component/shared/weekly budgets, actual pace chips, contextual footing placement, conserved volume/load, specific weeks, long-run caps and COROS preparation accounting.');
+
+const mixedText=E.presentVariantRaw(transition.variants[0]).text.split(', ')[0];
+assert.equal(mixedText,"S1 : 5 × 5' — S2 : 3 × 3'");
+assert(!E.presentVariantRaw(transition.variants[0]).text.includes('Transition'));
+assert.equal(transition.variants[0].work,34);
+for(const option of transition.variants){const [slow,fast]=option.structure.components;assert(E.maxFractionMinutes(fast.variant)<E.minFractionMinutes(slow.variant));}
+// A 4-min S1 ladder cannot be followed by a 4- or 5-min S2 fraction.
+assert.equal(E.minFractionMinutes({structure:{type:'ladder',durationsMin:[4,6,8,6,4]}}),4);
+assert.equal(E.minFractionMinutes({structure:{type:'continuous',durationMin:25}}),25);
+console.log('OK: complete mixed summary, shorter faster fractions in both options, shared caps and preserved calendar rules.');
