@@ -3,7 +3,7 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 const start=html.indexOf('const RULES='),end=html.indexOf('const CAPLAB=');
-vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,presentVariantRaw,sessionTitle};`,context);
+vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,presentVariantRaw,sessionTitle,prepareSession};`,context);
 const E=context.engine;
 const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
 const pred=E.predict(state);
@@ -34,3 +34,7 @@ for(let k=0;k<5;k++){
 const weekday=E.buildCalendar({...state,calRace:'2026-12-18',slDay:'4'},pred);assert.equal(weekday.weeks.at(-2).sl,60);
 const five=E.buildCalendar({...state,calDist:0},pred);assert(five.weeks.some(w=>w.sl>90));
 console.log('OK: 4-week priority, short plans, exact calendar coverage, long-run caps, continuous alternation, zone/load accounting, complementary formats and other distances.');
+
+for(const w of c.weeks)for(const session of w.sessions){if(session.isLong)continue;assert.equal(session.wu,session.activation?27:24);assert.equal(session.cd,10);assert(Math.abs(session.total-(session.wu+Math.max(...session.variants.map(v=>v.total))+10))<1e-9);const before=session.total;E.prepareSession(session);assert.equal(session.total,before,'preparation must not be added twice');}
+const preparedS1=E.prepareSession({fam:'s1',variants:[{total:25}],wu:20,cd:10});assert.equal(preparedS1.total,59);
+const preparedAs10=E.prepareSession({fam:'spec',dist:1,variants:[{total:25}],wu:20,cd:10});assert.equal(preparedAs10.total,62);

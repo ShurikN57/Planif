@@ -668,6 +668,10 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
    La création est limitée à une séance neuve dans le calendrier ou la bibliothèque, après aperçu et confirmation. */
 window.PlanifCoros=(()=>{
   'use strict';
+  const PROFILE_KEY='planif-coros-profile-v1';
+  const getProfile=()=>read(localStorage,PROFILE_KEY)==='guided'?'guided':'manual';
+  const setProfile=value=>{if(!['manual','guided'].includes(value))throw new Error('Profil COROS invalide.');write(localStorage,PROFILE_KEY,value);};
+  const profileOptions=selected=>`<option value="manual" ${selected==='manual'?'selected':''}>Au ressenti · manuel</option><option value="guided" ${selected==='guided'?'selected':''}>Guidé · chronométré</option>`;
   const KEY='planif-coros-v1',SCOPES='openid offline_access mcp.tools';
   const REGIONS={eu:'https://mcpeu.coros.com',us:'https://mcpus.coros.com',cn:'https://mcpcn.coros.com'};
   let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0,currentDraft=null,currentDate='';
@@ -761,7 +765,7 @@ window.PlanifCoros=(()=>{
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   function settingsHtml(){
-    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
+    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p><label class="sf"><span>Profil COROS favori</span><select data-coros-profile>${profileOptions(getProfile())}</select></label><p class="lbl">Repris à chaque envoi. Au ressenti : aucune cible d’allure, toutes les récupérations et le retour au calme au bouton Tour. Guidé : allures prévues, récupérations chronométrées et 10 min de retour au calme. Planif comptabilise toujours 24 ou 27 min de préparation et 10 min de retour au calme.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
   }
   const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('');
@@ -792,16 +796,16 @@ window.PlanifCoros=(()=>{
     let reason=snapshot.unsupported||'';currentDraft=null;
     try{if(!reason)currentDraft=PlanifCorosAdapter.plan(snapshot);}catch(e){reason=e.message;}
     const draft=currentDraft;currentDate=snapshot.date||localDate(new Date());const limit=new Date();limit.setDate(limit.getDate()+90);
-    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.preparation?.activation?`<label class="sf"><span>Activation : cible en km/h (S2 par défaut, ou légèrement plus lent)</span><input name="activationKmh" type="text" inputmode="decimal" required value="${draft.preparation.s2Kmh}"></label>`:''}${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required checked><span>Je garde les phases au ressenti sans alerte d’allure : échauffement, récupération, retour au calme et efforts libres éventuels.</span></label>':''}${draft.free?`<label class="corosConfirm"><input type="checkbox" name="free" checked ${draft.preparation?'':'required'}><span>${draft.preparation?'Toutes les récupérations manuelles : lignes droites, fractions, séries et blocs. Décocher pour utiliser les 48 s et les durées Planif ; les transitions restent manuelles.':'Je termine les récupérations libres avec le bouton Tour de la montre.'}</span></label>`:''}<p class="lbl">Les choix ci-dessus concernent uniquement la copie COROS. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
+    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Profil pour cet envoi</span><select name="profile">${profileOptions(getProfile())}</select></label><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.preparation?.activation?`<label class="sf"><span>Activation : cible en km/h (S2 par défaut, ou légèrement plus lent)</span><input name="activationKmh" type="text" inputmode="decimal" required value="${draft.preparation.s2Kmh}"></label>`:''}${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required checked><span>Je conserve les phases sans cible d’allure au ressenti, notamment les lignes droites et les efforts libres éventuels.</span></label>':''}${draft.free&&!draft.preparation?`<label class="corosConfirm"><input type="checkbox" name="free" checked ${draft.preparation?'':'required'}><span>${draft.preparation?'Toutes les récupérations manuelles : lignes droites, fractions, séries et blocs. Décocher pour utiliser les 48 s et les durées Planif ; les transitions restent manuelles.':'Je termine les récupérations libres avec le bouton Tour de la montre.'}</span></label>`:''}<p class="lbl">Ce profil s’applique à cet envoi. Choisis ton favori dans Réglages → COROS pour les prochains envois. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
     d.addEventListener('input',updatePreviewSteps,{once:true});if(draft)updatePreviewSteps();d.showModal();
   }
-  function previewOptions(draft,form){const recovery=draft.preparation&&form.elements.namedItem('free')?.checked?'manual':'auto';return{coreRecovery:recovery,strideRecovery:recovery,activationKmh:form.elements.namedItem('activationKmh')?Number(form.elements.namedItem('activationKmh').value.replace(',','.')):undefined};}
+  function previewOptions(draft,form){const profile=form.elements.namedItem('profile')?.value||getProfile(),recovery=profile==='manual'?'manual':'auto';return{profile,coreRecovery:recovery,strideRecovery:recovery,activationKmh:form.elements.namedItem('activationKmh')?Number(form.elements.namedItem('activationKmh').value.replace(',','.')):undefined};}
   function previewValues(draft,form){return Object.fromEntries(draft.choices.map(c=>[c.id,form.elements.namedItem(c.id).value]));}
   function updatePreviewSteps(){
     const d=document.getElementById('corosPreview'),form=d?.querySelector('form');if(!form||!currentDraft)return;
     const scheduled=form.elements.namedItem('destination').value==='calendar';form.elements.namedItem('scheduledDate').required=scheduled;form.elements.namedItem('scheduledDate').disabled=!scheduled;d.querySelector('#corosDateField').hidden=!scheduled;d.querySelector('#corosDateField').style.display=scheduled?'':'none';form.querySelector('button[type="submit"]').textContent=scheduled?'Ajouter au calendrier COROS':'Enregistrer dans la bibliothèque COROS';
-    try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true},previewOptions(currentDraft,form));const labels=PlanifCorosAdapter.labels(currentDraft);d.querySelector('#corosStepList').innerHTML=c.sections.map((s,i)=>`<li>${labels[i]?'<strong>'+escape(labels[i])+'</strong><br>':''}${escape(sectionLabel(s))}</li>`).join('');}catch(e){d.querySelector('#corosStepList').innerHTML=`<li>${escape(e.message)}</li>`;}
-    for(const choice of currentDraft.choices){const field=form.elements.namedItem(choice.id);if(choice.label.startsWith('Récupération')){const manual=!!currentDraft.preparation&&previewOptions(currentDraft,form).coreRecovery==='manual';field.disabled=manual;const label=field.closest?.('label');if(label)label.style.display=manual?'none':'';}}
+    try{const c=PlanifCorosAdapter.course(currentDraft,previewValues(currentDraft,form),{noIntensity:true,free:true},previewOptions(currentDraft,form));const labels=PlanifCorosAdapter.labels(currentDraft,previewOptions(currentDraft,form));d.querySelector('#corosStepList').innerHTML=c.sections.map((s,i)=>`<li>${labels[i]?'<strong>'+escape(labels[i])+'</strong><br>':''}${escape(sectionLabel(s))}</li>`).join('');}catch(e){d.querySelector('#corosStepList').innerHTML=`<li>${escape(e.message)}</li>`;}
+    for(const choice of currentDraft.choices){const field=form.elements.namedItem(choice.id);if(choice.label.startsWith('Récupération')){const manual=previewOptions(currentDraft,form).coreRecovery==='manual';field.disabled=manual;const label=field.closest?.('label');if(label)label.style.display=manual?'none':'';}}
     form.oninput=updatePreviewSteps;
   }
   async function sendFromPreview(dialog){
@@ -848,7 +852,8 @@ window.PlanifCoros=(()=>{
     const saved=read(sessionStorage,KEY+'-auth');if(saved&&safeIssuer(saved.issuer)&&typeof saved.accessToken==='string'&&typeof saved.clientId==='string'&&Number.isFinite(saved.expiresAt))auth=saved;
     if(callback){busy=true;message='Finalisation de la connexion COROS…';emit();try{await finish();await discover();}catch(e){message=e.message;}finally{busy=false;emit();}}else emit();
   }
-  return{start,settingsHtml,preview,get busy(){return busy;},get callback(){return callback;}};
+  document.addEventListener('change',e=>{if(e.target.matches?.('[data-coros-profile]'))setProfile(e.target.value);});
+  return{start,settingsHtml,preview,getProfile,setProfile,get busy(){return busy;},get callback(){return callback;}};
 })();
 
 
@@ -868,7 +873,7 @@ window.PlanifCorosAdapter=(()=>{
   function plan(snapshot){
     const x=clone(snapshot),draft={name:x.title,description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
     if(!x.title||!x.description)fail('La séance affichée est incomplète.');
-    if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push('Préparation personnelle COROS : 20 min faciles, transitions manuelles, 3 lignes droites de 12 s, puis le cœur de séance et 10 min faciles. Les lignes droites restent au ressenti.');if(x.activation)draft.notes.push('Avant les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2, entre deux récupérations manuelles.');}
+    if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh,easyBand:x.easyBand};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push('Préparation personnelle COROS : 20 min faciles, 3 lignes droites de 12 s, puis le cœur de séance et un retour au calme comptabilisé à 10 min dans Planif. Les lignes droites restent au ressenti.');if(x.activation)draft.notes.push('Après les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2. En mode guidé : 45 s avant et 1 min 30 après.');}
     const choice=(label,range,value,unit='s')=>{
       const r=range.map(Math.round);if(r.length!==2||r.some(v=>!Number.isFinite(v)||v<=0)||r[0]>r[1])fail('Une durée proposée est invalide.');
       if(r[0]===r[1])return r[0];
@@ -969,32 +974,38 @@ window.PlanifCorosAdapter=(()=>{
         if(v.choice){const c=draft.choices.find(c=>c.id===v.choice),number=Number(values[v.choice]);if(!c||!Number.isInteger(number)||number<c.min||number>c.max)fail('Choisis une valeur dans chaque plage proposée.');return number;}
       }return v;
     };
+    if(options.profile&&!['manual','guided'].includes(options.profile))fail('Choisis un profil COROS valide.');
+    const manualProfile=options.profile==='manual',manualCore=manualProfile||options.coreRecovery==='manual';
     let sections=clone(draft.sections);
     if(draft.preparation){
       if(!['auto','manual'].includes(options.coreRecovery||'auto')||!['auto','manual'].includes(options.strideRecovery||'auto'))fail('Choisis un mode de récupération valide.');
       const core=sections.filter((s,i)=>!(i===0&&s.sectionType===1)&&!(i===sections.length-1&&s.sectionType===4));
-      const free=()=>({sectionType:3,targetType:4}),stride=()=>({sectionType:2,targetType:2,targetValue:12});
-      if(options.coreRecovery==='manual'){const manual=s=>{if(s.intervalGroup)s.sets.forEach(manual);else if(s.sectionType===3){s.targetType=4;delete s.targetValue;}};core.forEach(manual);}
-      sections=[{sectionType:1,targetType:2,targetValue:1200},free()];
-      if(draft.preparation.activation){const speed=options.activationKmh??draft.preparation.s2Kmh;if(!Number.isFinite(speed)||speed<=0||speed>draft.preparation.s2Kmh)fail('La cible d’activation doit être au second seuil ou plus lente.');sections.push({sectionType:2,targetType:2,targetValue:105,...pace([speed,speed])},free());}
-      sections.push({intervalGroup:true,repeats:2,sets:[stride(),options.strideRecovery==='manual'?free():{sectionType:3,targetType:2,targetValue:48}]},stride(),free(),...core,free(),{sectionType:4,targetType:2,targetValue:600});
+      const recovery=seconds=>manualProfile?{sectionType:3,targetType:4}:{sectionType:3,targetType:2,targetValue:seconds};
+      const stride=()=>({sectionType:2,targetType:2,targetValue:12});
+      const easy=options.profile==='guided'&&draft.preparation.easyBand?pace(draft.preparation.easyBand):{};
+      sections=[{sectionType:1,targetType:2,targetValue:1200,...easy},recovery(48),{intervalGroup:true,repeats:2,sets:[stride(),options.strideRecovery==='manual'?{sectionType:3,targetType:4}:recovery(48)]},stride(),recovery(draft.preparation.activation?45:60)];
+      if(draft.preparation.activation){const speed=options.activationKmh??draft.preparation.s2Kmh;if(!Number.isFinite(speed)||speed<=0||speed>draft.preparation.s2Kmh)fail('La cible d’activation doit être au second seuil ou plus lente.');sections.push({sectionType:2,targetType:2,targetValue:105,...pace([speed,speed])},recovery(90));}
+      sections.push(...core);
+      if(manualProfile)sections.push(recovery(0));
+      sections.push(manualProfile?{sectionType:4,targetType:4}:{sectionType:4,targetType:2,targetValue:600,...easy});
     }
+    const applyProfile=s=>{if(s.intervalGroup){s.sets.forEach(applyProfile);return;}if((s.sectionType===3&&manualCore)||(s.sectionType===4&&manualProfile)){s.targetType=4;delete s.targetValue;}if(manualProfile){delete s.intensityType;delete s.intensityValueStart;delete s.intensityValueEnd;}};
+    sections.forEach(applyProfile);
     const walk=s=>{
       if(s.intervalGroup){if(!Number.isInteger(s.repeats)||s.repeats<1||s.repeats>20||!s.sets?.length)fail('Groupe de répétitions invalide.');s.sets.forEach(walk);return;}
       if(s.targetType!==4){s.targetValue=resolve(s.targetValue);if(!Number.isInteger(s.targetValue)||s.targetValue<=0)fail('Durée ou distance invalide.');}
       if(![1,2,3,4].includes(s.sectionType)||![1,2,4].includes(s.targetType))fail('Section invalide.');
     };sections.forEach(walk);
-    const choices=draft.choices.filter(c=>!(draft.preparation&&options.coreRecovery==='manual'&&c.label.startsWith('Récupération'))).map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
-    const description=[draft.description,draft.preparation&&options.coreRecovery==='manual'?'Les récupérations manuelles remplacent les durées de récupération indiquées dans le résumé du cœur.':null,draft.preparation?.activation?`Activation de 1 min 45 à ${options.activationKmh??draft.preparation.s2Kmh} km/h, au plus au second seuil.`:null,'Allures absolues calculées dans Planif, en min/km. Les phases au ressenti n’ont pas d’alerte d’allure.',choices,...draft.notes,draft.preparation?`Récupérations du cœur : ${options.coreRecovery==='manual'?'manuelles, bouton Tour':'selon Planif'}. Récupérations entre lignes droites : ${options.strideRecovery==='manual'?'manuelles, bouton Tour':'48 s'}.`:null].filter(Boolean).join(' ');
+    const choices=draft.choices.filter(c=>!(manualCore&&c.label.startsWith('Récupération'))).map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
+    const description=[draft.description,manualProfile?'Profil au ressenti : aucune cible d’allure. Toutes les récupérations et le retour au calme sont manuels, bouton Tour. Le retour au calme reste estimé à 10 min dans Planif.':'Profil guidé : allures prévues, récupérations chronométrées et retour au calme de 10 min. Les lignes droites restent au ressenti.',choices,...draft.notes].filter(Boolean).join(' ');
     return{sportType:1,courseName:draft.name.slice(0,100),courseDescription:description,sections};
   }
-  function labels(draft){
+  function labels(draft,options={}){
     if(!draft.preparation)return[];
-    const labels=['Échauffement','Transition manuelle'];
-    if(draft.preparation.activation)labels.push('Activation au S2 ou légèrement plus lent','Transition manuelle');
-    labels.push('Lignes droites 1 et 2 avec récupérations','Ligne droite 3','Transition avant le cœur de séance');
+    const labels=['Échauffement','Récupération avant les lignes droites','Lignes droites 1 et 2 avec récupérations','Ligne droite 3','Récupération après les lignes droites'];
+    if(draft.preparation.activation)labels.push('Activation au S2 ou légèrement plus lent','Récupération avant le cœur de séance');
     const core=draft.sections.filter((s,i)=>!(i===0&&s.sectionType===1)&&!(i===draft.sections.length-1&&s.sectionType===4));
-    labels.push(...core.map(()=>null),'Transition après le cœur de séance','Retour au calme');return labels;
+    labels.push(...core.map(()=>null));if(options.profile==='manual')labels.push('Transition après le cœur de séance');labels.push('Retour au calme');return labels;
   }
   return{plan,course,pace,labels};
 })();
@@ -1201,7 +1212,7 @@ const RULES={
       allowedContexts:['aero','assimilation'],
       formats:['continuous','blocks']
     },
-    warmup:{vma:[20,10],vmaShort:[20,10],s2:[20,10],s1:[15,10],fartlek:[20,10],mixed:[20,10],spec:[20,10],hills:[25,10]},
+    warmup:{vma:[27,10],vmaShort:[27,10],s2:[24,10],s1:[24,10],fartlek:[27,10],mixed:[24,10],spec:[27,10],hills:[24,10]},
     longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,90,130,160]}}
   },
   library:{
@@ -3386,6 +3397,20 @@ function densityFactor(x){
 function loadZone(v,st){const Z=RULES.load.zones;if(v>=Z.z4OfVma*st.vma)return'z4';if(v>=st.s2-Z.z3BelowS2)return'z3';if(v>=st.s1lo-Z.z2BelowS1Low)return'z2';return'z1';}
 const emptyBd=()=>({z1:0,z2:0,z3:0,z4:0});
 const sumBd=bd=>bd.z1+bd.z2+bd.z3+bd.z4;
+function preparationActivation(v,s={}){
+  const S=v.structure||{},I=v.intensity||{};
+  if(['vma','vmaShort','fartlek'].includes(s.fam)||v.sector==='vo2'||v.sector==='spec10k'||S.type==='fartlek_structured')return true;
+  if(['spec','taper'].includes(s.fam)&&[0,1].includes(s.dist))return true;
+  if(['5 km','10 km'].includes(I.race))return true;
+  return (S.components||[]).some(c=>preparationActivation(c.variant));
+}
+function prepareSession(s){
+  if(s.isLong||!s.variants?.length)return s;
+  s.activation=s.variants.some(v=>preparationActivation(v,s));
+  s.wu=s.activation?27:24;s.cd=10;
+  s.total=s.wu+Math.max(...s.variants.map(v=>v.total))+s.cd;
+  return s;
+}
 function variantLoad(x,s,st){
   const bd=emptyBd(),d=densityFactor(x);
   (x.parts||[]).forEach(([m,v])=>{bd[loadZone(v,st)]+=m*loadFactorForSpeed(v,st)*d;});
@@ -3398,6 +3423,7 @@ function checkCaps(x,st,exempt){
   return Object.keys(RULES.safeguards.caps).filter(k=>!exempt.includes(k)&&m[k]>RULES.safeguards.caps[k]+RULES.safeguards.capTolerance);
 }
 function withLoad(s,st){
+  prepareSession(s);
   s.variants.forEach(x=>{if(!x.ruleRefs)x.ruleRefs=variantRuleRefs(x,null);});
   s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup']))];
   s.variants.forEach(x=>{Object.assign(x,variantLoad(x,s,st));x.capFail=s.libSector?capsFor(s.libSector,x,st):checkCaps(x,st,s.isLong?['s1']:[]);});
@@ -4346,7 +4372,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.06.02';
+const APP_VERSION='2026.10.06.03';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4705,23 +4731,17 @@ const libColor=sec=>sec==='s1'?ZONES.z2.c:sec==='s2'?ZONES.z3.c:sec==='spec10k'?
 function libSessionHtml(r){
   const st=lastSt,sec=r.sector,Ws=libWork(sec);if(!Ws)return'';
   const o=libCandidates(sec,Ws[libVol]).find(x=>x.c.key===r.key);if(!o)return'<div class="card"><p class="lbl">Ce format n\'existe plus avec les réglages actuels.</p></div>';
-  const c=o.c,[wu,cd]=RULES.organization.warmup[LIB_WARM[sec]],ld=variantLoad(c,{wu,cd},st),[main,rec]=splitRec(vText(c));
+  const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10}),{wu,cd}=prep,ld=variantLoad(c,prep,st),[main,rec]=splitRec(vText(c));
   const pw=RULES.library.phaseWeights[o.fam],secLab=LIB_SECTORS.find(x=>x.id===sec).lab;
   let h=`<div class="sHead" style="--c:${libColor(sec)}"><h2>${secLab}</h2><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
   h+=`<div class="card"><div class="struct">${main}</div>${rec?`<div class="lbl">${rec.charAt(0).toUpperCase()+rec.slice(1)}</div>`:''}<div class="pace">${vChips(c).map(x=>`<div>${x}</div>`).join('')}</div></div>`;
-  h+=`<div class="card"><div class="kv"><span>Travail</span><span class="v">${Math.round(c.work)}'</span><span>Durée totale</span><span class="v">≈ ${fmtDur(r5(wu+c.total+cd))}</span><span>Échauffement</span><span class="v">${wu}'</span><span>Retour au calme</span><span class="v">${cd}'</span></div></div>`;
+  h+=`<div class="card"><div class="kv"><span>Travail</span><span class="v">${Math.round(c.work)}'</span><span>Durée totale</span><span class="v">≈ ${fmtDur(wu+c.total+cd)}</span><span>Échauffement</span><span class="v">${wu}'</span><span>Retour au calme</span><span class="v">${cd}'</span></div></div>`;
   const rpe=SECTOR_INFO[sec]?SECTOR_INFO[sec].rpe:null;
   h+=`<div class="card"><details class="info"><summary>ⓘ Pourquoi ce format</summary><p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p></details></div>`;
   return h;
 }
 /* Copie de la séance affichée : la conversion ne modifie ni le plan ni ses variantes. */
-function corosActivation(v,s={}){
-  const S=v.structure||{},I=v.intensity||{};
-  if(['vma','vmaShort','fartlek'].includes(s.fam)||v.sector==='vo2'||v.sector==='spec10k'||S.type==='fartlek_structured')return true;
-  if(['spec','taper'].includes(s.fam)&&[0,1].includes(s.dist))return true;
-  if(['5 km','10 km'].includes(I.race))return true;
-  return (S.components||[]).some(c=>corosActivation(c.variant));
-}
+function corosActivation(v,s={}){return preparationActivation(v,s);}
 function corosSessionSnapshot(){
   const st=lastSt,r=appSession;if(!st||!r)throw new Error('Ouvre une séance pour la préparer.');
   const copy=v=>{
