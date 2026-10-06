@@ -1159,10 +1159,11 @@ const RULES={
     maxQualities:2,
     allowTripleStandard:false,
     betweenBlocks:[1.5,2.5],
+    componentTimes:{s1:{4:[3,6],5:[3,5],6:[2,4],8:[2,3],10:[2,2],12:[2,2]},s2:{3:[2,4],4:[2,3],5:[2,2],6:[2,2]},vo2:{0.5:[4,16],0.75:[4,10],1:[4,8]}},
     combinations:{
-      's1>s2':{contexts:['transition','assimilation'],transitionPrimaryFactor:0.75,transitionSecondaryMin:[8,12],assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
-      's2>vo2':{contexts:['reminder','assimilation'],reminderPrimaryMin:[10,14],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
-      's1>vo2':{contexts:['reminder','assimilation'],reminderPrimaryMin:[12,16],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55}
+      's1>s2':{maxWork:35,maxPrimary:25,maxSecondary:12,contexts:['transition','assimilation'],transitionPrimaryFactor:0.75,transitionSecondaryMin:[8,12],assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
+      's2>vo2':{maxWork:25,maxPrimary:18,maxSecondary:10,contexts:['reminder','assimilation'],reminderPrimaryMin:[10,14],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55},
+      's1>vo2':{maxWork:30,maxPrimary:24,maxSecondary:8,contexts:['reminder','assimilation'],reminderPrimaryMin:[12,16],reminderSecondaryFactor:0.60,assimPrimaryFactor:0.75,assimSecondaryFactor:0.55}
     }
   },
   load:{
@@ -1197,6 +1198,7 @@ const RULES={
       pro:{range:[60,75],intensityPctLT1:[0.84,0.91]}
     },
     prolongedAllowed:{weeklyMinutesFrom:360,runsUpTo:4},
+    calendarContext:{bridgePriority:80,afterQuality:30,beforeQuality:35,beforeLongRun:35,vo2Bonus:10,beforeRestDiscount:15,normalTarget:50,recoveryTarget:45},
     secondRecoveryFootingWhenHeavy:2
   },
   organization:{
@@ -2658,7 +2660,9 @@ const RULE_META=(()=>{
   'mixed.maxQualities':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Deux qualités maximum dans une séance mixte standard afin de ne pas additionner plusieurs séances complètes.'}),
   'mixed.allowTripleStandard':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'S1 + S2 + VO₂ n’est pas généré comme format standard.'}),
   'mixed.betweenBlocks':m('Q_MIXED_SESSIONS','physiological',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'La coupure entre deux composantes reste libre et courte ; la valeur exacte est un choix de programmation.'}),
-  'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-02',reviewSummary:'Les rapports de volumes par combinaison sont des heuristiques prudentes dérivées des volumes dédiés et des usages transition/rappel/assimilation.'}),
+  'mixed.componentTimes':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Formats courts réservés aux composants mixtes ; leur sélection ne peut dépasser le budget demandé. Les formats dédiés restent inchangés.'}),
+  'recovery.calendarContext':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Priorité au footing récupération entre qualité et sortie longue ou deux qualités. Transfert de minutes vers 45 min, avec EF normale vers 50 min avant repos, sans modifier le volume hebdomadaire.'}),
+  'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Budgets stricts communs aux deux composants et aux deux options : S1→S2 35 min (S1 ≤25, S2 ≤12), S1→VO₂ 30 min, S2→VO₂ 25 min. Le budget demandé par composant et le budget hebdomadaire réel restent prioritaires. Heuristiques internes, sans revendication de plafond scientifique universel.'}),
   'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Sous-zones pratiques de footing exprimées en % de la vitesse LT1 : récupération 75–83 %, EF normale/prolongée 84–91 %. Ce découpage sert à la prescription et ne constitue pas des seuils physiologiques distincts.'}),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
@@ -3256,6 +3260,8 @@ function generateSession(sector,W,st,ctx){
     if(mem.fams.includes(c.fam))sc+=SEL.sameFamily;
     c.score=sc+hash01(c.key+'|'+ctx.k)*SEL.tieBreak;all.push(c);
   }));
+  if(ctx.mixedComponent){const table=RULES.mixed.componentTimes[sector],gen=sector==='s1'?s1Time:sector==='s2'?s2Time:vo2Time;gen(table,sector+'.time')(W,st).forEach(c=>{c.famW=1;c.load=candLoad(c,st);c.capFail=capsFor(sector,c,st);c.ruleRefs=variantRuleRefs(c,sector);c.score=Math.abs(c.work-W)/W*SEL.volumeGap+hash01(c.key+'|'+ctx.k)*SEL.tieBreak;all.push(c);});}
+  if(Number.isFinite(ctx.maxWorkMinutes)){all=all.filter(c=>c.work<=ctx.maxWorkMinutes+1e-9&&!c.capFail.length);if(!all.length)return[];}
   const safe=all.filter(c=>!c.capFail.length);if(safe.length)all=safe; /* sinon on garde, et l'alerte garde-fou s'affiche */
   const tol=TOL(W);
   let pool=all.filter(c=>Math.abs(c.work-W)<=tol);if(!pool.length)pool=all;
@@ -3447,17 +3453,21 @@ const mixedCfg=(a,b,role)=>{
 };
 function mixedCandidates(fam,W,st,ctx,shortOnly){
   const sec=mixedSector(fam);
-  return generateSession(sec,W,st,{...ctx,shortOnly:!!shortOnly,memory:null});
+  return generateSession(sec,W,st,{...ctx,mixedComponent:true,maxWorkMinutes:W,shortOnly:!!shortOnly,memory:null});
 }
 function mixedComponentLabel(fam){return fam==='s1'?'S1':fam==='s2'?'S2':'VO₂';}
 function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,st,ctx){
   const cfg=mixedCfg(primaryFam,secondaryFam,role);if(!cfg)return null;
+  const budget=Math.min(cfg.maxWork,ctx.maxMixedWork??Infinity);if(budget<=0)return null;
+  secondaryW=Math.min(secondaryW,cfg.maxSecondary);
+  primaryW=Math.min(primaryW,cfg.maxPrimary,budget-secondaryW);if(primaryW<=0||secondaryW<=0)return null;
   const p=mixedCandidates(primaryFam,primaryW,st,{...ctx,k,t},false);
   const q=mixedCandidates(secondaryFam,secondaryW,st,{...ctx,k:k+1,t},mixedSector(secondaryFam)==='vo2'&&role!=='transition');
+  if(!p.length||!q.length)return null;
   const br=RULES.mixed.betweenBlocks,bm=rangeMid(br);
   const variants=[0,1].map(i=>{
     const a=p[Math.min(i,p.length-1)],b=q[Math.min(i,q.length-1)];
-    const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations'];
+    const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations','mixed.componentTimes'];
     return cand({
       sector:'mixed',fam:`mixed.${mixedKey(primaryFam,secondaryFam)}`,kind:'mixed',key:`mixed:${role}:${a.key}>${b.key}`,size:'mixed',
       structure:{type:'mixed_zones',role,recoveryType:'free',recoveryBetweenBlocksMin:bm,recoveryBetweenBlocksRangeMin:br,
@@ -3470,7 +3480,7 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
   const [wu,cd]=RULES.organization.warmup.mixed,core=Math.max(...variants.map(x=>x.total));
   const hi=mixedSector(secondaryFam)==='vo2'?'z4':mixedSector(secondaryFam)==='s2'?'z3':'z2';
   return withLoad({fam:'mixed',mixedRole:role,mixedFrom:mixedSector(primaryFam),mixedTo:mixedSector(secondaryFam),zone:hi,variants,
-    work:variants[0].work,gap:Math.abs(variants[1].work-variants[0].work),total:r5(wu+core+cd),wu,cd},st);
+    mixedTargets:{primaryW,secondaryW},work:variants[0].work,gap:Math.abs(variants[1].work-variants[0].work),total:r5(wu+core+cd),wu,cd},st);
 }
 
 /* ---------- footings : catégories et volume cible à ±2,5 % ---------- */
@@ -3630,6 +3640,14 @@ function buildWeek(B,st,o){
     if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
     else if(bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     if(cW>0&&sessions.length<3)sessions.push(makeSession(cDef.fam,cW,k+2,t,st,{...ctx,memory:null}));
+    for(let i=0;i<sessions.length;i++){
+      const mix=sessions[i];if(mix.fam!=='mixed')continue;
+      const other=sessions.reduce((sum,x,j)=>sum+(j===i?0:Math.max(...x.variants.map(v=>v.work))),0),remaining=max-other;
+      if(Math.max(...mix.variants.map(v=>v.work))<=remaining+1e-9)continue;
+      const reduced=makeMixedSession(mix.mixedFrom,mix.mixedTo,mix.mixedTargets.primaryW,mix.mixedTargets.secondaryW,mix.mixedRole,k,t,st,{...ctx,maxMixedWork:remaining});
+      if(reduced)sessions[i]=reduced;
+      else{const choices=mixedCandidates(mix.mixedFrom,Math.max(0,remaining),st,ctx,false);if(choices.length){const replacement={fam:mix.mixedFrom==='vo2'?'vmaShort':mix.mixedFrom,zone:zoneForSpeed(choices[0].parts[0][1],st),variants:choices,work:choices[0].work,wu:24,cd:10};sessions[i]=withLoad(replacement,st);}else{sessions.splice(i--,1);warns.push({code:'budget_too_small'});}}
+    }
     /* règles de bloc et de volume qui ont fixé le volume de travail de chaque séance */
     const addRefs=(x,refs)=>{x.ruleRefs=[...new Set(x.ruleRefs.concat(refs.filter(Boolean)))];};
     const bp=B.id==='spec'?`blocks.spec.${B.dist}`:`blocks.${B.id}`;
@@ -3820,7 +3838,7 @@ function buildIntroWeek(st,vol,win){
 }
 
 /* Placement sur les dates : qualités espacées d'au moins 48 h, sortie longue en fin de semaine,
-   footing récupération le lendemain de la qualité la plus coûteuse, jours choisis respectés s'ils sont saisis. */
+   footing récupération prioritaire entre qualité et sortie longue, jours choisis respectés s'ils sont saisis. */
 function placeWeek(wk,win,st){
   const PL=RULES.calendar.placement;
   const dates=[];for(let d=win.start;d<=win.end;d=addDays(d,1))dates.push(d);
@@ -3854,13 +3872,34 @@ function placeWeek(wk,win,st){
       if(d){put(d,{kind:'q',s:x});qDays.push({d,s:x});}else warns.push({code:'no_day_session',params:{session:sessionKey(x)}});});
     if(qDays.some((a,i)=>qDays.some((b,j)=>j>i&&Math.abs(idx(a.d)-idx(b.d))<PL.minDaysBetweenQualities)))warns.push({code:'qualities_consecutive'});
     if(slD&&qDays.some(q=>Math.abs(idx(q.d)-idx(slD))<PL.minDaysBetweenQualities))warns.push({code:'quality_next_to_long_run'});
-    const afterQ=qDays.slice().sort((a,b)=>b.s.loadMax-a.s.loadMax).map(q=>addDays(q.d,1));
+    const C=RULES.recovery.calendarContext;
+    const dayKey=d=>+d,qualityAt=d=>qDays.find(q=>dayKey(q.d)===dayKey(d));
+    const risk=d=>{
+      const prev=qualityAt(addDays(d,-1)),next=qualityAt(addDays(d,1)),beforeLong=slD&&dayKey(addDays(d,1))===dayKey(slD);
+      let score=(prev?C.afterQuality:0)+(next?C.beforeQuality:0)+(beforeLong?C.beforeLongRun:0);
+      if(prev&&(next||beforeLong))score+=C.bridgePriority;
+      if(prev&&preparationActivation(prev.s.variants[0],prev.s))score+=C.vo2Bonus;
+      if(prev&&!next&&!beforeLong&&!st.avail[wd(addDays(d,1))])score-=C.beforeRestDiscount;
+      return score;
+    };
+    const afterQ=qDays.map(q=>addDays(q.d,1));
     wk.foot.forEach(f=>{let d=null;
-      const okAfter=afterQ.filter(x=>x<=win.end&&st.avail[wd(x)]&&isFree(x));
-      if(f.type==='rec'&&okAfter.length)d=okAfter[0];
-      if(!d&&okAfter.length&&f.type!=='rec')d=okAfter[okAfter.length-1];
-      if(!d)d=spread(free());
-      if(d)put(d,{kind:'foot',f});else{f.unplaced=true;warns.push({code:'no_day_footing_reduce'});}});
+      const choices=free(),okAfter=afterQ.filter(x=>x<=win.end&&st.avail[wd(x)]&&isFree(x));
+      if(f.type==='rec')d=choices.slice().sort((a,b)=>risk(b)-risk(a)||((qualityAt(addDays(b,-1))?.s.loadMax||0)-(qualityAt(addDays(a,-1))?.s.loadMax||0)))[0];
+      if(!d&&okAfter.length)d=okAfter.slice().sort((a,b)=>risk(a)-risk(b))[0];
+      if(!d)d=spread(choices);
+      if(d){if(f.type==='rec'){const prev=qualityAt(addDays(d,-1));if(prev)f.after=sessionKey(prev.s);}put(d,{kind:'foot',f});}else{f.unplaced=true;warns.push({code:'no_day_footing_reduce'});}});
+    /* Keep weekly minutes unchanged: transfer spare easy minutes to the protected recovery run,
+       up to 45 min, rather than extend the normal run before a rest day. */
+    const placed=dates.flatMap(d=>(slot.get(+d)||[]).filter(it=>it.kind==='foot').map(it=>({d,f:it.f})));
+    for(const entry of placed.filter(x=>x.f.type==='rec'&&risk(x.d)>=C.bridgePriority)){
+      let need=Math.max(0,C.recoveryTarget-entry.f.min);
+      for(const donor of placed.filter(x=>x.f.type==='std'&&risk(x.d)<C.bridgePriority)){
+        const transfer=Math.min(need,Math.max(0,donor.f.min-C.normalTarget));donor.f.min-=transfer;entry.f.min+=transfer;need-=transfer;
+      }
+    }
+    placed.forEach(({f})=>{f.load=f.min*RULES.load.intensity.easy;});
+
   }
   return{list:dates.map(d=>({date:d,items:slot.get(+d)||[]})),warns};
 }
@@ -3890,7 +3929,7 @@ function buildCalendar(st,pred){
     else wk=buildIntroWeek(st,vol,win);
     Object.assign(wk,{index:i,k:i,startDate:win.start,endDate:win.end,phase:p.kind==='charge'?p.block:p.kind,block:p.block,assimilation:p.kind==='assim',
       taper:p.kind==='taper',raceWeek:i===plan.length-1,targetVolume:vol,segK:p.k,segLen:p.segLen});
-    wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement'],
+    wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement','recovery.calendarContext'],
       p.kind==='taper'?['calendar.taper']:p.kind==='intro'?['calendar.introWeekMinDays','calendar.introFooting']:[]);
     const pl=placeWeek(wk,win,st);wk.days=pl.list;wk.warns=wk.warns.concat(pl.warns);
     /* le volume réel ne compte que les footings placés */
@@ -3960,7 +3999,7 @@ function presentVariantRaw(v){
     const parts=S.components.map(c=>`${mixedComponentLabel(c.fam)} : ${presentVariantRaw(c.variant).text}`);
     const rb=S.recoveryBetweenBlocksRangeMin;
     return{text:`${role} — ${parts.join(' puis ')}, ${fmtRec(rb[0])}–${fmtRec(rb[1])} libre entre blocs`,
-      chips:[`${mixedComponentLabel(S.components[0].fam)} → ${mixedComponentLabel(S.components[1].fam)}`]};
+      chips:S.components.flatMap(c=>presentVariantRaw(c.variant).chips.map(chip=>`${mixedComponentLabel(c.fam)} : ${chip}`))};
   }
   if(sec==='p10'){
     if(f==='p10.alternating')return{text:`${S.sets} × (400 m S1 + 400 m AS10) en continu, sans récupération`,
@@ -4372,7 +4411,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.06.03';
+const APP_VERSION='2026.10.06.04';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4779,7 +4818,7 @@ function sessionScreenHtml(){
     let h=head(sessionTitle(s));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
     h+=`<div class="card"><div class="struct">${main}</div>${rec?`<div class="lbl">${rec.charAt(0).toUpperCase()+rec.slice(1)}</div>`:''}<div class="pace">${vChips(v).map(c=>`<div>${c}</div>`).join('')}</div></div>`;
-    h+=`<div class="card"><div class="kv"><span>Travail</span><span class="v">${Math.round(v.work)}'</span><span>Durée totale</span><span class="v">≈ ${fmtDur(s.total)}</span>${s.isLong?'':`<span>Échauffement</span><span class="v">${s.wu}'</span><span>Retour au calme</span><span class="v">${s.cd}'</span>`}</div></div>`;
+    h+=`<div class="card"><div class="kv"><span>Travail</span><span class="v">${Math.round(v.work)}'</span><span>Durée totale</span><span class="v">≈ ${fmtDur(s.isLong?s.total:s.wu+v.total+s.cd)}</span>${s.isLong?'':`<span>Échauffement</span><span class="v">${s.wu}'</span><span>Retour au calme</span><span class="v">${s.cd}'</span>`}</div></div>`;
     h+=`<div class="card"><details class="info"><summary>ⓘ Pourquoi cette séance</summary><p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}</details></div>`;
     return h;}
   if(it.kind==='race'){const r2=it.s;
