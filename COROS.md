@@ -1,6 +1,6 @@
 # Liaison Planif / COROS
 
-Version 2026.10.04.17 : connexion OAuth avec PKCE et envoi explicite d’une séance neuve au calendrier COROS ou dans la bibliothèque. Les entraînements existants et le moteur Planif restent inchangés.
+Version 2026.10.06.01 : connexion OAuth avec PKCE et envoi explicite d’une séance neuve au calendrier COROS ou dans la bibliothèque. Les entraînements existants et le moteur Planif restent inchangés.
 
 ## Premier envoi réel
 
@@ -35,11 +35,13 @@ La copie COROS des séances de qualité (hors sortie longue spécifique) utilise
 1. 20 minutes faciles.
 2. Transition manuelle (bouton Tour).
 3. Pour VMA/VO₂, fartlek structuré, AS5 et AS10, y compris leurs rappels et les séances mixtes contenant ces qualités : 1 minute 45 au second seuil, suivie d’une transition manuelle. La vitesse par défaut est la valeur S2 saisie dans Planif ; l’aperçu permet de choisir une valeur plus lente, jamais plus rapide. Aucune marge automatique n’est inventée.
-4. Trois lignes droites de 12 secondes au ressenti, avec deux récupérations de 48 secondes entre elles, ou deux récupérations manuelles si choisi.
+4. Trois lignes droites de 12 secondes au ressenti, avec deux récupérations manuelles par défaut ; 48 secondes entre elles si le mode manuel est décoché.
 5. Transition manuelle avant le cœur.
-6. Cœur de séance conservé ; récupérations selon Planif par défaut, ou toutes manuelles si choisi (entre fractions, séries et blocs). Les durées devenues inutiles sont masquées dans l’aperçu.
+6. Cœur de séance conservé ; récupérations toutes manuelles par défaut (entre fractions, séries et blocs), ou selon Planif si le mode manuel est décoché. Les durées devenues inutiles sont masquées dans l’aperçu.
 7. Transition manuelle après le cœur.
 8. 10 minutes faciles.
+
+L’aperçu s’ouvre sur le calendrier COROS. Les deux cases sont précochées : phases au ressenti sans alerte d’allure et toutes les récupérations manuelles. Une seule case pilote les récupérations des lignes droites et du cœur ensemble. La décocher rétablit les 48 secondes entre lignes droites et les durées Planif ; les transitions libres demandées entre phases restent manuelles. Le clic final d’envoi demeure obligatoire. Aucun réglage scientifique ni paramètre du moteur n’est modifié.
 
 Les footings, courses et sorties longues gardent leur transcription existante. Le plan actif, ses statistiques et ses séances passées ne sont pas recalculés : cette préparation est une préférence d’envoi COROS, clairement détaillée dans l’aperçu. Le résumé de la copie de qualité exclut les anciennes statistiques de préparation pour éviter d’afficher une durée totale incohérente. Les phases manuelles n’ont pas de durée prédéterminée.
 
