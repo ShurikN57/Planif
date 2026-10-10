@@ -35,9 +35,9 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
  for(const status of ['realized','adapted','missed']){
   const record={id:info.id,status,revision:1,activityId:status==='missed'?null:'101',activity:status==='missed'?null:{id:'101',name:'Jogging',date:info.date,durationSec:3600,distanceKm:10}};
   context.fetch=async()=>({ok:true,json:async()=>({sessions:[record]})});await link.refresh();
-  const closed=link.sessionHtml(info);assert(closed.includes('data-strava="undo"'));
+  const closed=link.sessionHtml(info);assert(closed.includes('class="stravaUndo"'));assert(closed.includes('data-strava="undo"'));assert.equal((closed.match(/data-coros-preview/g)||[]).length,1);
   assert(!closed.includes('data-strava="search"'));assert(!closed.includes('data-strava-associate'));assert(!closed.includes('data-strava="missed"'));
-  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Voir l’activité Strava')<closed.indexOf('Annuler la validation'));}
+  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Annuler la validation')<closed.indexOf('Voir l’activité Strava'));assert(closed.indexOf('Voir l’activité Strava')<closed.indexOf('data-coros-preview'));}
   await assert.rejects(link.save(info,'adapted','101'),/Annule la validation/);
   context.fetch=async()=>({ok:true,json:async()=>({id:info.id,status:'planned',revision:2})});await link.save(info,'planned');
   const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));

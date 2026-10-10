@@ -267,7 +267,14 @@ button.tile{cursor:pointer}
 button.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tile .go{float:right;color:var(--muted);font-size:1.2rem;line-height:1}
 .appbar .back{border:0;padding:.4rem .2rem;font-size:1rem;font-weight:600;color:var(--accent);min-height:44px}
-.sHead{border-left:6px solid var(--c);padding:.1rem 0 .1rem .8rem;margin-bottom:.9rem}
+.sHead{position:relative;border-left:6px solid var(--c);padding:.1rem 0 .1rem .8rem;margin-bottom:.9rem}
+.sHeadTitle{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem}
+.footInfo summary{display:flex;align-items:center;justify-content:center;list-style:none;cursor:pointer;width:44px;height:44px;color:var(--accent);font-size:1.4rem}
+.footInfo summary::-webkit-details-marker{display:none}
+.footInfoBody{position:absolute;top:100%;left:0;right:0;z-index:20;background:var(--surface,#fff);border:1px solid var(--line);border-radius:8px;padding:.8rem;box-shadow:0 4px 16px #0002}
+.sessionStatus{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin:1rem 0}
+button.stravaUndo{background:transparent;border:0;color:#c62828;padding:.25rem 0;min-height:44px;font:inherit;font-size:.85rem;text-align:right;cursor:pointer}
+
 .sHead h2{font-size:1.6rem;margin:0}
 .sHead .lbl{margin-top:.15rem}
 .optSeg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:.8rem}
@@ -1092,7 +1099,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.10.13"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.10.14"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4600,7 +4607,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.13';
+const APP_VERSION='2026.10.10.14';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4664,7 +4671,7 @@ function appCalendarWeeks(C,st){
     h+='</div>';
   }
   h+='</div>';
-  h+=`<p class="lbl">Glisse la poignée ⠿ vers un autre jour de la même semaine. Tu peux aussi ouvrir la séance pour choisir sa date.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
+  h+=`<p class="lbl">Glisse la poignée ⠿ vers un autre jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
   C.weeks.forEach((w,i)=>{
     const open=calOpen.has(i),pos=w.phase!=='assim'&&w.segLen?` ${w.segK+1}/${w.segLen}`:'';
     h+=`<div class="cw${i===curIdx?' nowW':''}${w.assimilation?' assimW':''}${w.raceWeek?' raceW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>`+
@@ -5075,11 +5082,10 @@ function planifSessionInfo(r){
   if(!(minutes>0))return null;
   return {planId:activePlan.id,id,date:planDateKey(day.date),originalDate:activePlan.moves?.[id]?.from||planDateKey(day.date),minutes,title};
 }
-function planifMoveHtml(){
+function planifMoveNoticeHtml(){
   const info=planifSessionInfo(appSession);if(!info)return '';
-  const source=findPlanifSession(lastPlan,info.id);if(!source||['race','veille'].includes(source.it.kind))return '';
-  const moved=info.originalDate!==info.date,warning=lastPlan.moveWarnings?.[info.id];
-  return `<div class="card">${moved?`<p class="lbl">Initialement prévue le ${fmtD(new Date(info.originalDate+'T12:00:00'))}.</p>`:''}${warning?`<p class="lbl">Déplacement suspendu : ${warning}</p>`:''}<details class="info"><summary>Déplacer la séance</summary><p>Choisis un autre jour dans cette semaine. Le contenu, le volume hebdomadaire et la validation sont conservés.</p><form data-planif-move><label class="sf"><span>Nouvelle date</span><select name="date">${source.w.days.map(d=>{const key=planDateKey(d.date);try{planifMoveCheck(lastPlan,info.id,key,lastSt);return `<option value="${key}"${key===info.date?' selected':''}>${fmtD(d.date)}</option>`;}catch{return '';}}).join('')}</select></label><p class="lbl" data-move-warning role="status"></p><button class="cta ghost" type="submit">Déplacer à cette date</button></form>${activePlan.moves?.[info.id]?'<button type="button" class="cta ghost" data-planif-restore>Rétablir la date initiale</button>':''}</details></div>`;
+  const warning=lastPlan.moveWarnings?.[info.id];
+  return (info.originalDate!==info.date?`<p class="lbl">Initialement prévue le ${fmtD(new Date(info.originalDate+'T12:00:00'))}.</p>`:'')+(warning?`<p class="lbl">Déplacement suspendu : ${warning}</p>`:'');
 }
 function movePlanifSession(date,ref=appSession,keepCalendar=false){
   const info=planifSessionInfo(ref);if(!info)return false;
@@ -5099,7 +5105,7 @@ function sessionScreenHtml(){
   if(r.sl&&w){it={kind:'sl'};day=null;}
   if(!it)return'<div class="card"><p class="lbl">Cette séance n\'existe plus dans le plan actuel.</p></div>';
   const when=day?fmtD(day.date):`Semaine ${r.w+1}`,ph=day?`${phaseLab(w.phase,C.race.distance)}, semaine ${w.index+1}`:`${blockLabel(C.B)}${w.assim?', assimilation':''}`,col=itemColor(it,w);
-  const head=(t)=>`<div class="sHead" style="--c:${col}"><h2>${t}</h2><div class="lbl">${when}, ${ph}</div></div>`;
+  const head=(t,info='')=>`<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div></div>`;
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0],[main,rec]=splitRec(vText(v));
     let h=head(sessionTitle(s));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
@@ -5113,16 +5119,16 @@ function sessionScreenHtml(){
       `<div class="card"><details class="info"><summary>ⓘ Charge</summary><p>Charge estimée : ${pts(w.slLoad)}.</p></details></div>`;
   if(it.kind==='veille')return head('Jogg + LD')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
   if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head(joggTitle(f))+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${paceHtml(efBandText('active',st))}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div></div>`;const lab=joggTitle(f);
-    return head(lab)+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${paceHtml(efBandText(f.type,st))}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
-      `<div class="card"><details class="info"><summary>ⓘ Pourquoi ce footing</summary><p>Jogg’ facile au ressenti : adapte l’effort à ta fatigue et au terrain, sans dépasser le premier seuil. La durée tient compte du volume hebdomadaire et des séances voisines.</p><p>Charge estimée : ${pts(f.load)}.</p></details></div>`;}
+    const info=`<details class="footInfo"><summary aria-label="Pourquoi ce footing" title="Pourquoi ce footing">ⓘ</summary><div class="footInfoBody"><p>Jogg’ facile au ressenti : adapte l’effort à ta fatigue et au terrain, sans dépasser le premier seuil. La durée tient compte du volume hebdomadaire et des séances voisines.</p><p>Charge estimée : ${pts(f.load)}.</p></div></details>`;
+    return head(lab,info)+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${paceHtml(efBandText(f.type,st))}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`;}
   return'';
 }
 function openSession(ref){appSession=ref;appOpt=0;renderApp();window.scrollTo(0,0);}
 function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
-    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+planifMoveHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
-    if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
+    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+planifMoveNoticeHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
+    if($('scr-session').querySelector('.sHead')&&!$('scr-session').querySelector('[data-coros-preview]'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
   $('scr-session').hidden=true;
@@ -5159,9 +5165,6 @@ document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){ap
 load();syncQualityPrereqs();render();renderApp();
 PlanifCoros.start();
 globalThis.PlanifCalendarDrag?.({root:$('scr-cal'),getSession:id=>findPlanifSession(lastPlan,id),check:(id,date)=>planifMoveCheck(lastPlan,id,date,lastSt),move:(date,ref)=>movePlanifSession(date,ref,true),say:message=>{calendarMoveMessage=message;const region=$('calMoveStatus');if(region)region.textContent=message;}});
-document.addEventListener('submit',e=>{if(!e.target.matches('[data-planif-move]'))return;e.preventDefault();try{movePlanifSession(e.target.elements.date.value);}catch(error){e.target.querySelector('[data-move-warning]').textContent=error.message;}});
-document.addEventListener('change',e=>{if(!e.target.matches('[data-planif-move] select'))return;const info=planifSessionInfo(appSession);if(!info)return;try{e.target.closest('form').querySelector('[data-move-warning]').textContent=planifMoveCheck(lastPlan,info.id,e.target.value,lastSt).warnings.join(' ');}catch(error){e.target.closest('form').querySelector('[data-move-warning]').textContent=error.message;}});
-document.addEventListener('click',e=>{if(!e.target.closest('[data-planif-restore]'))return;const info=planifSessionInfo(appSession);if(info)movePlanifSession(info.originalDate);});
 window.PlanifStravaContext={
   get activePlan(){return activePlan;},
   get appOpt(){return appOpt;},
@@ -5177,7 +5180,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.13"></script>
+<script src="./planif-strava.js?v=2026.10.10.14"></script>
 </body>
 </html>
 

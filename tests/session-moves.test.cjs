@@ -26,5 +26,5 @@ assert.throws(()=>E.planifMoveCheck(C,race.planifId,'2026-12-19',st),/fixée/);
 const near=build().weeks.at(-2),sl=near.days.flatMap(d=>d.items).find(x=>x.kind==='sl');assert(sl);near.sl=75;
 const fixture={weeks:[near]};assert.throws(()=>E.planifMoveCheck(fixture,sl.planifId,'2026-12-13',st),/plafond/);
 E.applyPlanifMoves(fixture,{[sl.planifId]:{to:'2026-12-13'}},null,st);assert(fixture.moveWarnings[sl.planifId].includes('plafond'),'replay rechecks long-run guard after recalculation');
-assert(html.includes('data-planif-move'));assert(html.includes('data-planif-restore'));
+assert(!html.includes('data-planif-move'));assert(!html.includes('data-planif-restore'));assert(html.includes('planifMoveNoticeHtml()'));
 console.log('OK: move Friday to Thursday, stable ID/content/weekly totals, persistence after regeneration and past preservation, deduplication, restore, occupied-day warning, week boundary and taper/long-run guards.');
