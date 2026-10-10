@@ -4551,7 +4551,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.08';
+const APP_VERSION='2026.10.10.09';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -5091,6 +5091,13 @@ $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEvent
 document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){appSession=null;appLib=false;appTab='set';setUi('app');}else{setBuilt=false;if(appTab==='set'&&!appSession&&!appLib)renderApp();}document.querySelectorAll('[data-coros]').forEach(b=>b.disabled=PlanifCoros.busy);});
 load();syncQualityPrereqs();render();renderApp();
 PlanifCoros.start();
+window.PlanifStravaContext={
+  get activePlan(){return activePlan;},
+  get appOpt(){return appOpt;},
+  sessionInfo(){return planifSessionInfo(appSession);},
+  redraw(){setBuilt=false;renderApp();},
+  settings(){appSession=null;appLib=false;appTab='set';setBuilt=false;renderApp();}
+};
 })();
 
 if ('serviceWorker' in navigator) {

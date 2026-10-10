@@ -1,6 +1,7 @@
 /* Liaison au Firebase existant. Les validations sont explicites et réversibles. */
 window.PlanifStrava=(()=>{
   'use strict';
+  const ctx=window.PlanifStravaContext;
   const ORIGIN='https://strava-mobile-2f93f.web.app',AUTH_KEY='planif-strava-auth-v1';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const read=(storage,key,fallback)=>{try{return JSON.parse(storage.getItem(key)||'null')||fallback;}catch{return fallback;}};
@@ -8,7 +9,7 @@ window.PlanifStrava=(()=>{
   const ready=()=>!!auth?.token&&auth.expiresAt>Date.now();
   const cacheKey=(planId,uid=auth.uid)=>'planif-strava-records-v1:'+uid+':'+planId;
   const remember=()=>{try{sessionStorage.setItem(AUTH_KEY,JSON.stringify(auth));}catch{}};
-  function redraw(){setBuilt=false;renderApp();}
+  function redraw(){ctx.redraw();}
   async function api(path,options={}){
     if(!ready())throw Error('Reconnecte ton compte athlète pour actualiser les données.');
     const response=await fetch(ORIGIN+'/api/'+path,{...options,headers:{'Content-Type':'application/json','Authorization':'Bearer '+auth.token,...options.headers}});
@@ -38,12 +39,12 @@ window.PlanifStrava=(()=>{
     }finally{form.elements.password.value='';}
   }
   async function refresh(){
-    if(!auth||!activePlan)return;
-    const planId=activePlan.id,uid=auth.uid;
+    if(!auth||!ctx.activePlan)return;
+    const planId=ctx.activePlan.id,uid=auth.uid;
     records=read(localStorage,cacheKey(planId),{});loadedPlan=planId;
     if(!ready()){redraw();return;}
     const data=await api('planif/plans/'+encodeURIComponent(planId));
-    if(auth?.uid!==uid||activePlan?.id!==planId)return;
+    if(auth?.uid!==uid||ctx.activePlan?.id!==planId)return;
     records=Object.fromEntries(data.sessions.map(r=>[r.id,r]));localStorage.setItem(cacheKey(planId),JSON.stringify(records));redraw();
   }
   const currentRecords=info=>auth&&info&&info.planId===loadedPlan?records:{};
@@ -56,7 +57,7 @@ window.PlanifStrava=(()=>{
   async function search(info){
     const key=candidateKey(info),uid=auth?.uid;
     const data=await api(`planif/activities?from=${offset(info.date,-7)}&to=${offset(info.date,7)}`);
-    if(auth?.uid!==uid||activePlan?.id!==info.planId)return;
+    if(auth?.uid!==uid||ctx.activePlan?.id!==info.planId)return;
     activities[key]={list:rank(data.activities,info),truncated:data.truncated};
     message=data.activities.length?'Sélectionne la sortie puis confirme son association.':'Aucune sortie trouvée autour de cette date. Synchronise ton application Strava puis actualise.';redraw();
   }
@@ -79,34 +80,34 @@ window.PlanifStrava=(()=>{
   }
   async function save(info,status,activityId=null){
     const prior=currentRecords(info)[info.id],uid=auth?.uid;
-    const record=await api(`planif/plans/${encodeURIComponent(info.planId)}/sessions/${encodeURIComponent(info.id)}`,{method:'PUT',body:JSON.stringify({status,activityId,revision:prior?.revision||0,plannedAt:info.date,plannedMinutes:info.minutes,title:info.title,planTitle:activePlan.title,option:appOpt})});
-    if(auth?.uid!==uid||activePlan?.id!==info.planId){const cached=read(localStorage,cacheKey(info.planId,uid),{});cached[info.id]=record;localStorage.setItem(cacheKey(info.planId,uid),JSON.stringify(cached));return;}
+    const record=await api(`planif/plans/${encodeURIComponent(info.planId)}/sessions/${encodeURIComponent(info.id)}`,{method:'PUT',body:JSON.stringify({status,activityId,revision:prior?.revision||0,plannedAt:info.date,plannedMinutes:info.minutes,title:info.title,planTitle:ctx.activePlan.title,option:ctx.appOpt})});
+    if(auth?.uid!==uid||ctx.activePlan?.id!==info.planId){const cached=read(localStorage,cacheKey(info.planId,uid),{});cached[info.id]=record;localStorage.setItem(cacheKey(info.planId,uid),JSON.stringify(cached));return;}
     records[info.id]=record;localStorage.setItem(cacheKey(info.planId),JSON.stringify(records));message=status==='planned'?'Validation annulée.':statusLabel(status)+' : enregistré.';redraw();
   }
   function onSession(info){
     const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-'),status=currentRecords(info)[info?.id]?.status;
     if(!info||!ready()||busy||activities[candidateKey(info)]||(status&&status!=='planned')||info.date>today)return;
     const uid=auth.uid,key=candidateKey(info);activities[key]={list:[],pending:true};
-    setTimeout(()=>{if(auth?.uid===uid&&activePlan?.id===info.planId)perform(()=>search(info));},0);
+    setTimeout(()=>{if(auth?.uid===uid&&ctx.activePlan?.id===info.planId)perform(()=>search(info));},0);
   }
   async function perform(action){if(busy)return;busy=true;try{await action();}catch(e){message=e.message;}finally{busy=false;redraw();}}
   document.addEventListener('click',e=>{
     const b=e.target.closest('[data-strava]');if(!b)return;
     const action=b.dataset.strava;
-    if(action==='settings'){appSession=null;appTab='set';setBuilt=false;redraw();return;}
+    if(action==='settings'){ctx.settings();return;}
     if(action==='connect'){connect();return;}
     if(action==='disconnect'){auth=null;records={};activities={};loadedPlan=null;sessionStorage.removeItem(AUTH_KEY);message='Planif déconnecté. Les validations restent enregistrées pour ton compte.';redraw();return;}
     if(action==='refresh'){perform(refresh);return;}
-    const info=planifSessionInfo(appSession);if(!info)return;
+    const info=ctx.sessionInfo();if(!info)return;
     if(action==='search')perform(()=>search(info));
     if(action==='missed')perform(()=>save(info,'missed'));
     if(action==='undo')perform(()=>save(info,'planned'));
   });
   document.addEventListener('submit',e=>{
     if(e.target.matches('[data-strava-login]')){e.preventDefault();perform(()=>login(e.target));}
-    if(e.target.matches('[data-strava-associate]')){e.preventDefault();const info=planifSessionInfo(appSession);if(info)perform(()=>save(info,e.target.elements.status.value,e.target.elements.activityId.value));}
+    if(e.target.matches('[data-strava-associate]')){e.preventDefault();const info=ctx.sessionInfo();if(info)perform(()=>save(info,e.target.elements.status.value,e.target.elements.activityId.value));}
   });
-  function onPlan(){if(auth&&activePlan&&loadedPlan!==activePlan.id){loadedPlan=activePlan.id;records=read(localStorage,cacheKey(loadedPlan),{});perform(refresh);}}
+  function onPlan(){if(auth&&ctx.activePlan&&loadedPlan!==ctx.activePlan.id){loadedPlan=ctx.activePlan.id;records=read(localStorage,cacheKey(loadedPlan),{});perform(refresh);}}
   document.addEventListener('planif-plan-change',onPlan);
   setTimeout(()=>{onPlan();redraw();},0);
   return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};

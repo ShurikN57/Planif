@@ -9,8 +9,14 @@ const copied=JSON.parse(JSON.stringify(plan));copied.weeks[0].sessions[0].name='
 const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
 const sessionStorage=storage(),localStorage=storage(),events={},requests=[];
 sessionStorage.setItem('planif-strava-auth-v1',JSON.stringify({uid:'flo',token:'test',name:'Flo',expiresAt:Date.now()+60000}));
-const context={sessionStorage,localStorage,console,setTimeout:()=>{},setBuilt:false,renderApp(){},activePlan:{id:'plan-1',title:'10 km'},appOpt:0,appSession:{},planifSessionInfo:()=>null,document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};}};
-vm.createContext(context);let source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');source=source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,refresh,search,save};');vm.runInContext(source,context);
+let startup,redraws=0;
+const context={sessionStorage,localStorage,console,setTimeout:fn=>{startup=fn;},document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};},redrawCounter:()=>redraws++};
+vm.createContext(context);
+// Load the actual bridge inside an IIFE: no Planif state/function is a global.
+const bridge=html.slice(html.indexOf('window.PlanifStravaContext={'),html.indexOf('\n})();',html.indexOf('window.PlanifStravaContext={')));
+vm.runInContext(`(()=>{let activePlan={id:'plan-1',title:'10 km'},appOpt=0,appSession=null,appLib=false,appTab='today',setBuilt=true;const planifSessionInfo=()=>null,renderApp=()=>redrawCounter();${bridge}})();`,context);
+let source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');source=source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,refresh,search,save};');vm.runInContext(source,context);
+startup();assert(redraws>0,'real module startup redraws without private globals');assert.equal(Object.hasOwn(context,'activePlan'),false);
 const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60,title:'S1-5x6’'};
 (async()=>{
  await link.refresh();assert(requests[0].options.headers.Authorization==='Bearer test');
