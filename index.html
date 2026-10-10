@@ -260,6 +260,7 @@ body:not([data-ui="app"]) .shell{display:none}
 .refgrid .big{font-size:1.9rem}
 .refgrid .card>.lbl:last-child{font-size:.88rem;color:var(--ink);font-weight:600;line-height:1.35}
 .cta{width:100%;min-height:48px;margin-top:.6rem}
+.cta.ghost.stravaActivity{display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-align:center;text-decoration:none;font:inherit;font-weight:600;border:1px solid #fc4c02;border-radius:6px;padding:.45rem .9rem;color:#fc4c02}
 
 /* ===== Écran Séance (v9.0b) ===== */
 button.tile{cursor:pointer}
@@ -2979,6 +2980,47 @@ function ensurePlanifSessionIds(C){
     }));
   });
 }
+function findPlanifSession(C,id){
+  for(const [wi,w]of (C?.weeks||[]).entries())for(const [di,day]of (w.days||[]).entries()){
+    const ii=(day.items||[]).findIndex(it=>it.planifId===id);if(ii>=0)return {w,day,it:day.items[ii],ref:{w:wi,d:di,i:ii}};
+  }
+  return null;
+}
+function applyPlanifMoves(C,moves={},previous=null,st=null){
+  for(const [id,move]of Object.entries(moves)){
+    const current=findPlanifSession(C,id),saved=findPlanifSession(previous,id),source=current||saved;
+    if(!source)continue;
+    // The week comes from the generated plan, including when only the saved item remains.
+    const w=C.weeks[source.ref.w],day=w?.days.find(d=>planDateKey(d.date)===move.to);if(!day)continue;
+    if(st&&current){try{planifMoveCheck(C,id,move.to,st);}catch(error){(C.moveWarnings||(C.moveWarnings={}))[id]=error.message;continue;}}
+    const preserved=saved&&planDateKey(saved.day.date)===move.to&&parseDate(move.to)<new Date(new Date().setHours(0,0,0,0));
+    const it=preserved||!current?JSON.parse(JSON.stringify(saved.it)):current.it;
+    for(const week of C.weeks)for(const d of week.days)d.items=d.items.filter(x=>x.planifId!==id);
+    day.items.push(it);
+  }
+  return C;
+}
+function planifMoveCheck(C,id,date,st){
+  const source=findPlanifSession(C,id);if(!source)throw Error('Séance introuvable.');
+  const day=source.w.days.find(d=>planDateKey(d.date)===date);
+  if(!day)throw Error('Choisis une date dans la même semaine.');
+  const it=source.it;if(['race','veille'].includes(it.kind))throw Error('Cette séance reste fixée à sa date avant la course.');
+  const beforeRace=dayDiff(day.date,parseDate(st.calRace));
+  if(source.w.raceWeek){
+    if(beforeRace<=0||beforeRace===2)throw Error('La course et le repos à J−2 restent protégés.');
+    if(it.kind==='q'&&!RULES.calendar.taper.reminderDaysBefore.includes(beforeRace))throw Error('Le rappel doit rester à J−3 ou J−4.');
+  }
+  const long=it.kind==='sl'||it.kind==='q'&&it.s.isLong,minutes=it.kind==='sl'?source.w.sl:it.s?.total;
+  const guard=RULES.calendar.longRun10k;
+  if(st.calDist===1&&long&&beforeRace<=guard.preRaceDays&&minutes>guard.preRaceCapMinutes)throw Error('Cette sortie longue dépasse le plafond à l’approche du 10 km.');
+  const warnings=[];
+  if(day.items.some(x=>x.planifId!==id))warnings.push('Ce jour contient déjà une séance. Les deux séances seront conservées.');
+  if(!st.avail[wd(day.date)])warnings.push('Ce jour était prévu comme indisponible ou au repos.');
+  if(it.kind==='q'||long)for(const w of C.weeks)for(const d of w.days){
+    if(Math.abs(dayDiff(day.date,d.date))<RULES.calendar.placement.minDaysBetweenQualities&&d.items.some(x=>x.planifId!==id&&(x.kind==='q'||x.kind==='sl')))warnings.push('Une autre séance exigeante ou sortie longue est proche de cette date.');
+  }
+  return {source,day,warnings:[...new Set(warnings)]};
+}
 function saveActivePlan(st,C,forceNew=false){
   if(!C||C.error||st.mode!=='cal')return;
   ensurePlanifSessionIds(C);
@@ -4248,7 +4290,9 @@ function render(){
   if(cal){$('specRow').style.display='none';
     $('calDistHint').textContent=st.calDist===1?'':'Seul le spécifique 10 km utilise déjà la nouvelle bibliothèque ; cette distance garde son générateur actuel.';
     let C=buildCalendar(st,pred);
-    if(!C.error&&!structureEditing&&activePlan&&sameStructure(calendarStructure(),activePlan.structure))C=preservePastSessions(C);
+    if(!C.error&&!structureEditing&&activePlan&&sameStructure(calendarStructure(),activePlan.structure)){
+      ensurePlanifSessionIds(C);C=preservePastSessions(C);C=applyPlanifMoves(C,activePlan.moves,activePlan.plan,st);
+    }
     lastCalError=C.error||null;
     if(C.error){$('overview').innerHTML=`<h2>Calendrier à compléter</h2><p>${warnText(C.error)}</p>`;$('weeksSec').innerHTML='';lastPlan=null;return;}
     lastPlan=C;lastPred=pred;lastSt=st;
@@ -4551,7 +4595,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.11';
+const APP_VERSION='2026.10.10.12';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -5021,7 +5065,22 @@ function planifSessionInfo(r){
   else if(it.kind==='veille'){minutes=it.min;title='Jogg + LD';}
   else if(it.kind==='race'){minutes=(it.s?.duration||it.s?.total||lastPlan.race?.seconds/60);title='Course';}
   if(!(minutes>0))return null;
-  return {planId:activePlan.id,id,date:planDateKey(day.date),minutes,title};
+  return {planId:activePlan.id,id,date:planDateKey(day.date),originalDate:activePlan.moves?.[id]?.from||planDateKey(day.date),minutes,title};
+}
+function planifMoveHtml(){
+  const info=planifSessionInfo(appSession);if(!info)return '';
+  const source=findPlanifSession(lastPlan,info.id);if(!source||['race','veille'].includes(source.it.kind))return '';
+  const moved=info.originalDate!==info.date,warning=lastPlan.moveWarnings?.[info.id];
+  return `<div class="card">${moved?`<p class="lbl">Initialement prévue le ${fmtD(new Date(info.originalDate+'T12:00:00'))}.</p>`:''}${warning?`<p class="lbl">Déplacement suspendu : ${warning}</p>`:''}<details class="info"><summary>Déplacer la séance</summary><p>Choisis un autre jour dans cette semaine. Le contenu, le volume hebdomadaire et la validation sont conservés.</p><form data-planif-move><label class="sf"><span>Nouvelle date</span><select name="date">${source.w.days.map(d=>{const key=planDateKey(d.date);try{planifMoveCheck(lastPlan,info.id,key,lastSt);return `<option value="${key}"${key===info.date?' selected':''}>${fmtD(d.date)}</option>`;}catch{return '';}}).join('')}</select></label><p class="lbl" data-move-warning role="status"></p><button class="cta ghost" type="submit">Déplacer à cette date</button></form>${activePlan.moves?.[info.id]?'<button type="button" class="cta ghost" data-planif-restore>Rétablir la date initiale</button>':''}</details></div>`;
+}
+function movePlanifSession(date){
+  const info=planifSessionInfo(appSession);if(!info)return;
+  const check=planifMoveCheck(lastPlan,info.id,date,lastSt);if(info.date===date&&!activePlan.moves?.[info.id])return;
+  if(check.warnings.length&&!window.confirm(check.warnings.join('\n')+'\nDéplacer quand même ?'))return;
+  const moves={...activePlan.moves};if(date===info.originalDate)delete moves[info.id];else moves[info.id]={from:info.originalDate,to:date};
+  check.source.day.items.splice(check.source.ref.i,1);check.day.items.push(check.source.it);
+  activePlan={...activePlan,moves};saveActivePlan(lastSt,lastPlan);calSel=null;
+  render();appSession=findPlanifSession(lastPlan,info.id)?.ref||null;renderApp();
 }
 function sessionScreenHtml(){
   if(appSession&&appSession.lib)return libSessionHtml(appSession.lib);
@@ -5054,7 +5113,7 @@ function openSession(ref){appSession=ref;appOpt=0;renderApp();window.scrollTo(0,
 function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
-    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
+    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+planifMoveHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
     if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
@@ -5091,6 +5150,9 @@ $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEvent
 document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){appSession=null;appLib=false;appTab='set';setUi('app');}else{setBuilt=false;if(appTab==='set'&&!appSession&&!appLib)renderApp();}document.querySelectorAll('[data-coros]').forEach(b=>b.disabled=PlanifCoros.busy);});
 load();syncQualityPrereqs();render();renderApp();
 PlanifCoros.start();
+document.addEventListener('submit',e=>{if(!e.target.matches('[data-planif-move]'))return;e.preventDefault();try{movePlanifSession(e.target.elements.date.value);}catch(error){e.target.querySelector('[data-move-warning]').textContent=error.message;}});
+document.addEventListener('change',e=>{if(!e.target.matches('[data-planif-move] select'))return;const info=planifSessionInfo(appSession);if(!info)return;try{e.target.closest('form').querySelector('[data-move-warning]').textContent=planifMoveCheck(lastPlan,info.id,e.target.value,lastSt).warnings.join(' ');}catch(error){e.target.closest('form').querySelector('[data-move-warning]').textContent=error.message;}});
+document.addEventListener('click',e=>{if(!e.target.closest('[data-planif-restore]'))return;const info=planifSessionInfo(appSession);if(info)movePlanifSession(info.originalDate);});
 window.PlanifStravaContext={
   get activePlan(){return activePlan;},
   get appOpt(){return appOpt;},
@@ -5106,7 +5168,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.11"></script>
+<script src="./planif-strava.js?v=2026.10.10.12"></script>
 </body>
 </html>
 

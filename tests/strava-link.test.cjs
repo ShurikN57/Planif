@@ -37,7 +37,7 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
   context.fetch=async()=>({ok:true,json:async()=>({sessions:[record]})});await link.refresh();
   const closed=link.sessionHtml(info);assert(closed.includes('data-strava="undo"'));
   assert(!closed.includes('data-strava="search"'));assert(!closed.includes('data-strava-associate'));assert(!closed.includes('data-strava="missed"'));
-  if(record.activity)assert(closed.includes('Voir l’activité Strava'));
+  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Voir l’activité Strava')<closed.indexOf('Annuler la validation'));}
   await assert.rejects(link.save(info,'adapted','101'),/Annule la validation/);
   context.fetch=async()=>({ok:true,json:async()=>({id:info.id,status:'planned',revision:2})});await link.save(info,'planned');
   const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));

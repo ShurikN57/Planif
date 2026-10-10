@@ -67,9 +67,10 @@ window.PlanifStrava=(()=>{
     if(!info)return '';
     const record=currentRecords(info)[info.id],results=activities[candidateKey(info)],used=new Set(Object.values(currentRecords(info)).filter(r=>r.id!==info.id&&r.activityId).map(r=>r.activityId));
     let h=`<div class="card"><h2>Suivi de la séance</h2><p><b>${!record?.activityId&&(!record||record.status==='planned')&&results?.list.length?'Activité trouvée · à confirmer':statusLabel(record?.status)}</b></p>`;
-    if(record?.activity){const a=record.activity;h+=`<p>${esc(a.name)} · ${esc(a.date)} · ${Math.round(a.durationSec/60)}’ · ${Number(a.distanceKm).toFixed(2)} km</p><a href="https://www.strava.com/activities/${encodeURIComponent(a.id)}" target="_blank" rel="noopener">Voir l’activité Strava</a><p class="lbl">Activité associée ; le respect des fractions et des allures n’est pas évalué automatiquement.</p>`;}
+    if(record?.activity){const a=record.activity;h+=`<p>${esc(a.name)} · ${esc(a.date)} · ${Math.round(a.durationSec/60)}’ · ${Number(a.distanceKm).toFixed(2)} km</p><p class="lbl">Activité associée ; le respect des fractions et des allures n’est pas évalué automatiquement.</p>`;}
     if(!auth)h+='<button type="button" class="cta ghost" data-strava="settings">Lier mon compte Strava</button>';
     else if(finalized(record)){
+      if(record.activity)h+=`<a class="cta ghost stravaActivity" href="https://www.strava.com/activities/${encodeURIComponent(record.activity.id)}" target="_blank" rel="noopener">Voir l’activité Strava</a>`;
       h+=`<button type="button" class="cta ghost" data-strava="undo" ${busy?'disabled':''}>Annuler la validation</button><p class="lbl" role="status">${esc(message)}</p>`;
     }else{
       h+=`<button type="button" class="cta ghost" data-strava="search" ${busy?'disabled':''}>${results?'Actualiser les sorties':'Rechercher une activité'}</button>`;
