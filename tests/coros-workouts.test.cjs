@@ -85,3 +85,38 @@ assert(ctx.corosActivation({}, {fam:'spec',dist:0}));assert(ctx.corosActivation(
 assert(!ctx.corosActivation({sector:'s2'},{fam:'s2'}));assert(!ctx.corosActivation({}, {fam:'spec',dist:2}));assert(!ctx.corosActivation({}, {fam:'spec',dist:3}));
 assert(ctx.corosActivation({structure:{components:[{variant:{sector:'vo2'}}]}}));
 console.log('OK : distances, allures inversées, choix de durée/récupération, absence de récup finale, séries de 30/45 fractions, progressions, pyramides, blocs, fartlek au ressenti, côtes libres, immutabilité et refus explicites.');
+
+// Manual export matches the user's COROS screenshots: complete repeated pairs, no loose last rep.
+const mixedPrepared={...preparedSnapshot,variant:{structure:{type:'mixed_zones',components:[
+ {fam:'s1',variant:{structure:{type:'intervals',reps:5,durationMin:5,recoveryMin:1},intensity:{minKmh:12,maxKmh:12.5}}},
+ {fam:'s2',variant:{structure:{type:'intervals',reps:3,durationMin:3,recoveryMin:1},intensity:{minKmh:14,maxKmh:14.4}}}
+],recoveryBetweenBlocksMin:2}}};
+const mixedDraft=adapter.plan(mixedPrepared),mixedBefore=JSON.stringify(mixedDraft);
+const compact=adapter.course(mixedDraft,{},consent,{profile:'manual'});validate(compact);
+assert.equal(compact.sections.length,6);
+assert.equal(compact.sections[0].sectionType,1);assert.equal(compact.sections[0].targetValue,1200);
+assert.equal(compact.sections[1].sectionType,3);assert.equal(compact.sections[1].targetType,4);
+assert.equal(JSON.stringify(compact.sections.filter(s=>s.intervalGroup).map(s=>[s.repeats,s.sets[0].targetValue,s.sets[1].targetType])),JSON.stringify([[3,12,4],[5,300,4],[3,180,4]]));
+assert.equal(compact.sections.at(-1).sectionType,4);assert.equal(compact.sections.at(-1).targetType,4);
+const compactLabels=adapter.labels(mixedDraft,{profile:'manual'},compact.sections);
+assert.equal(compactLabels.length,6);assert.equal(compactLabels.at(-1),'Retour au calme');assert(!compactLabels.some(s=>s&&s.includes('Transition')));
+assert.equal(JSON.stringify(mixedDraft),mixedBefore);
+// Guided export retains exactly four S1 recoveries, two S2 recoveries and one inter-block recovery.
+const guidedMixed=adapter.course(mixedDraft,{},consent,{profile:'guided'});validate(guidedMixed);
+const guidedCore=expand(guidedMixed).slice(8,-1);
+assert.equal(guidedCore.filter(s=>s.sectionType===3&&s.targetValue===60).length,6);
+assert.equal(guidedCore.filter(s=>s.sectionType===3&&s.targetValue===120).length,1);
+assert.equal(guidedCore.at(-1).sectionType,2);
+assert.equal(guidedMixed.sections.at(-1).targetValue,600);
+// COROS groups remain capped at twenty, including exact-boundary and multi-group formats.
+for(const reps of [1,20,21,30,45]){
+ const draft=adapter.plan({...preparedSnapshot,variant:{structure:{type:'intervals',reps,durationMin:2,recoveryMin:1},intensity:{minKmh:14,maxKmh:14.5}}});
+ const sent=adapter.course(draft,{},consent,{profile:'manual'});validate(sent);
+ const flat=expand(sent);assert.equal(flat.filter(s=>s.sectionType===2&&s.targetValue===120).length,reps);
+ assert.equal(flat.filter(s=>s.sectionType===3).length,reps+4);
+ assert(sent.sections.filter(s=>s.intervalGroup).every(s=>s.repeats<=20));
+ assert(!flat.some((s,i)=>s.sectionType===3&&flat[i+1]?.sectionType===3));
+}
+assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections).at(-1),'Retour au calme');
+assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections)[3],'Activation au S2 ou légèrement plus lent');
+console.log('OK: screenshot-equivalent manual groups, grouped final recoveries, guided inter-block timing, 20-repetition limits, preview alignment and draft immutability.');
