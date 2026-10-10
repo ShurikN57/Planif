@@ -49,6 +49,8 @@ window.PlanifStrava=(()=>{
   }
   const currentRecords=info=>auth&&info&&info.planId===loadedPlan?records:{};
   const statusLabel=status=>({realized:'Réalisée',adapted:'Adaptée',missed:'Non réalisée',planned:'Prévue'}[status]||'Prévue');
+  const finalized=record=>['realized','adapted','missed'].includes(record?.status);
+  const todayKey=()=>{const now=new Date();return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');};
   function badge(info){const record=currentRecords(info)[info?.id];return record&&record.status!=='planned'?`<span class="inPlan">${record.status==='missed'?'':'✓ '}${statusLabel(record.status)}</span>`:'';}
   function settingsHtml(){return `<div class="card"><h2>Liaison Strava</h2><p class="lbl">${auth?'Compte : '+esc(auth.name)+(ready()?'':' · session à renouveler'):'Retrouve les sorties déjà synchronisées dans ton application Strava.'}</p><button type="button" class="cta ghost" data-strava="connect">${auth?'Renouveler la connexion':'Lier mon compte athlète'}</button><details class="info"><summary>Connexion par email · iPhone ou fenêtre bloquée</summary><p>Utilise les identifiants de ton application Strava Firebase.</p><form data-strava-login><label class="sf"><span>Email</span><input name="email" type="email" autocomplete="username" required></label><label class="sf"><span>Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label><button class="cta" type="submit">Se connecter</button></form></details>${auth?'<button type="button" class="cta ghost" data-strava="refresh">Actualiser les validations</button><button type="button" class="cta ghost" data-strava="disconnect">Déconnecter Planif</button>':''}<p class="lbl" role="status">${esc(message)}</p><p class="lbl">Une activité est associée uniquement après ta confirmation. La liaison ne modifie aucune activité Strava. La connexion est conservée pour cette session ; les validations restent sauvegardées.</p></div>`;}
   const candidateKey=info=>info.planId+':'+info.id+':'+info.date;
@@ -67,26 +69,28 @@ window.PlanifStrava=(()=>{
     let h=`<div class="card"><h2>Suivi de la séance</h2><p><b>${!record?.activityId&&(!record||record.status==='planned')&&results?.list.length?'Activité trouvée · à confirmer':statusLabel(record?.status)}</b></p>`;
     if(record?.activity){const a=record.activity;h+=`<p>${esc(a.name)} · ${esc(a.date)} · ${Math.round(a.durationSec/60)}’ · ${Number(a.distanceKm).toFixed(2)} km</p><a href="https://www.strava.com/activities/${encodeURIComponent(a.id)}" target="_blank" rel="noopener">Voir l’activité Strava</a><p class="lbl">Activité associée ; le respect des fractions et des allures n’est pas évalué automatiquement.</p>`;}
     if(!auth)h+='<button type="button" class="cta ghost" data-strava="settings">Lier mon compte Strava</button>';
-    else{
+    else if(finalized(record)){
+      h+=`<button type="button" class="cta ghost" data-strava="undo" ${busy?'disabled':''}>Annuler la validation</button><p class="lbl" role="status">${esc(message)}</p>`;
+    }else{
       h+=`<button type="button" class="cta ghost" data-strava="search" ${busy?'disabled':''}>${results?'Actualiser les sorties':'Rechercher une activité'}</button>`;
       const list=results?.list.filter(a=>!used.has(a.id))||[];
       if(list.length)h+=`<form data-strava-associate><label class="sf"><span>Activité à associer</span><select name="activityId">${list.map(a=>`<option value="${esc(a.id)}">${esc(a.date)} · ${esc(a.name)} · ${Math.round(a.durationSec/60)}’ · ${Number(a.distanceKm).toFixed(2)} km</option>`).join('')}</select></label><label class="sf"><span>Résultat</span><select name="status"><option value="realized">Réalisée</option><option value="adapted">Adaptée · contenu modifié</option></select></label><button type="submit" class="cta" ${busy?'disabled':''}>Confirmer l’association</button></form>`;
       if(results?.truncated)h+='<p class="lbl">La liste a atteint sa limite de 200 activités.</p>';
-      h+=`<button type="button" class="cta ghost" data-strava="missed" ${busy?'disabled':''}>Marquer non réalisée</button>`;
-      if(record&&record.status!=='planned')h+=`<button type="button" class="cta ghost" data-strava="undo" ${busy?'disabled':''}>Annuler la validation</button>`;
+      if(info.date<=todayKey())h+=`<button type="button" class="cta ghost" data-strava="missed" ${busy?'disabled':''}>Marquer non réalisée</button>`;
       h+=`<p class="lbl" role="status">${esc(message)}</p>`;
     }
     return h+'</div>';
   }
   async function save(info,status,activityId=null){
     const prior=currentRecords(info)[info.id],uid=auth?.uid;
+    if(status==='missed'&&info.date>todayKey())throw Error('Une séance future ne peut pas être marquée non réalisée.');
+    if(status!=='planned'&&finalized(prior))throw Error('Annule la validation avant de modifier le résultat.');
     const record=await api(`planif/plans/${encodeURIComponent(info.planId)}/sessions/${encodeURIComponent(info.id)}`,{method:'PUT',body:JSON.stringify({status,activityId,revision:prior?.revision||0,plannedAt:info.date,plannedMinutes:info.minutes,title:info.title,planTitle:ctx.activePlan.title,option:ctx.appOpt})});
     if(auth?.uid!==uid||ctx.activePlan?.id!==info.planId){const cached=read(localStorage,cacheKey(info.planId,uid),{});cached[info.id]=record;localStorage.setItem(cacheKey(info.planId,uid),JSON.stringify(cached));return;}
     records[info.id]=record;localStorage.setItem(cacheKey(info.planId),JSON.stringify(records));message=status==='planned'?'Validation annulée.':statusLabel(status)+' : enregistré.';redraw();
   }
   function onSession(info){
-    const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-'),status=currentRecords(info)[info?.id]?.status;
-    if(!info||!ready()||busy||activities[candidateKey(info)]||(status&&status!=='planned')||info.date>today)return;
+    if(!info||!ready()||busy||activities[candidateKey(info)]||finalized(currentRecords(info)[info.id])||info.date>todayKey())return;
     const uid=auth.uid,key=candidateKey(info);activities[key]={list:[],pending:true};
     setTimeout(()=>{if(auth?.uid===uid&&ctx.activePlan?.id===info.planId)perform(()=>search(info));},0);
   }

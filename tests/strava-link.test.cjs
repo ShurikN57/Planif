@@ -12,7 +12,9 @@ const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(
 const sessionStorage=storage(),localStorage=storage(),events={},requests=[];
 sessionStorage.setItem('planif-strava-auth-v1',JSON.stringify({uid:'flo',token:'test',name:'Flo',expiresAt:Date.now()+60000}));
 let startup,redraws=0;
-const context={sessionStorage,localStorage,console,setTimeout:fn=>{startup=fn;},document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};},redrawCounter:()=>redraws++};
+const clock=new Date(2026,9,10,0,30).getTime();
+class FixedDate extends Date{constructor(...args){super(...(args.length?args:[clock]));}static now(){return clock;}}
+const context={Date:FixedDate,sessionStorage,localStorage,console,setTimeout:fn=>{startup=fn;},document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};},redrawCounter:()=>redraws++};
 vm.createContext(context);
 // Load the actual bridge inside an IIFE: no Planif state/function is a global.
 const bridge=html.slice(html.indexOf('window.PlanifStravaContext={'),html.indexOf('\n})();',html.indexOf('window.PlanifStravaContext={')));
@@ -25,11 +27,26 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
  const ranked=link.rank([{id:'2',date:'2026-10-11',durationSec:3600},{id:'1',date:'2026-10-10',durationSec:3500}],info);assert.equal(ranked[0].id,'1');
  context.fetch=async()=>({ok:true,json:async()=>({activities:[{id:'101',date:info.date,name:'<img src=x>',durationSec:3600,distanceKm:10}],truncated:false})});
  await link.search(info);const h=link.sessionHtml(info);assert(h.includes('Activité trouvée'));assert(h.includes('&lt;img src=x&gt;'));assert(!h.includes('<img src=x>'));assert.equal(link.badge(info),'');
+ // Local calendar day, including just after midnight when the UTC date is yesterday.
+ assert(link.sessionHtml({...info,date:'2026-10-09'}).includes('data-strava="missed"'));
+ assert(link.sessionHtml(info).includes('data-strava="missed"'));
+ assert(!link.sessionHtml({...info,date:'2026-10-11'}).includes('data-strava="missed"'));
+ await assert.rejects(link.save({...info,date:'2026-10-11'},'missed'),/future/);
+ for(const status of ['realized','adapted','missed']){
+  const record={id:info.id,status,revision:1,activityId:status==='missed'?null:'101',activity:status==='missed'?null:{id:'101',name:'Jogging',date:info.date,durationSec:3600,distanceKm:10}};
+  context.fetch=async()=>({ok:true,json:async()=>({sessions:[record]})});await link.refresh();
+  const closed=link.sessionHtml(info);assert(closed.includes('data-strava="undo"'));
+  assert(!closed.includes('data-strava="search"'));assert(!closed.includes('data-strava-associate'));assert(!closed.includes('data-strava="missed"'));
+  if(record.activity)assert(closed.includes('Voir l’activité Strava'));
+  await assert.rejects(link.save(info,'adapted','101'),/Annule la validation/);
+  context.fetch=async()=>({ok:true,json:async()=>({id:info.id,status:'planned',revision:2})});await link.save(info,'planned');
+  const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));
+ }
  let resolve;context.fetch=()=>new Promise(r=>resolve=r);const saving=link.save(info,'realized','101');
  events.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
  resolve({ok:true,json:async()=>({id:info.id,status:'realized',activityId:'101',revision:1})});await saving;
  assert.equal(link.badge(info),'');assert.equal(sessionStorage.getItem('planif-strava-auth-v1'),null);
  assert.equal(JSON.parse(localStorage.getItem('planif-strava-records-v1:flo:plan-1'))[info.id].revision,1);
  const calls=requests.length;await events.message({origin:'https://attacker.example',data:{type:'planif-strava-auth'}});assert.equal(requests.length,calls);
- console.log('OK: stable session IDs, duplicate footings, candidate ordering/escaping, explicit confirmation, disconnect during save and auth origin guard.');
+ console.log('OK: stable IDs, candidate escaping, local date gates, finalized actions hidden, undo reopens association, stale action guards, disconnect during save and auth origin guard.');
 })().catch(e=>{console.error(e);process.exit(1);});

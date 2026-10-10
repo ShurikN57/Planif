@@ -4551,7 +4551,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.10';
+const APP_VERSION='2026.10.10.11';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -5106,7 +5106,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.10"></script>
+<script src="./planif-strava.js?v=2026.10.10.11"></script>
 </body>
 </html>
 
