@@ -4466,7 +4466,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.03';
+const APP_VERSION='2026.10.10.04';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4796,8 +4796,8 @@ function thresholdHrText(v,st){
   if(v.structure?.components)return [...new Set(v.structure.components.flatMap(c=>thresholdHrText(c.variant,st)))];
   const sector=v.sector||(v.fam||'').split('.')[0];
   if(!['s1','s2'].includes(sector))return [];
-  const value=sector==='s1'?st?.lt1Hr:st?.lt2Hr,label=sector==='s1'?'S1':'S2';
-  return [`Plafond FC ${label} : ${value>0?Math.round(value)+' bpm':'à renseigner dans Physiologie (FC '+label+')'}`];
+  const value=sector==='s1'?st?.lt2Hr*0.95:st?.lt2Hr,label=sector==='s1'?'S1':'S2';
+  return [`Plafond FC ${label} : ${value>0?Math.round(value)+' bpm':'à renseigner dans Physiologie (FC S2)'}`];
 }
 function qualityScheduleHtml(v,s,st){
   const rows=sessionRecoveryRows(v),S=v.structure||{};
