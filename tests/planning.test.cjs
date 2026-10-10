@@ -160,3 +160,32 @@ assert(mixedHr.includes('Plafond FC S1 : 165 bpm'));assert(mixedHr.includes('Pla
 const activeHtml=context.ui.show({w:aw.index,f:af});assert(activeHtml.includes('class="paceSpeed"'));
 console.log('OK: combined Jogg pace range, chronological quality steps, optional block recovery and pace-first typography.');
 
+
+// Library progression uses each VO2 format's effort duration, not a shared 18-minute goal.
+context.pred=pred;
+vm.runInContext(`let lastPred=pred;const info=(title,lines)=>lines.join(' ');`+
+ html.slice(html.indexOf('const LIB_SECTORS='),html.indexOf('function libSessionHtml('))+
+ `\nthis.library={candidates:libCandidates,work:libWork,count:libFormatCount,load:libCandidateLoad,html:appLibHtml,set:(sec,phase)=>{libSector=sec;libVol=phase;},range:vo2WorkRange};`,context);
+const L=context.library;
+const phaseCandidates=[0,1,2].map(i=>L.candidates('vo2',L.work('vo2')[i],i));
+const thirty=phaseCandidates.map(list=>list.find(o=>o.c.key==='vo2:int:0.5').c);
+assert.deepEqual(thirty.map(c=>c.structure.reps),[16,24,30]);
+assert(thirty.every(c=>c.work<=15&&c.structure.reps<=30));
+const four=phaseCandidates.map(list=>list.find(o=>o.c.key==='vo2:vo2.longTime:4').c);
+assert.deepEqual(four.map(c=>c.work),[12,16,20]);
+for(const sec of ['s1','s2','vo2','spec10k','hills']){
+ const phases=[0,1,2].map(i=>L.candidates(sec,L.work(sec)[i],i));
+ const unique=new Set(phases.flat().map(o=>o.c.key));assert.equal(L.count(sec),unique.size);
+ for(let i=0;i<3;i++)for(const {c} of phases[i]){
+  const load=L.load(sec,c,state);assert(Number.isFinite(load)&&load>0);
+  if(i){const before=phases[i-1].find(o=>o.c.key===c.key);if(before)assert(c.work>=before.c.work-1e-9);}
+ }
+ L.set(sec,1);const rendered=L.html();assert(rendered.includes(' · charge '));assert(rendered.includes(`${L.count(sec)} formats distincts`));assert(!rendered.includes('undefined'));assert(!rendered.includes('NaN'));
+}
+// The tile and the detail use the same preparation, cooldown and recovery load model.
+for(const c of [...thirty,...four]){
+ const prep=E.prepareSession({fam:'vma',variants:[c]});
+ assert.equal(prep.wu,27);assert.equal(prep.cd,10);
+ assert(L.load('vo2',c,state)>0);
+}
+console.log('OK: library 30-second progression 16/24/30 reps, 4-minute progression 12/16/20 minutes, distinct counts, finite loads and rendered category cards.');

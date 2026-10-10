@@ -4466,7 +4466,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.04';
+const APP_VERSION='2026.10.10.05';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
@@ -4829,12 +4829,29 @@ function libWork(sec){
   const K=RULES.blocks.spec[1].K,v=libV10();if(!v)return null;
   return[K[0],(K[0]+K[1])/2,K[1]].map(k=>Math.min(k/v*60,RULES.spec10k.workCap));
 }
-function libCandidates(sec,W){
+/* Bibliothèque : progression par format, sans modifier la sélection du plan.
+   Les plages VO₂ selon la durée de fraction sont des choix existants de Planif. */
+function libFormatCandidate(f,c,st,ctx,phase){
+  if(c.sector!=='vo2'||!['intervals','intermittent'].includes(c.structure.type))return c;
+  const [lo,hi]=vo2WorkRange(maxFractionMinutes(c)),target=lo+(hi-lo)*phase/2;
+  let next=f.gen(target,st,ctx).find(v=>v.key===c.key)||c;
+  // L'arrondi en séries ne doit pas dépasser le volume propre au format.
+  for(let t=target;next.work>hi+1e-9&&t>0;t-=0.25){
+    next=f.gen(Math.max(0,t-0.25),st,ctx).find(v=>v.key===c.key)||next;
+  }
+  return next.work<=hi+1e-9?next:null;
+}
+function libCandidates(sec,W,phase=libVol){
   const st=lastSt;if(!st)return[];
   if(sec==='hills'){const H=RULES.hills;return[...H.short.reps.map(r=>({c:hillStruct(r,W,false,st),fam:'hills.short'})),...H.long.reps.map(r=>({c:hillStruct(r,W,true,st),fam:'hills.long'}))].map(o=>{o.c.key=`${o.fam}:${o.c.structure.durationMin}`;return o;});}
   const ctx={v:libV10()};const out=[];
-  SESSION_LIBRARY[sec].forEach(f=>{f.gen(W,st,ctx).forEach(c=>{if(!capsFor(sec,c,st).length)out.push({c,fam:f.id});});});
+  SESSION_LIBRARY[sec].forEach(f=>{f.gen(W,st,ctx).forEach(seed=>{const c=libFormatCandidate(f,seed,st,ctx,phase);if(c&&!capsFor(sec,c,st).length)out.push({c,fam:f.id});});});
   return out;
+}
+const libFormatCount=sec=>{const Ws=libWork(sec);return Ws?new Set(Ws.flatMap((W,i)=>libCandidates(sec,W,i).map(o=>o.c.key))).size:0;};
+function libCandidateLoad(sec,c,st){
+  const prep=prepareSession({fam:LIB_WARM[sec],variants:[c],wu:24,cd:10});
+  return variantLoad(c,prep,st).load;
 }
 const planKeys=()=>{const m={};if(lastPlan&&lastPlan.weeks)lastPlan.weeks.forEach((w,i)=>(w.sessions||[]).forEach(s=>s.variants.forEach(v=>{if(v.key&&!(v.key in m))m[v.key]=i+1;})));return m;};
 const phaseHint=w=>{const p=PHASE_NAMES.filter((n,i)=>i<3&&w[i]>=0.8);return p.length?`plutôt ${p.join(', ')} de bloc`:'peu utilisé';};
@@ -4843,20 +4860,20 @@ function appLibHtml(){
   const secs=LIB_SECTORS.filter(x=>x.id!=='spec10k'||libV10());
   if(!secs.find(x=>x.id===libSector))libSector='s2';
   const Ws=libWork(libSector);
-  let h='<div class="chips2" role="group" aria-label="Qualité">'+secs.map(x=>`<button type="button" data-lsec="${x.id}" aria-pressed="${x.id===libSector}">${x.lab}</button>`).join('')+'</div>';
+  let h='<div class="chips2" role="group" aria-label="Qualité">'+secs.map(x=>`<button type="button" data-lsec="${x.id}" aria-pressed="${x.id===libSector}">${x.lab} · ${libFormatCount(x.id)}</button>`).join('')+'</div>';
   const fams=libSector==='hills'?['hills.short','hills.long']:SESSION_LIBRARY[libSector].map(f=>f.id);
   if(!fams.includes(libFam))libFam='all';
   h+='<div class="chips2 sub" role="group" aria-label="Type">'+[['all','Tous']].concat(fams.map(f=>[f,FAM_LAB[f]])).map(([f,l])=>`<button type="button" data-lfam="${f}" aria-pressed="${f===libFam}">${l}</button>`).join('')+'</div>';
-  h+=`<div class="optSeg three" role="group" aria-label="Volume de travail">${['Début','Milieu','Fin'].map((l,i)=>`<button type="button" data-lvol="${i}" aria-pressed="${i===libVol}">${l} de bloc<small>${Math.round(Ws[i])}'</small></button>`).join('')}</div>`;
-  h+=`<div class="card"><p class="lbl" style="margin:0">Formats que le moteur peut proposer, calculés avec tes repères pour environ ${Math.round(Ws[libVol])}' de travail. Leur pertinence dépend de la phase du bloc : le plan choisit parmi eux.</p>${info('Bibliothèque',['Les formats, les bornes de répétitions, les allures et les récupérations viennent directement des règles du moteur.','« Dans ton plan » signale un format retenu dans le plan affiché ; la pertinence par phase vient des poids de la bibliothèque.'])}</div>`;
+  h+=`<div class="optSeg three" role="group" aria-label="Période du bloc">${['Début','Milieu','Fin'].map((l,i)=>`<button type="button" data-lvol="${i}" aria-pressed="${i===libVol}">${l} de bloc<small>Volume adapté au format</small></button>`).join('')}</div>`;
+  h+=`<div class="card"><p class="lbl" style="margin:0">${libFormatCount(libSector)} formats distincts dans cette catégorie. Le volume de chaque format évolue selon la période choisie, ses bornes et tes repères ; il n’existe pas de durée commune imposée.</p>${info('Bibliothèque',['La progression et la pertinence par phase sont des choix Planif. Certains formats fixes restent identiques entre les périodes.','La charge estimée combine le travail, l’intensité, la densité des récupérations, la préparation et le retour au calme. Deux charges proches ne garantissent pas le même stimulus ni la même fatigue.','Un format est compté une seule fois, même si son nombre de répétitions varie entre début, milieu et fin.','« Dans ton plan » signale un format retenu dans le plan affiché ; la pertinence par phase vient des poids de la bibliothèque.'])}</div>`;
   const pk=planKeys(),all=libCandidates(libSector,Ws[libVol]);
   (libFam==='all'?fams:[libFam]).forEach(f=>{
     const list=all.filter(o=>o.fam===f);if(!list.length)return;
     const w=RULES.library.phaseWeights[f];
-    h+=`<div class="libFam"><h2>${FAM_LAB[f]}</h2>${w?`<span class="lbl">${phaseHint(w)}</span>`:''}</div>`;
+    h+=`<div class="libFam"><h2>${FAM_LAB[f]} · ${list.length} formats</h2>${w?`<span class="lbl">${phaseHint(w)}</span>`:''}</div>`;
     list.forEach(o=>{const c=o.c,[main,rec]=splitRec(vText(c)),ch=vChips(c),inPlan=c.key in pk;
       h+=`<button type="button" class="tile libT" style="--c:${libColor(libSector)}" data-lib="${libSector}|${encodeURIComponent(c.key)}"><span class="go" aria-hidden="true">›</span>`+
-        `<span class="s">${main}</span><span class="t">${paceHtml(ch[0]||'')}</span><span class="t">${rec?rec.charAt(0).toUpperCase()+rec.slice(1)+', ':''}travail ${Math.round(c.work)}'</span>${inPlan?`<span class="inPlan">Dans ton plan, semaine ${pk[c.key]}</span>`:''}</button>`;});
+        `<span class="s">${main}</span><span class="t">${paceHtml(ch[0]||'')}</span><span class="t">${rec?rec.charAt(0).toUpperCase()+rec.slice(1)+', ':''}travail ${fmtRep(c.work)} · charge ${pts(libCandidateLoad(libSector,c,st))}</span>${inPlan?`<span class="inPlan">Dans ton plan, semaine ${pk[c.key]}</span>`:''}</button>`;});
   });
   return h;
 }
