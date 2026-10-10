@@ -86,7 +86,7 @@ for(const type of ['rec','std','pro']){
  assert.equal(E.joggTitle({type}),'Jogg’');
  assert.equal(E.joggTitle({type,ld:'strides'}),'Jogg + LD');
  assert.equal(E.efBandText(type,state),E.efBandText('std',state));
- assert(E.efBandText(type,state).includes('sans allure imposée'));
+ assert(E.efBandText(type,state).includes('/km ('));
  assert.deepEqual(Array.from(E.efBand(type,state)),Array.from(E.efBand('std',state)));
 }
 // Assimilation is an easy week regardless of the obsolete two-quality setting.
@@ -113,15 +113,37 @@ console.log('OK: Jogg/LD labels, shared easy guidance, assimilation without qual
 
 // Render the real tile and detail functions, including block-mode links.
 context.state=state;context.plan=c;
-vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts';`+
+vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts',ptsRange=(a,b)=>pts(a)+' à '+pts(b);const vText=v=>presentVariantRaw(v).text,vChips=v=>presentVariantRaw(v).chips;`+
  html.slice(html.indexOf('const activeRangeText='),html.indexOf('function renderWeeks('))+
  html.slice(html.indexOf('function itemColor('),html.indexOf('/* Résumé de case'))+
  html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
+ html.slice(html.indexOf('const splitRec='),html.indexOf('const LIB_SECTORS='))+
  html.slice(html.indexOf('function sessionScreenHtml('),html.indexOf('function openSession('))+
- `\nthis.ui={tileHtml,itemShort,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
+ `\nthis.ui={tileHtml,itemShort,qualityScheduleHtml,sessionRecoveryRows,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
 const aw=c.weeks.find(w=>w.assimilation),af=aw.foot.findIndex(f=>f.assimilationActive);
 assert(context.ui.tileHtml({kind:'foot',f:aw.foot[af]},aw,{w:aw.index,f:af}).includes(`data-open="${aw.index},f,${af}"`));
-assert(context.ui.show({w:aw.index,f:af}).includes('Remplace la qualité en assimilation'));
+assert(!context.ui.show({w:aw.index,f:af}).includes('Un bloc de 10'));
+assert(!context.ui.show({w:aw.index,f:af}).includes('% LT1'));
+assert(context.ui.show({w:aw.index,f:af}).includes('<strong>'));
 assert.equal(context.ui.itemShort({kind:'foot',f:{type:'std',min:50,ld:'strides'}},aw).k,'Jogg + LD');
 console.log('OK: calendar/block tiles, active detail link and LD heading.');
+
+assert.deepEqual(Array.from(E.efBand('std',state)),[11.75*.75,11.75*.91]);
+const ordered=['Échauffement :','Travail :','Récup :','Retour au calme :','Durée totale :'];
+for(const w of c.weeks)for(const s of w.sessions)for(const v of s.variants){
+ const detail=context.ui.qualityScheduleHtml(v,s,state);
+ let last=-1;for(const label of ordered){const pos=detail.indexOf(label);assert(pos>last,label+' must follow previous step');last=pos;}
+ assert(!detail.includes('NaN'),v.fam+': '+detail);assert(!detail.includes('undefined'),v.fam+': '+detail);
+ const rec=context.ui.sessionRecoveryRows(v);
+ assert.equal(detail.includes('Récup entre blocs :'),rec.blocks.length>0);
+ if(v.intensity?.minKmh)assert(detail.includes('<strong>'));
+}
+const mixedDetail=context.ui.qualityScheduleHtml(transition.variants[0],transition,state);
+assert(mixedDetail.indexOf('Récup entre blocs :')>mixedDetail.indexOf('Récup :'));
+assert(mixedDetail.indexOf('Récup entre blocs :')<mixedDetail.indexOf('Retour au calme :'));
+assert(mixedDetail.includes('class="paceSpeed"'));
+const continuous={fam:'s1.cont',work:20,total:20,structure:{type:'continuous',durationMin:20},intensity:{minKmh:12,maxKmh:12.5}};
+assert(!context.ui.qualityScheduleHtml(continuous,{wu:24,cd:10},state).includes('Récup entre blocs :'));
+assert(context.ui.show({w:0,q:0}).includes('sessionSteps'));
+console.log('OK: combined Jogg pace range, chronological quality steps, optional block recovery and pace-first typography.');
 
