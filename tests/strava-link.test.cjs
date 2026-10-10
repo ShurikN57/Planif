@@ -1,0 +1,27 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const ids=html.slice(html.indexOf('function ensurePlanifSessionIds('),html.indexOf('function saveActivePlan('));
+const model={};vm.createContext(model);vm.runInContext(ids,model);
+const q=[{name:'first'},{name:'second'}],foot=[{min:40},{min:40}],plan={weeks:[{sessions:q,foot,days:[{items:[{kind:'q',s:q[1]},{kind:'foot',f:foot[0]}]},{items:[{kind:'q',s:q[0]},{kind:'foot',f:foot[1]},{kind:'sl'}]}]}]};
+model.ensurePlanifSessionIds(plan);assert.equal(plan.weeks[0].days[0].items[0].planifId,'w0-q1');assert.equal(plan.weeks[0].days[1].items[0].planifId,'w0-q0');
+assert.equal(plan.weeks[0].days[1].items[1].planifId,'w0-foot1');assert.equal(plan.weeks[0].days[1].items[2].planifId,'w0-sl0');
+const copied=JSON.parse(JSON.stringify(plan));copied.weeks[0].sessions[0].name='pace changed';model.ensurePlanifSessionIds(copied);assert.equal(copied.weeks[0].days[1].items[0].planifId,'w0-q0');
+const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
+const sessionStorage=storage(),localStorage=storage(),events={},requests=[];
+sessionStorage.setItem('planif-strava-auth-v1',JSON.stringify({uid:'flo',token:'test',name:'Flo',expiresAt:Date.now()+60000}));
+const context={sessionStorage,localStorage,console,setTimeout:()=>{},setBuilt:false,renderApp(){},activePlan:{id:'plan-1',title:'10 km'},appOpt:0,appSession:{},planifSessionInfo:()=>null,document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};}};
+vm.createContext(context);let source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');source=source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,refresh,search,save};');vm.runInContext(source,context);
+const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60,title:'S1-5x6’'};
+(async()=>{
+ await link.refresh();assert(requests[0].options.headers.Authorization==='Bearer test');
+ const ranked=link.rank([{id:'2',date:'2026-10-11',durationSec:3600},{id:'1',date:'2026-10-10',durationSec:3500}],info);assert.equal(ranked[0].id,'1');
+ context.fetch=async()=>({ok:true,json:async()=>({activities:[{id:'101',date:info.date,name:'<img src=x>',durationSec:3600,distanceKm:10}],truncated:false})});
+ await link.search(info);const h=link.sessionHtml(info);assert(h.includes('Activité trouvée'));assert(h.includes('&lt;img src=x&gt;'));assert(!h.includes('<img src=x>'));assert.equal(link.badge(info),'');
+ let resolve;context.fetch=()=>new Promise(r=>resolve=r);const saving=link.save(info,'realized','101');
+ events.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
+ resolve({ok:true,json:async()=>({id:info.id,status:'realized',activityId:'101',revision:1})});await saving;
+ assert.equal(link.badge(info),'');assert.equal(sessionStorage.getItem('planif-strava-auth-v1'),null);
+ assert.equal(JSON.parse(localStorage.getItem('planif-strava-records-v1:flo:plan-1'))[info.id].revision,1);
+ const calls=requests.length;await events.message({origin:'https://attacker.example',data:{type:'planif-strava-auth'}});assert.equal(requests.length,calls);
+ console.log('OK: stable session IDs, duplicate footings, candidate ordering/escaping, explicit confirmation, disconnect during save and auth origin guard.');
+})().catch(e=>{console.error(e);process.exit(1);});

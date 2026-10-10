@@ -2967,8 +2967,21 @@ function archiveActivePlan(reason){
   planHistory=planHistory.slice(0,20);
   putJson(STORE.history,planHistory);
 }
+/* Identifiants de séance indépendants des allures et de l'option choisie. */
+function ensurePlanifSessionIds(C){
+  (C.weeks||[]).forEach((w,wi)=>{
+    const used={q:new Set(),foot:new Set()},counts={};
+    (w.days||[]).forEach(d=>(d.items||[]).forEach(it=>{
+      let index=counts[it.kind]||0;counts[it.kind]=index+1;
+      const pool=it.kind==='q'?w.sessions:it.kind==='foot'?w.foot:null,value=it.kind==='q'?it.s:it.f;
+      if(pool){const found=pool.findIndex((v,i)=>!used[it.kind].has(i)&&(v===value||JSON.stringify(v)===JSON.stringify(value)));if(found>=0)index=found;used[it.kind].add(index);}
+      if(!it.planifId)it.planifId=`w${wi}-${it.kind}${index}`;
+    }));
+  });
+}
 function saveActivePlan(st,C,forceNew=false){
   if(!C||C.error||st.mode!=='cal')return;
+  ensurePlanifSessionIds(C);
   const structure=calendarStructure();
   if(!activePlan||forceNew){
     activePlan={id:'plan-'+Date.now(),title:planTitle(st),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),structure,plan:snapshotPlan(C)};
@@ -2976,6 +2989,7 @@ function saveActivePlan(st,C,forceNew=false){
     activePlan={...activePlan,title:planTitle(st),updatedAt:new Date().toISOString(),structure:activePlan.structure||structure,plan:snapshotPlan(C)};
   }
   putJson(STORE.active,activePlan);
+  document.dispatchEvent?.(new CustomEvent('planif-plan-change'));
 }
 function restoreActiveStructure(){
   if(activePlan&&activePlan.structure){applyIds(activePlan.structure,STRUCT_IDS);saveModeState('cal');}
@@ -4537,12 +4551,12 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.07';
+const APP_VERSION='2026.10.10.08';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
-function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}`;
+function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}`;
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
@@ -4737,6 +4751,7 @@ function appSetHtml(){
   h+=`<details class="card settingsFold" data-settings-section="physio"${settingsSections.physio?' open':''}><summary><h2>Physiologie</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent"><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p></div></details>`;
 
   h+=PlanifCoros.settingsHtml();
+  h+=globalThis.PlanifStrava?.settingsHtml()||'';
 
   h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button></div>`;
   return h;
@@ -4989,6 +5004,25 @@ function corosSessionSnapshot(){
   throw new Error('Ce format libre n’est pas encore exportable sans modifier ses consignes.');
 }
 
+function planifSessionInfo(r){
+  if(!r||r.lib||lastSt?.mode!=='cal'||!activePlan||!lastPlan?.weeks)return null;
+  const w=lastPlan.weeks[r.w];if(!w)return null;
+  let day,it,id;
+  if(r.q!==undefined)id=`w${r.w}-q${r.q}`;
+  else if(r.f!==undefined)id=`w${r.w}-foot${r.f}`;
+  else if(r.sl)id=`w${r.w}-sl0`;
+  else{day=w.days?.[r.d];it=day?.items?.[r.i];id=it?.planifId;}
+  if(!it)for(const d of w.days||[]){const found=d.items?.find(x=>x.planifId===id);if(found){day=d;it=found;break;}}
+  if(!it||!id||!day)return null;
+  let minutes,title;
+  if(it.kind==='q'){const v=it.s.variants[appOpt]||it.s.variants[0];minutes=it.s.wu+v.total+it.s.cd;title=PlanifCorosAdapter.shortTitle({kind:'quality',variant:v,title:sessionTitle(it.s)});}
+  else if(it.kind==='foot'){minutes=it.f.min;title=PlanifCorosAdapter.shortTitle({kind:'foot',foot:it.f});}
+  else if(it.kind==='sl'){minutes=w.sl;title=`Sortie longue ${Math.round(minutes)}’`;}
+  else if(it.kind==='veille'){minutes=it.min;title='Jogg + LD';}
+  else if(it.kind==='race'){minutes=(it.s?.duration||it.s?.total||lastPlan.race?.seconds/60);title='Course';}
+  if(!(minutes>0))return null;
+  return {planId:activePlan.id,id,date:planDateKey(day.date),minutes,title};
+}
 function sessionScreenHtml(){
   if(appSession&&appSession.lib)return libSessionHtml(appSession.lib);
   const C=lastPlan,st=lastSt,r=appSession;const w=C&&C.weeks&&C.weeks[r.w];
@@ -5020,7 +5054,7 @@ function openSession(ref){appSession=ref;appOpt=0;renderApp();window.scrollTo(0,
 function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
-    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml();
+    ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
     if($('scr-session').querySelector('.sHead'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
@@ -5065,6 +5099,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script src="./planif-strava.js"></script>
 </body>
 </html>
 
