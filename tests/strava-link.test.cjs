@@ -1,5 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const version=html.match(/const APP_VERSION='([^']+)'/)[1],asset=`./planif-strava.js?v=${version}`;
+assert(html.includes(`src="${asset}"`));assert(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8').includes(`'${asset}'`),'PWA caches the exact versioned module');
 const ids=html.slice(html.indexOf('function ensurePlanifSessionIds('),html.indexOf('function saveActivePlan('));
 const model={};vm.createContext(model);vm.runInContext(ids,model);
 const q=[{name:'first'},{name:'second'}],foot=[{min:40},{min:40}],plan={weeks:[{sessions:q,foot,days:[{items:[{kind:'q',s:q[1]},{kind:'foot',f:foot[0]}]},{items:[{kind:'q',s:q[0]},{kind:'foot',f:foot[1]},{kind:'sl'}]}]}]};
