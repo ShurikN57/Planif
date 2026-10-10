@@ -120,3 +120,25 @@ for(const reps of [1,20,21,30,45]){
 assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections).at(-1),'Retour au calme');
 assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections)[3],'Activation au S2 ou légèrement plus lent');
 console.log('OK: screenshot-equivalent manual groups, grouped final recoveries, guided inter-block timing, 20-repetition limits, preview alignment and draft immutability.');
+
+// Short names describe the selected workout rather than the old generic screen heading.
+const named=(sector,structure,intensity={})=>({...base,variant:{sector,structure,intensity}});
+for(const [snapshot,name] of [
+ [named('s1',{type:'intervals',reps:5,durationMin:6,recoveryMin:1}),'S1-5x6’'],
+ [named('s2',{type:'intervals',reps:6,durationMin:4,recoveryMin:1}),'S2-6x4’'],
+ [named('vo2',{type:'intermittent',sets:2,perSet:6,reps:12,workMin:1,recoveryMin:1,recoveryBetweenSetsMin:2}),'VO-2x(6x1’)'],
+ [named('s1',{type:'intervals',reps:5,durationMin:6,progression:'increasing'}),'PR-5x6’'],
+ [named('s2',{type:'ladder',shape:'progressive',durationsMin:[4,6,8]}),'PR-4’+6’+8’'],
+ [mixedPrepared,'MX-S1:5x5’+S2:3x3’'],
+ [{...foot,foot:{type:'std',min:50}},'EF-50’'],
+ [{...foot,foot:{type:'std',min:45,ld:'strides'}},'EF-45’+LD'],
+ [named('spec10k',{type:'intervals',reps:3,distanceM:2000,recoveryMin:2},{race:'10 km',refKmh:14.5}),'AS10-3x2000m'],
+ [named('vo2',{type:'intermittent',reps:20,workMin:.5,recoveryMin:.5}),'VO-20x30”'],
+ [named('s1',{type:'intervals',reps:4,durationMin:1.5}),'S1-4x1’30”']
+])assert.equal(adapter.shortTitle(snapshot),name);
+const namedDraft=adapter.plan(named('s1',{type:'intervals',reps:5,durationMin:6,recoveryMin:1},{minKmh:12,maxKmh:12.5}));
+assert.equal(namedDraft.name,'S1-5x6’');
+for(const profile of ['manual','guided'])assert.equal(adapter.course(namedDraft,{},consent,{profile}).courseName,'S1-5x6’');
+assert.equal(adapter.shortTitle({...base,variant:{structure:{type:'continuous',durationMin:20}}}),base.title);
+assert.equal(adapter.course(mixedDraft,{},consent,{profile:'manual'}).courseName,'MX-S1:5x5’+S2:3x3’');
+console.log('OK: short S1/S2/VO/PR/MX/EF titles, series, distances, seconds, selected contents and identical names in both COROS profiles.');

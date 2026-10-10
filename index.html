@@ -800,7 +800,7 @@ window.PlanifCoros=(()=>{
     let reason=snapshot.unsupported||'';currentDraft=null;
     try{if(!reason)currentDraft=PlanifCorosAdapter.plan(snapshot);}catch(e){reason=e.message;}
     const draft=currentDraft;currentDate=snapshot.date||localDate(new Date());const limit=new Date();limit.setDate(limit.getDate()+90);
-    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Profil pour cet envoi</span><select name="profile">${profileOptions(getProfile())}</select></label><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.preparation?.activation?`<label class="sf"><span>Activation : cible en km/h (S2 par défaut, ou légèrement plus lent)</span><input name="activationKmh" type="text" inputmode="decimal" required value="${draft.preparation.s2Kmh}"></label>`:''}${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required checked><span>Je conserve les phases sans cible d’allure au ressenti, notamment les lignes droites et les efforts libres éventuels.</span></label>':''}${draft.free&&!draft.preparation?`<label class="corosConfirm"><input type="checkbox" name="free" checked ${draft.preparation?'':'required'}><span>${draft.preparation?'Toutes les récupérations manuelles : lignes droites, fractions, séries et blocs. Décocher pour utiliser les 48 s et les durées Planif ; les transitions restent manuelles.':'Je termine les récupérations libres avec le bouton Tour de la montre.'}</span></label>`:''}<p class="lbl">Ce profil s’applique à cet envoi. Choisis ton favori dans Réglages → COROS pour les prochains envois. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
+    d.innerHTML=`<h2>Envoyer vers COROS</h2><h3>${escape(draft?.name||snapshot.title)}</h3>${reason?`<p>${escape(reason)}</p>`:`<p class="lbl">Choisis le calendrier pour programmer cette séance à une date, ou la bibliothèque pour conserver un modèle.</p><p class="lbl">${escape(draft.description)}</p><form id="corosSendForm"><label class="sf"><span>Profil pour cet envoi</span><select name="profile">${profileOptions(getProfile())}</select></label><label class="sf"><span>Destination</span><select name="destination"><option value="calendar">Calendrier COROS</option><option value="library">Bibliothèque COROS</option></select></label><label class="sf" id="corosDateField"><span>Date de la séance</span><input name="scheduledDate" type="date" required min="${localDate(new Date())}" max="${localDate(limit)}" value="${escape(currentDate)}"></label><p class="lbl">Une nouvelle séance sera ajoutée. Les entraînements COROS existants sont conservés ; vérifie le jour choisi pour éviter une séance en double.</p>${draft.preparation?.activation?`<label class="sf"><span>Activation : cible en km/h (S2 par défaut, ou légèrement plus lent)</span><input name="activationKmh" type="text" inputmode="decimal" required value="${draft.preparation.s2Kmh}"></label>`:''}${draft.choices.map(c=>`<label class="sf"><span>${escape(c.label)} (${c.min}–${c.max} ${c.unit==='min'?'min':'s'})</span><input name="${c.id}" type="number" inputmode="numeric" required min="${c.min}" max="${c.max}" step="1" value="${c.value}"></label>`).join('')}<details class="info" open><summary>Structure envoyée</summary><ol class="corosSteps" id="corosStepList">${draft.sections.map(s=>`<li>${escape(sectionLabel(s))}</li>`).join('')}</ol></details>${draft.notes.map(note=>`<p class="lbl">${escape(note)}</p>`).join('')}${draft.noIntensity?'<label class="corosConfirm"><input type="checkbox" name="noIntensity" required checked><span>Je conserve les phases sans cible d’allure au ressenti, notamment les lignes droites et les efforts libres éventuels.</span></label>':''}${draft.free&&!draft.preparation?`<label class="corosConfirm"><input type="checkbox" name="free" checked ${draft.preparation?'':'required'}><span>${draft.preparation?'Toutes les récupérations manuelles : lignes droites, fractions, séries et blocs. Décocher pour utiliser les 48 s et les durées Planif ; les transitions restent manuelles.':'Je termine les récupérations libres avec le bouton Tour de la montre.'}</span></label>`:''}<p class="lbl">Ce profil s’applique à cet envoi. Choisis ton favori dans Réglages → COROS pour les prochains envois. Le plan reste inchangé.</p><button type="submit" class="cta" ${auth?'':'disabled'}>Ajouter au calendrier COROS</button>${auth?'':'<p class="lbl">Connecte ton compte COROS dans Réglages pour envoyer cette séance.</p>'}</form>`}<p id="corosSendStatus" class="lbl corosStatus" role="status"></p><button type="button" class="cta ghost" data-coros-close>Fermer</button>`;
     d.addEventListener('input',updatePreviewSteps,{once:true});if(draft)updatePreviewSteps();d.showModal();
   }
   function previewOptions(draft,form){const profile=form.elements.namedItem('profile')?.value||getProfile(),recovery=profile==='manual'?'manual':'auto';return{profile,coreRecovery:recovery,strideRecovery:recovery,activationKmh:form.elements.namedItem('activationKmh')?Number(form.elements.namedItem('activationKmh').value.replace(',','.')):undefined};}
@@ -874,8 +874,50 @@ window.PlanifCorosAdapter=(()=>{
     if(values.some(v=>v<120||v>1499))fail('Cette allure sort des limites acceptées par COROS.');
     return{intensityType:2,intensityValueStart:values[0],intensityValueEnd:values[1]};
   }
+  // Titre court construit à partir du contenu réel, identique pour les deux profils.
+  function shortTitle(x){
+    const duration=m=>{const t=Math.round(m*60),min=Math.floor(t/60),seconds=t%60;return seconds?min?`${min}’${String(seconds).padStart(2,'0')}”`:`${seconds}”`:`${min}’`;};
+    const distance=m=>`${m}m`;
+    const prefix=v=>{
+      const S=v.structure||{},I=v.intensity||{},fam=v.fam||'',sector=v.sector||fam.split('.')[0];
+      if(S.components||S.segments&&new Set(S.segments.map(p=>p.target)).size>1)return 'MX';
+      if(S.progression||S.shape==='progressive'||I.type==='progression'||fam==='s2.prog')return 'PR';
+      if(sector==='s1')return 'S1';if(sector==='s2')return 'S2';
+      if(sector==='vo2'||I.type==='pct_vma_range'||I.type==='pct_by_duration')return 'VO';
+      if(sector==='spec10k'||I.race==='10 km')return 'AS10';
+      if(I.race)return 'AS'+I.race.replace(/\s*km/g,'').replace(/\s/g,'');
+      if(S.type==='hill_reps')return 'Côtes';
+      if((S.type||'').startsWith('fartlek'))return 'Fartlek';
+      return null;
+    };
+    const format=v=>{
+      const S=v.structure||{};
+      if(S.components)return S.components.map(c=>`${prefix(c.variant)||c.fam.toUpperCase()}:${format(c.variant)}`).join('+');
+      if(S.type==='continuous')return duration(S.durationMin);
+      if(S.type==='fartlek_free')return duration(S.workMin);
+      if(S.type==='long_run')return S.reps?`${S.reps}x${S.distanceKm}km`:`${S.distanceKm}km`;
+      if(S.type==='ladder')return (S.durationsMin||S.distancesM||[]).map(n=>S.durationsMin?duration(n):distance(n)).join('+');
+      if(S.type==='sets'){
+        const list=S.durationsMin||S.distancesM||S.segments||[];
+        const content=list.map(n=>S.durationsMin?duration(n):S.segments?`${(n.target||'').toUpperCase()}:${distance(n.distanceM)}`:distance(n)).join('+');
+        return `${S.sets}x(${content})`;
+      }
+      const rep=S.distanceM?distance(S.distanceM):duration(S.durationMin??S.workMin);
+      return S.sets?`${S.sets}x(${S.perSet}x${rep})`:`${S.reps}x${rep}`;
+    };
+    if(x.kind==='quality'){
+      const tag=prefix(x.variant),content=tag&&format(x.variant);
+      return tag&&content?`${tag}-${content}`:x.title;
+    }
+    if(x.kind==='foot'){
+      const f=x.foot,active=f.activeBlocks||f.activeRange&&Array(f.activeReps||1).fill((f.activeRange[0]+f.activeRange[1])/2);
+      return `EF-${duration(f.min)}${active?.length?'('+active.map(duration).join('+')+'EA)':''}${f.ld?'+LD':''}`;
+    }
+    if(x.kind==='long')return `EF-${duration(x.long.totalMin)}(SL)`;
+    return x.title;
+  }
   function plan(snapshot){
-    const x=clone(snapshot),draft={name:x.title,description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
+    const x=clone(snapshot),draft={name:shortTitle(x),description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
     if(!x.title||!x.description)fail('La séance affichée est incomplète.');
     if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh,easyBand:x.easyBand};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push('Préparation personnelle COROS : 20 min faciles, 3 lignes droites de 12 s, puis le cœur de séance et un retour au calme comptabilisé à 10 min dans Planif. Les lignes droites restent au ressenti.');if(x.activation)draft.notes.push('Après les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2. En mode guidé : 45 s avant et 1 min 30 après.');}
     const choice=(label,range,value,unit='s')=>{
@@ -1040,7 +1082,7 @@ window.PlanifCorosAdapter=(()=>{
     const core=draft.sections.filter((s,i)=>!(i===0&&s.sectionType===1)&&!(i===draft.sections.length-1&&s.sectionType===4));
     labels.push(...core.map(()=>null));if(options.profile==='manual')labels.push('Transition après le cœur de séance');labels.push('Retour au calme');return labels;
   }
-  return{plan,course,pace,labels};
+  return{plan,course,pace,labels,shortTitle};
 })();
 
 </script>
@@ -4495,7 +4537,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.06';
+const APP_VERSION='2026.10.10.07';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
