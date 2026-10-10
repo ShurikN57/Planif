@@ -1,4 +1,4 @@
-const CACHE = 'planif-v7';
+const CACHE = 'planif-v8';
 const APP_SHELL = [
   './',
   './index.html',

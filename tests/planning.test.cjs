@@ -145,5 +145,16 @@ assert(mixedDetail.includes('class="paceSpeed"'));
 const continuous={fam:'s1.cont',work:20,total:20,structure:{type:'continuous',durationMin:20},intensity:{minKmh:12,maxKmh:12.5}};
 assert(!context.ui.qualityScheduleHtml(continuous,{wu:24,cd:10},state).includes('Récup entre blocs :'));
 assert(context.ui.show({w:0,q:0}).includes('sessionSteps'));
+assert.equal(E.joggTitle({type:'active',activeRange:[20,20]}),'Jogg’ + 20’ endurance active');
+assert.equal(E.joggTitle({type:'active',activeRange:[15,15],activeReps:2}),'Jogg’ + 2x15’ endurance active');
+assert.equal(E.joggTitle({type:'active',activeBlocks:[15,15]}),'Jogg’ + 2x15’ endurance active');
+const hrState={...state,lt1Hr:157,lt2Hr:170};
+const threshold=(sector)=>({fam:sector+'.time',sector,work:20,total:23,structure:{type:'intervals',reps:4,durationMin:5,recoveryMin:1,recoveryType:'free'},intensity:{minKmh:12,maxKmh:12.5}});
+assert(context.ui.qualityScheduleHtml(threshold('s1'),{wu:24,cd:10},hrState).includes('Plafond FC S1 : 157 bpm'));
+assert(context.ui.qualityScheduleHtml(threshold('s2'),{wu:24,cd:10},hrState).includes('Plafond FC S2 : 170 bpm'));
+assert(context.ui.qualityScheduleHtml(threshold('s2'),{wu:24,cd:10},state).includes('à renseigner'));
+const mixedHr=context.ui.qualityScheduleHtml(transition.variants[0],transition,hrState);
+assert(mixedHr.includes('Plafond FC S1 : 157 bpm'));assert(mixedHr.includes('Plafond FC S2 : 170 bpm'));
+const activeHtml=context.ui.show({w:aw.index,f:af});assert(activeHtml.includes('class="paceSpeed"'));
 console.log('OK: combined Jogg pace range, chronological quality steps, optional block recovery and pace-first typography.');
 
