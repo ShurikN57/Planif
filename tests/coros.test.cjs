@@ -62,15 +62,15 @@ async function sendCase(outcome,changedSchema=false,destination='library',invali
 
 (async()=>{
  const fav=env();assert.equal(fav.api.getProfile(),'manual');fav.api.setProfile('guided');const restored=env({local:fav.local});assert.equal(restored.api.getProfile(),'guided');assert(restored.api.settingsHtml().includes('value="guided" selected'));const favUi=fakeDialog(restored.context);restored.api.preview({title:'EF',description:'Footing',kind:'foot',foot:{type:'std',min:55},footBand:[9.9,10.7]});assert.equal(favUi.fields.profile.value,'guided');assert.equal(favUi.fields.destination.value,'calendar');assert.throws(()=>fav.api.setProfile('invalid'),/invalide/);
- const a=env();assert(a.api.settingsHtml().includes('À connecter'));
+ const a=env();assert(a.api.settingsHtml().includes('class="connectionTag off">Déconnecté'));
  await a.click('connect');assert.equal(a.assigned.length,1);const u=new URL(a.assigned[0]),p=JSON.parse(a.local.getItem('planif-coros-v1-pending'));
  assert.equal(u.searchParams.get('state'),p.state);assert.equal(u.searchParams.get('code_challenge_method'),'S256');assert.equal(u.searchParams.get('resource'),issuer+'/mcp');assert.equal(u.searchParams.get('code_challenge'),Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(p.verifier))).toString('base64url'));
  assert(!u.href.includes(p.verifier));
  const b=env({url:p.redirect+'&code=PRIVATE_CODE&state='+p.state,local:a.local});await b.api.start();
- assert.equal(b.context.location.href,'https://shurikn57.github.io/Planif/index.html');assert.equal(b.local.getItem('planif-coros-v1-pending'),null);assert(b.api.settingsHtml().includes('Connexion vérifiée'));assert(b.api.settingsHtml().includes('Exporter les formats'));assert(!b.api.settingsHtml().includes('PRIVATE'));
+ assert.equal(b.context.location.href,'https://shurikn57.github.io/Planif/index.html');assert.equal(b.local.getItem('planif-coros-v1-pending'),null);assert(b.api.settingsHtml().includes('class="connectionTag">Connecté'));assert(b.api.settingsHtml().includes('aria-label="Informations sur COROS"'));assert(b.api.settingsHtml().includes('Connexion vérifiée'));assert(b.api.settingsHtml().includes('Exporter les formats'));assert(!b.api.settingsHtml().includes('PRIVATE'));
  assert(b.session.getItem('planif-coros-v1-auth'));assert(![...b.local.data.values()].some(v=>v.includes('PRIVATE')));
  assert.equal(b.calls.filter(c=>c.u.endsWith('/mcp')).length,3);assert(b.calls.every(c=>c.opts.credentials==='omit'&&c.opts.cache==='no-store'));
- await b.click('disconnect');assert(!b.session.getItem('planif-coros-v1-auth'));assert(b.api.settingsHtml().includes('À connecter'));
+ await b.click('disconnect');assert(!b.session.getItem('planif-coros-v1-auth'));assert(b.api.settingsHtml().includes('class="connectionTag off">Déconnecté'));
  const badLocal=storage();badLocal.setItem('planif-coros-v1-pending',JSON.stringify(p));const bad=env({url:p.redirect+'&code=PRIVATE_CODE&state=evil',local:badLocal});await bad.api.start();assert.equal(bad.calls.length,0);assert(bad.api.settingsHtml().includes('Relance'));
  const off=env({online:false});await off.click('connect');assert.equal(off.calls.length,0);assert(off.api.settingsHtml().includes('Internet'));
  const expiredSession=storage();expiredSession.setItem('planif-coros-v1-auth',JSON.stringify({issuer,clientId:'test-public-client',accessToken:'PRIVATE_ACCESS',refreshToken:'PRIVATE_REFRESH',expiresAt:0}));const expired=env({session:expiredSession});await expired.api.start();await expired.click('verify');assert.equal(expired.calls.filter(c=>c.u.endsWith('/oauth2/token')).length,1);assert(expired.api.settingsHtml().includes('Connexion vérifiée'));

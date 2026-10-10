@@ -1,9 +1,9 @@
-const CACHE = 'planif-v9-strava-8';
+const CACHE = 'planif-v9-strava-9';
 const APP_SHELL = [
   './',
   './index.html',
-  './planif-strava.js?v=2026.10.10.15',
-  './planif-calendar-drag.js?v=2026.10.10.15',
+  './planif-strava.js?v=2026.10.10.16',
+  './planif-calendar-drag.js?v=2026.10.10.16',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

@@ -12,7 +12,7 @@ const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(
 const sessionStorage=storage(),localStorage=storage(),events={},requests=[];
 sessionStorage.setItem('planif-strava-auth-v1',JSON.stringify({uid:'flo',token:'test',name:'Flo',expiresAt:Date.now()+60000}));
 let startup,redraws=0;
-const clock=new Date(2026,9,10,0,30).getTime();
+let clock=new Date(2026,9,10,0,30).getTime();
 class FixedDate extends Date{constructor(...args){super(...(args.length?args:[clock]));}static now(){return clock;}}
 const context={Date:FixedDate,sessionStorage,localStorage,console,setTimeout:fn=>{startup=fn;},document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};},redrawCounter:()=>redraws++};
 vm.createContext(context);
@@ -23,6 +23,8 @@ let source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');so
 startup();assert(redraws>0,'real module startup redraws without private globals');assert.equal(Object.hasOwn(context,'activePlan'),false);
 const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60,title:'S1-5x6’'};
 (async()=>{
+ assert(link.settingsHtml().includes('class="connectionTag">Connecté'));assert(link.settingsHtml().includes('aria-label="Informations sur la liaison Strava"'));
+ const priorClock=clock;clock=JSON.parse(sessionStorage.getItem('planif-strava-auth-v1')).expiresAt+1;assert(link.settingsHtml().includes('class="connectionTag off">Déconnecté'));clock=priorClock;
  await link.refresh();assert(requests[0].options.headers.Authorization==='Bearer test');
  const ranked=link.rank([{id:'2',date:'2026-10-11',durationSec:3600},{id:'1',date:'2026-10-10',durationSec:3500}],info);assert.equal(ranked[0].id,'1');
  context.fetch=async()=>({ok:true,json:async()=>({activities:[{id:'101',date:info.date,name:'<img src=x>',durationSec:3600,distanceKm:10}],truncated:false})});
@@ -31,6 +33,8 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
  assert(link.sessionHtml({...info,date:'2026-10-09'}).includes('data-strava="missed"'));
  assert(link.sessionHtml(info).includes('data-strava="missed"'));
  assert(!link.sessionHtml({...info,date:'2026-10-11'}).includes('data-strava="missed"'));
+ assert(!link.sessionHtml({...info,date:'2026-10-11'}).includes('data-strava="search"'));assert(link.sessionHtml(info).includes('data-strava="search"'));
+ await assert.rejects(link.search({...info,date:'2026-10-11'}),/jour prévu/);
  await assert.rejects(link.save({...info,date:'2026-10-11'},'missed'),/future/);
  for(const status of ['realized','adapted','missed']){
   const record={id:info.id,status,revision:1,activityId:status==='missed'?null:'101',activity:status==='missed'?null:{id:'101',name:'Jogging',date:info.date,durationSec:3600,distanceKm:10}};
@@ -45,6 +49,7 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
  let resolve;context.fetch=()=>new Promise(r=>resolve=r);const saving=link.save(info,'realized','101');
  events.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
  resolve({ok:true,json:async()=>({id:info.id,status:'realized',activityId:'101',revision:1})});await saving;
+ assert(link.settingsHtml().includes('class="connectionTag off">Déconnecté'));
  assert.equal(link.badge(info),'');assert.equal(sessionStorage.getItem('planif-strava-auth-v1'),null);
  assert.equal(JSON.parse(localStorage.getItem('planif-strava-records-v1:flo:plan-1'))[info.id].revision,1);
  const calls=requests.length;await events.message({origin:'https://attacker.example',data:{type:'planif-strava-auth'}});assert.equal(requests.length,calls);

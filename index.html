@@ -351,6 +351,17 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .todayCountdown p{margin:.45rem 0 0}
 #scr-today>.card+ .card{margin-top:.9rem}
 .settingsTitle{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.65rem}
+.connectionCard{position:relative}
+.connectionTitle{gap:.4rem}
+.connectionTitle h2{margin-right:auto;min-width:0}
+.connectionTag{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--ok)}
+.connectionTag.off{color:#c62828}
+.connectionInfo{flex-shrink:0}
+.connectionInfo summary{list-style:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;color:var(--accent);font-size:1.4rem;cursor:pointer}
+.connectionInfo summary::-webkit-details-marker{display:none}
+.connectionInfoBody{position:absolute;left:.8rem;right:.8rem;top:3.7rem;max-height:65vh;overflow:auto;z-index:25;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.8rem;box-shadow:0 4px 16px #0002}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .connectionTag.off{color:#ff8585}}
+:root[data-theme="dark"] .connectionTag.off{color:#ff8585}
 .settingsTitle h2{margin:0}
 .lockTag{font-size:.75rem;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.2rem .5rem}
 .timeWheel{display:flex;align-items:end;gap:.35rem;margin-bottom:.7rem}
@@ -781,7 +792,7 @@ window.PlanifCoros=(()=>{
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   function settingsHtml(){
-    return `<div class="card"><div class="settingsTitle"><h2>COROS</h2><span class="lockTag">${auth?'Connecté':'À connecter'}</span></div><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p><label class="sf"><span>Profil COROS favori</span><select data-coros-profile>${profileOptions(getProfile())}</select></label><p class="lbl">Repris à chaque envoi. Au ressenti : aucune cible d’allure, toutes les récupérations et le retour au calme au bouton Tour. Guidé : allures prévues, récupérations chronométrées et 10 min de retour au calme. Planif comptabilise toujours 24 ou 27 min de préparation et 10 min de retour au calme.</p>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p><details class="info"><summary>ⓘ Connexion et envoi</summary><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></details></div>`;
+    return `<div class="card connectionCard"><div class="settingsTitle connectionTitle"><h2>COROS</h2><span class="connectionTag${auth?'':' off'}">${auth?'Connecté':'Déconnecté'}</span><details class="connectionInfo"><summary aria-label="Informations sur COROS" title="Connexion et envoi">ⓘ</summary><div class="connectionInfoBody"><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p><p class="lbl">Repris à chaque envoi. Au ressenti : aucune cible d’allure, toutes les récupérations et le retour au calme au bouton Tour. Guidé : allures prévues, récupérations chronométrées et 10 min de retour au calme. Planif comptabilise toujours 24 ou 27 min de préparation et 10 min de retour au calme.</p><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></div></details></div><label class="sf"><span>Profil COROS favori</span><select data-coros-profile>${profileOptions(getProfile())}</select></label>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p></div>`;
   }
   const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('');
@@ -1099,7 +1110,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.10.15"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.10.16"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4607,7 +4618,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.15';
+const APP_VERSION='2026.10.10.16';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5180,7 +5191,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.15"></script>
+<script src="./planif-strava.js?v=2026.10.10.16"></script>
 </body>
 </html>
 
