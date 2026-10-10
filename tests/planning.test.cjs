@@ -118,6 +118,7 @@ vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const b
  html.slice(html.indexOf('function itemColor('),html.indexOf('/* Résumé de case'))+
  html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
  html.slice(html.indexOf('const splitRec='),html.indexOf('const LIB_SECTORS='))+
+ html.slice(html.indexOf('function sessionInfoHeaderHtml('),html.indexOf('function libSessionHtml('))+
  html.slice(html.indexOf('function sessionScreenHtml('),html.indexOf('function openSession('))+
  `\nthis.ui={tileHtml,itemShort,qualityScheduleHtml,sessionRecoveryRows,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
 const aw=c.weeks.find(w=>w.assimilation),af=aw.foot.findIndex(f=>f.assimilationActive);

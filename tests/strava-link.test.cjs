@@ -35,12 +35,12 @@ const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'20
  for(const status of ['realized','adapted','missed']){
   const record={id:info.id,status,revision:1,activityId:status==='missed'?null:'101',activity:status==='missed'?null:{id:'101',name:'Jogging',date:info.date,durationSec:3600,distanceKm:10}};
   context.fetch=async()=>({ok:true,json:async()=>({sessions:[record]})});await link.refresh();
-  const closed=link.sessionHtml(info);assert(closed.includes('class="stravaUndo"'));assert(closed.includes('data-strava="undo"'));assert.equal((closed.match(/data-coros-preview/g)||[]).length,1);
+  const closed=link.sessionHtml(info);assert(closed.includes('class="stravaUndo"'));assert(closed.includes('data-strava="undo"'));assert.equal((closed.match(/data-coros-preview/g)||[]).length,status==='missed'?1:0);assert.equal(closed.includes('data-coros-completed'),status!=='missed');
   assert(!closed.includes('data-strava="search"'));assert(!closed.includes('data-strava-associate'));assert(!closed.includes('data-strava="missed"'));
-  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Annuler la validation')<closed.indexOf('Voir l’activité Strava'));assert(closed.indexOf('Voir l’activité Strava')<closed.indexOf('data-coros-preview'));}
+  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Annuler la validation')<closed.indexOf('Voir l’activité Strava'));assert(!closed.includes('data-coros-preview'));}
   await assert.rejects(link.save(info,'adapted','101'),/Annule la validation/);
   context.fetch=async()=>({ok:true,json:async()=>({id:info.id,status:'planned',revision:2})});await link.save(info,'planned');
-  const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));
+  const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));assert(reopened.includes('data-coros-preview'));assert(!reopened.includes('data-coros-completed'));
  }
  let resolve;context.fetch=()=>new Promise(r=>resolve=r);const saving=link.save(info,'realized','101');
  events.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});

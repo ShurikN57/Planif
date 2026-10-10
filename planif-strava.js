@@ -66,7 +66,8 @@ window.PlanifStrava=(()=>{
   function sessionHtml(info){
     if(!info)return '';
     const record=currentRecords(info)[info.id],results=activities[candidateKey(info)],used=new Set(Object.values(currentRecords(info)).filter(r=>r.id!==info.id&&r.activityId).map(r=>r.activityId));
-    let h=`<div class="card"><h2>Suivi de la séance</h2><div class="sessionStatus"><b>${!record?.activityId&&(!record||record.status==='planned')&&results?.list.length?'Activité trouvée · à confirmer':statusLabel(record?.status)}</b>${auth&&finalized(record)?`<button type="button" class="stravaUndo" data-strava="undo" ${busy?'disabled':''}><span aria-hidden="true">×</span> Annuler la validation</button>`:''}</div>`;
+    const completed=['realized','adapted'].includes(record?.status);
+    let h=`<div class="card"${completed?' data-coros-completed':''}><h2>Suivi de la séance</h2><div class="sessionStatus"><b>${!record?.activityId&&(!record||record.status==='planned')&&results?.list.length?'Activité trouvée · à confirmer':statusLabel(record?.status)}</b>${auth&&finalized(record)?`<button type="button" class="stravaUndo" data-strava="undo" ${busy?'disabled':''}><span aria-hidden="true">×</span> Annuler la validation</button>`:''}</div>`;
     if(record?.activity){const a=record.activity;h+=`<p>${esc(a.name)} · ${esc(a.date)} · ${Math.round(a.durationSec/60)}’ · ${Number(a.distanceKm).toFixed(2)} km</p><p class="lbl">Activité associée ; le respect des fractions et des allures n’est pas évalué automatiquement.</p>`;}
     if(!auth)h+='<button type="button" class="cta ghost" data-strava="settings">Lier mon compte Strava</button>';
     else if(finalized(record)){
@@ -80,7 +81,7 @@ window.PlanifStrava=(()=>{
       if(info.date<=todayKey())h+=`<button type="button" class="cta ghost" data-strava="missed" ${busy?'disabled':''}>Marquer non réalisée</button>`;
       h+=`<p class="lbl" role="status">${esc(message)}</p>`;
     }
-    return h+'<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button></div>';
+    return h+(completed?'':'<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>')+'</div>';
   }
   async function save(info,status,activityId=null){
     const prior=currentRecords(info)[info.id],uid=auth?.uid;

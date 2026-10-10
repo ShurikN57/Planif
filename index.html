@@ -1099,7 +1099,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.10.14"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.10.15"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4607,7 +4607,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.14';
+const APP_VERSION='2026.10.10.15';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5023,15 +5023,17 @@ function appLibHtml(){
   return h;
 }
 const libColor=sec=>sec==='s1'?ZONES.z2.c:sec==='s2'?ZONES.z3.c:sec==='spec10k'?'var(--accent)':ZONES.z4.c;
+function sessionInfoHeaderHtml(label,body){
+  return `<details class="footInfo"><summary aria-label="${label}" title="${label}">ⓘ</summary><div class="footInfoBody">${body}</div></details>`;
+}
 function libSessionHtml(r){
   const st=lastSt,sec=r.sector,Ws=libWork(sec);if(!Ws)return'';
   const o=libCandidates(sec,Ws[libVol]).find(x=>x.c.key===r.key);if(!o)return'<div class="card"><p class="lbl">Ce format n\'existe plus avec les réglages actuels.</p></div>';
   const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10}),{wu,cd}=prep,ld=variantLoad(c,prep,st),[main,rec]=splitRec(vText(c));
   const pw=RULES.library.phaseWeights[o.fam],secLab=LIB_SECTORS.find(x=>x.id===sec).lab;
-  let h=`<div class="sHead" style="--c:${libColor(sec)}"><h2>${secLab}</h2><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
-  h+=qualityScheduleHtml(c,prep,st);
   const rpe=SECTOR_INFO[sec]?SECTOR_INFO[sec].rpe:null;
-  h+=`<div class="card"><details class="info"><summary>ⓘ Pourquoi ce format</summary><p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p></details></div>`;
+  let h=`<div class="sHead" style="--c:${libColor(sec)}"><div class="sHeadTitle"><h2>${secLab}</h2>${sessionInfoHeaderHtml('Pourquoi ce format',`<p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p>`)}</div><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
+  h+=qualityScheduleHtml(c,prep,st);
   return h;
 }
 /* Copie de la séance affichée : la conversion ne modifie ni le plan ni ses variantes. */
@@ -5107,18 +5109,16 @@ function sessionScreenHtml(){
   const when=day?fmtD(day.date):`Semaine ${r.w+1}`,ph=day?`${phaseLab(w.phase,C.race.distance)}, semaine ${w.index+1}`:`${blockLabel(C.B)}${w.assim?', assimilation':''}`,col=itemColor(it,w);
   const head=(t,info='')=>`<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div></div>`;
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0],[main,rec]=splitRec(vText(v));
-    let h=head(sessionTitle(s));
+    let h=head(sessionTitle(s),sessionInfoHeaderHtml('Pourquoi cette séance',`<p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}`));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
     h+=qualityScheduleHtml(v,s,st);
-    h+=`<div class="card"><details class="info"><summary>ⓘ Pourquoi cette séance</summary><p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}</details></div>`;
+
     return h;}
   if(it.kind==='race'){const r2=it.s;
-    return head(sessionTitle(r2))+`<div class="card"><div class="lbl">${r2.goal?'Objectif':'Estimation'}</div><div class="big">${fmtTime(r2.targetTime)}</div><div class="kv" style="margin-top:.7rem"><span>Allure</span><span class="v">${paceHtml(kmh(r2.targetPace,r2.targetPace))}</span><span>Échauffement</span><span class="v">${r2.wu}'</span><span>Retour au calme</span><span class="v">${r2.cd}'</span></div></div>`+
-      `<div class="card"><details class="info"><summary>ⓘ Charge de la course</summary><p>Charge estimée : ${pts(r2.load)}.</p></details></div>`;}
-  if(it.kind==='sl')return head('Sortie longue')+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${paceHtml(efBandText('std',st))}</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceHtml(kmh(st.s1lo,st.s1hi))}</span>`:''}</div></div>`+
-      `<div class="card"><details class="info"><summary>ⓘ Charge</summary><p>Charge estimée : ${pts(w.slLoad)}.</p></details></div>`;
-  if(it.kind==='veille')return head('Jogg + LD')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head(joggTitle(f))+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${paceHtml(efBandText('active',st))}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div></div>`;const lab=joggTitle(f);
+    return head(sessionTitle(r2),sessionInfoHeaderHtml('Charge de la course',`<p>Charge estimée : ${pts(r2.load)}.</p>`))+`<div class="card"><div class="lbl">${r2.goal?'Objectif':'Estimation'}</div><div class="big">${fmtTime(r2.targetTime)}</div><div class="kv" style="margin-top:.7rem"><span>Allure</span><span class="v">${paceHtml(kmh(r2.targetPace,r2.targetPace))}</span><span>Échauffement</span><span class="v">${r2.wu}'</span><span>Retour au calme</span><span class="v">${r2.cd}'</span></div></div>`;}
+  if(it.kind==='sl')return head('Sortie longue',sessionInfoHeaderHtml('Charge',`<p>Charge estimée : ${pts(w.slLoad)}.</p>`))+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${paceHtml(efBandText('std',st))}</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceHtml(kmh(st.s1lo,st.s1hi))}</span>`:''}</div></div>`;
+  if(it.kind==='veille')return head('Jogg + LD',sessionInfoHeaderHtml('Pourquoi cette séance','<p>Très facile, puis quelques lignes droites avec récupération complète, avant la course.</p>'))+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head(joggTitle(f),sessionInfoHeaderHtml('Pourquoi ce footing',`<p>Le bloc d’endurance active reste sous le premier seuil, avec un début et une fin faciles.</p><p>Charge estimée : ${pts(f.load)}.</p>`))+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${paceHtml(efBandText('active',st))}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div></div>`;const lab=joggTitle(f);
     const info=`<details class="footInfo"><summary aria-label="Pourquoi ce footing" title="Pourquoi ce footing">ⓘ</summary><div class="footInfoBody"><p>Jogg’ facile au ressenti : adapte l’effort à ta fatigue et au terrain, sans dépasser le premier seuil. La durée tient compte du volume hebdomadaire et des séances voisines.</p><p>Charge estimée : ${pts(f.load)}.</p></div></details>`;
     return head(lab,info)+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${paceHtml(efBandText(f.type,st))}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`;}
   return'';
@@ -5128,7 +5128,7 @@ function renderApp(){
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
     ['today','cal','ref','study','set'].forEach(k=>{$('scr-'+k).hidden=true;});$('scr-lib').hidden=true;$('scr-session').hidden=false;$('scr-session').innerHTML=sessionScreenHtml()+planifMoveNoticeHtml()+(globalThis.PlanifStrava?.sessionHtml(planifSessionInfo(appSession))||'');globalThis.PlanifStrava?.onSession(planifSessionInfo(appSession));
-    if($('scr-session').querySelector('.sHead')&&!$('scr-session').querySelector('[data-coros-preview]'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
+    if($('scr-session').querySelector('.sHead')&&!$('scr-session').querySelector('[data-coros-preview],[data-coros-completed]'))$('scr-session').insertAdjacentHTML('beforeend','<button type="button" class="cta ghost" data-coros-preview>Envoyer vers COROS</button>');
     document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     return;}
   $('scr-session').hidden=true;
@@ -5180,7 +5180,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.14"></script>
+<script src="./planif-strava.js?v=2026.10.10.15"></script>
 </body>
 </html>
 
