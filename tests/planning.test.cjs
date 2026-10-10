@@ -3,7 +3,7 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 const start=html.indexOf('const RULES='),end=html.indexOf('const CAPLAB=');
-vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek};`,context);
+vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,buildPlan,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek,efBand,efBandText,joggTitle};`,context);
 const E=context.engine;
 const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
 const pred=E.predict(state);
@@ -80,3 +80,48 @@ for(const option of transition.variants){const [slow,fast]=option.structure.comp
 assert.equal(E.minFractionMinutes({structure:{type:'ladder',durationsMin:[4,6,8,6,4]}}),4);
 assert.equal(E.minFractionMinutes({structure:{type:'continuous',durationMin:25}}),25);
 console.log('OK: complete mixed summary, shorter faster fractions in both options, shared caps and preserved calendar rules.');
+
+// Jogg: one visible category and no imposed easy pace, including LD titles.
+for(const type of ['rec','std','pro']){
+ assert.equal(E.joggTitle({type}),'Jogg’');
+ assert.equal(E.joggTitle({type,ld:'strides'}),'Jogg + LD');
+ assert.equal(E.efBandText(type,state),E.efBandText('std',state));
+ assert(E.efBandText(type,state).includes('sans allure imposée'));
+ assert.deepEqual(Array.from(E.efBand(type,state)),Array.from(E.efBand('std',state)));
+}
+// Assimilation is an easy week regardless of the obsolete two-quality setting.
+for(const block of ['aero','s1','s2','vma','eco','spec'])for(const runs of [3,4,5,6])for(const vol of [180,240,300,420])for(const specDist of [0,1,2,3]){
+ const st={...state,block,specDist,runs,vol,assimQ2:true},b=E.getBlock(st,pred);
+ const w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,memory:{},block,specDist});
+ assert.equal(w.sessions.length,0);assert.equal(w.qualityMinutes,0);
+ const active=w.foot.filter(f=>f.assimilationActive);assert.equal(active.length,1);
+ const f=active[0];assert([10,15,20].includes(f.activeRange[0]));assert.equal(f.activeRange[0],f.activeRange[1]);
+ assert(f.wu>=10);assert.equal(f.wu+f.activeRange[0]+f.cd,f.min);
+ assert.equal(w.vol,w.sl+w.foot.reduce((sum,f)=>sum+f.min,0));assert(Number.isFinite(w.load));
+ assert.equal(w.z.z1,w.vol);assert(w.foot.length+1<=runs);
+}
+for(const w of c.weeks.filter(w=>w.assimilation)){
+ assert.equal(w.sessions.length,0);
+ const active=w.days.flatMap(d=>d.items.map(it=>({d,it}))).find(x=>x.it.kind==='foot'&&x.it.f.assimilationActive);
+ assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q1Day);
+}
+for(const [vol,minutes] of [[130,10],[140,15],[150,20]]){
+ const st={...state,runs:3},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,block:'spec',specDist:1});
+ assert.equal(w.foot.find(f=>f.assimilationActive).activeRange[0],minutes);
+}
+console.log('OK: Jogg/LD labels, shared easy guidance, assimilation without quality, 10/15/20-minute active blocks, preferred quality day and conserved minutes.');
+
+// Render the real tile and detail functions, including block-mode links.
+context.state=state;context.plan=c;
+vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts';`+
+ html.slice(html.indexOf('const activeRangeText='),html.indexOf('function renderWeeks('))+
+ html.slice(html.indexOf('function itemColor('),html.indexOf('/* Résumé de case'))+
+ html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
+ html.slice(html.indexOf('function sessionScreenHtml('),html.indexOf('function openSession('))+
+ `\nthis.ui={tileHtml,itemShort,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
+const aw=c.weeks.find(w=>w.assimilation),af=aw.foot.findIndex(f=>f.assimilationActive);
+assert(context.ui.tileHtml({kind:'foot',f:aw.foot[af]},aw,{w:aw.index,f:af}).includes(`data-open="${aw.index},f,${af}"`));
+assert(context.ui.show({w:aw.index,f:af}).includes('Remplace la qualité en assimilation'));
+assert.equal(context.ui.itemShort({kind:'foot',f:{type:'std',min:50,ld:'strides'}},aw).k,'Jogg + LD');
+console.log('OK: calendar/block tiles, active detail link and LD heading.');
+

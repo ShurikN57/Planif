@@ -644,7 +644,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
             <label>Qualités / semaine<select id="qualityCount"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
           </div>
           <p class="hint" id="qualityHint">2 qualités sont recommandées à partir de 5 sorties ; possibles avec 4 sorties.</p>
-          <label class="check"><input type="checkbox" id="assimQ2"> 2 séances de qualité en assimilation</label>
+          <input type="checkbox" id="assimQ2" hidden><p class="hint">En assimilation : Jogg’ avec un bloc de 10, 15 ou 20’ d’endurance active à la place de la qualité.</p>
           <p class="hint" id="blocHint">Le volume moyen inclut la semaine d'assimilation (environ −22 % par rapport à la dernière semaine de charge).</p>
         </fieldset>
       </form>
@@ -654,7 +654,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
       <section id="predSec"></section>
       <section id="overview"></section>
       <section id="weeksSec"></section>
-      <p class="note">Le volume hebdomadaire est une cible à ±2,5 % près : les footings restent dans leurs plages (récupération 35 à 45', standard 40 à 60', prolongé 60 à 75' seulement si le volume l'impose) plutôt que de tomber à la minute près. Le pourcentage de qualité compte uniquement le temps de travail ciblé de chaque séance, sans échauffement, récupérations ni retour au calme. Les deux options d'une séance visent le même volume de travail, à ±5 % ou ±2' près. En VO₂max, la plage d'intensité dépend de la durée des fractions, puis le moteur descend dans la plage quand le nombre de répétitions augmente.</p>
+      <p class="note">Le volume hebdomadaire est une cible à ±2,5 % près : les Jogg’ adaptent leur durée au volume disponible, sans imposer une catégorie normal/récupération ni une allure précise. Le pourcentage de qualité compte uniquement le temps de travail ciblé de chaque séance, sans échauffement, récupérations ni retour au calme. Les deux options d'une séance visent le même volume de travail, à ±5 % ou ±2' près. En VO₂max, la plage d'intensité dépend de la durée des fractions, puis le moteur descend dans la plage quand le nombre de répétitions augmente.</p>
     </main>
   </div>
   <div class="audit">
@@ -1212,9 +1212,10 @@ const RULES={
       weeklyMax:1,minRuns:4,maxRuns:6,
       blockWhenFourRunsAndTwoQualities:true,
       work:[15,45],warmup:20,cooldown:10,intensityPctLT1:[0.92,0.98],
-      allowedContexts:['aero','assimilation'],
+      allowedContexts:['aero'],
       formats:['continuous','blocks']
     },
+    assimilationActive:{blockMinutes:[10,15,20],preferredWarmup:20,cooldown:10,minEasy:10},
     warmup:{vma:[27,10],vmaShort:[27,10],s2:[24,10],s1:[24,10],fartlek:[27,10],mixed:[24,10],spec:[27,10],hills:[24,10]},
     longRun:{share:0.25,minMinutes:50,minShare:0.2,softShare:0.28,maxShare:0.35,cap:{default:110,aero:130,spec:[105,90,130,160]}}
   },
@@ -2555,7 +2556,7 @@ const RULE_META=(()=>{
   'blocks.aero.fartlek':m("Q_SESSION_COMBINATION","organizational",{"origin": "internal_heuristic", "confidence": "low", "decision": "keep", "findings": [], "lastReview": "2026-10-03", "reviewSummary": "Fartlek sans cible chronométrique : effort contrôlé au ressenti, récupération en footing facile, structure adaptable au terrain. Aucune preuve externe directement reliée dans la revue actuelle : prescription pratique Planif, sans revendication de consensus scientifique vérifié."}),
   'blocks.aero.ramp':m('Q_LOAD_PROGRESSION','organizational'),
   'blocks.aero.shortHills':m("Q_HILLS","organizational",{"origin": "partial_science", "confidence": "moderate", "decision": "keep", "findings": ["FND_024", "FND_005", "FND_006", "FND_026"], "lastReview": "2026-10-03", "reviewSummary": "SRC_017 apporte une comparaison de programmes de côtes chez des coureurs ; SRC_026/027 fournissent un contexte économie et renforcement indirect. Le format exact 6–10 × 10–15 s à 6–10 %, l’alternance avec les lignes droites et le statut hors qualité restent heuristiques. SRC_038 apporte un contexte supplémentaire sur renforcement et économie, avec possible chevauchement des études de SRC_027 ; pas de validation directe du format de côtes."}),
-  'blocks.assimilation':m('Q_ASSIMILATION','organizational'),
+  'blocks.assimilation':m('Q_ASSIMILATION','organizational',{origin:'internal_heuristic',decision:'modify',lastReview:'2026-10-10',reviewSummary:'Choix de programmation : la qualité est remplacée par un Jogg avec un bloc d’endurance active sous LT1. Les durées exactes ne sont pas une prescription scientifique universelle.'}),
   'blocks.eco.A':m('Q_BLOCK_WORK_VOLUME','organizational'),
   'blocks.eco.B':m('Q_SESSION_COMBINATION','organizational'),
   'blocks.eco.budget':m('Q_INTENSITY_DISTRIBUTION','organizational'),
@@ -2649,7 +2650,8 @@ const RULE_META=(()=>{
   'load.zones':m('Q_LOAD_WEIGHTING','physiological'),
   'organization.longRun':m('Q_LONG_RUN','organizational',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_002"], "lastReview": "2026-10-03", "reviewSummary": "Observation de prescriptions marathon, sans preuve d’efficacité ni plafond universel. Durées et parts hebdomadaires Planif restent heuristiques."}),
   'organization.qualityFrequency':m("Q_MIXED_SESSIONS","organizational",{"origin": "internal_heuristic", "confidence": "low", "decision": "keep", "findings": [], "lastReview": "2026-10-03", "reviewSummary": "Le nombre de qualités reste choisi par l’athlète. Deux qualités sont possibles dès 4 sorties mais plutôt recommandées à partir de 5 ; trois qualités nécessitent au moins 6 sorties. La troisième est allégée. Aucune preuve externe directement reliée dans la revue actuelle : prescription pratique Planif, sans revendication de consensus scientifique vérifié."}),
-  'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Endurance active distincte des qualités : au plus une fois par semaine, 15 à 45 min à 92–98 % de la vitesse LT1, avec LT1 comme plafond, précédées de 20 min faciles et suivies de 10 min faciles. Utilisée en développement aérobie ou assimilation.'}),
+  'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-10',reviewSummary:'En développement aérobie : au plus une fois par semaine, 15 à 45 min à 92–98 % de la vitesse LT1, avec LT1 comme plafond. En assimilation, la règle dédiée limite le bloc à 10, 15 ou 20 min.'}),
+  'organization.assimilationActive':m('Q_ASSIMILATION','organizational',{origin:'internal_heuristic',confidence:'low',decision:'modify',lastReview:'2026-10-10',reviewSummary:'Choix utilisateur : un Jogg avec un bloc de 10, 15 ou 20 min d’endurance active remplace la qualité. Durée adaptée au Jogg disponible, début et fin faciles, sans dépasser LT1. Pas de qualité comptabilisée.'}),
   'organization.warmup':m('Q_WARMUP','organizational'),
   'prediction.marathonPenalty':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
@@ -2665,7 +2667,7 @@ const RULE_META=(()=>{
   'mixed.componentTimes':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Formats courts réservés aux composants mixtes ; leur sélection ne peut dépasser le budget demandé. Les formats dédiés restent inchangés.'}),
   'recovery.calendarContext':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Priorité au footing récupération entre qualité et sortie longue ou deux qualités. Transfert de minutes vers 45 min, avec EF normale vers 50 min avant repos, sans modifier le volume hebdomadaire.'}),
   'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Budgets stricts communs aux deux composants et aux deux options : S1→S2 35 min (S1 ≤25, S2 ≤12), S1→VO₂ 30 min, S2→VO₂ 25 min. Le budget demandé par composant et le budget hebdomadaire réel restent prioritaires. Heuristiques internes, sans revendication de plafond scientifique universel.'}),
-  'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-03',reviewSummary:'Sous-zones pratiques de footing exprimées en % de la vitesse LT1 : récupération 75–83 %, EF normale/prolongée 84–91 %. Ce découpage sert à la prescription et ne constitue pas des seuils physiologiques distincts.'}),
+  'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-10',reviewSummary:'Une seule catégorie visible : Jogg, facile au ressenti sous LT1, sans allure imposée. Les anciens types internes servent uniquement à adapter la durée et le placement, pas à imposer un footing normal ou récupération.'}),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
   's1.band':m("Q_S1_INTENSITY","physiological",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_022"], "lastReview": "2026-10-03", "reviewSummary": "SRC_007 distingue les repères physiologiques dans son protocole. Le soutien porte sur le repère LT1, pas sur les marges d’allure S1 : celles-ci restent heuristiques. SRC_018 est désormais rattachée à S2."}),
@@ -2991,17 +2993,18 @@ function s2Range(rng,work,st){
 const lt1Ref=st=>(st.s1lo+st.s1hi)/2;
 function efPctBand(type){
   if(type==='active')return RULES.organization.activeEndurance.intensityPctLT1;
-  return RULES.recovery.footing[type==='rec'?'rec':type==='pro'?'pro':'std'].intensityPctLT1;
+  return [RULES.recovery.footing.rec.intensityPctLT1[0],RULES.recovery.footing.std.intensityPctLT1[1]];
 }
 function efBand(type,st){
   const p=efPctBand(type),v=lt1Ref(st);
   return[v*p[0],v*p[1]];
 }
 function efBandText(type,st){
+  if(type!=='active')return 'Au ressenti, facile et sous le premier seuil — sans allure imposée';
   const p=efPctBand(type),v=efBand(type,st);
   return `${fmtSpd(v[0])} à ${fmtSpd(v[1])} km/h (${fmtPace(v[0])} à ${fmtPace(v[1])}/km) · ${Math.round(p[0]*100)}–${Math.round(p[1]*100)} % LT1`;
 }
-const footColor=type=>type==='active'?'var(--ef-active)':type==='rec'?'var(--ef-rec)':'var(--ef-std)';
+const footColor=type=>type==='active'?'var(--ef-active)':'var(--ef-std)';
 function s1Margin(repMin){return RULES.s1.band.durationMargins.find(x=>repMin<=x.max).r;}
 function s1Band(repMin,work,st){
   const B=RULES.s1.band,r=s1Margin(repMin),pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1);
@@ -3500,7 +3503,8 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
 }
 
 /* ---------- footings : catégories et volume cible à ±2,5 % ---------- */
-const FOOT={rec:{lab:'Footing récupération',r:RULES.recovery.footing.rec.range,d:RULES.recovery.footing.rec.default},std:{lab:'EF normale',r:RULES.recovery.footing.std.range,d:RULES.recovery.footing.std.default},pro:{lab:'Footing prolongé',r:RULES.recovery.footing.pro.range},active:{lab:'Footing actif'}};
+const FOOT={rec:{lab:'Jogg’',r:RULES.recovery.footing.rec.range,d:RULES.recovery.footing.rec.default},std:{lab:'Jogg’',r:RULES.recovery.footing.std.range,d:RULES.recovery.footing.std.default},pro:{lab:'Jogg’',r:RULES.recovery.footing.pro.range},active:{lab:'Jogg’ + endurance active'}};
+const joggTitle=f=>f.ld?'Jogg + LD':f.type==='active'?'Jogg’ + endurance active':'Jogg’';
 function planFootings(o){
   const warns=[];let sl=o.sl,removed=0,converted=false;
   /* 1 footing récupération après la séance la plus coûteuse ; un 2e si la semaine est chargée ; tous en assimilation */
@@ -3591,6 +3595,7 @@ function roundW(fam,W){if(fam==='s1')return Math.max(5,r5(W));if(fam==='spec')re
 /* Construction d'UNE semaine d'un bloc : partagée par le mode Bloc et par le calendrier.
    o = {k, N, t, assim, vol, memory, block, specDist} ; k et N sont locaux au bloc. */
 function buildWeek(B,st,o){
+  if(o.assim)return buildAssimilationWeek(B,st,o);
   const{k,N,t,assim,vol,memory}=o,warns=[];
   const isMara=o.block==='spec'&&o.specDist===3;
   const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1,
@@ -3721,6 +3726,26 @@ function buildWeek(B,st,o){
     const reminders=(assim?['strides_optional_week','evaluation']:B.reminders).map(code=>({code,params:{block:B.id,dist:B.dist}}));
   const ruleRefs=[...(tenK?['calendar.longRun10k']:[]),...(longMain?['weeklyFormats']:[]),'organization.longRun','recovery.footing','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
   return{k,assim,target:vol,vol:volume,volume,ruleRefs:sessions.some(()=>true)?ruleRefs.concat(aeContext?['organization.activeEndurance']:[]):ruleRefs,sessions,sl,slS1,slEA,slLoad:sumBd(slBd),foot,z,pct,qualityMinutes:qWork,qualityPct:pct,load,loadMin,loadMax,heavy,workLoad,loadBreakdown:bd,warns,reminders,budget:B.budget,costly:costly&&sessionKey(costly)};
+}
+/* Assimilation : aucune qualité, un Jogg actif au jour de qualité habituel.
+   Les anciens types rec/std ne servent plus qu'au placement et aux durées. */
+function buildAssimilationWeek(B,st,o){
+  const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1;
+  const cap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
+  const sl=clamp(r5(o.vol*LR.share),Math.min(LR.minMinutes,cap),cap);
+  const fp=planFootings({R:o.vol-sl,f:Math.max(1,st.runs-1),nQ:0,assim:false,heavy:false,vol:o.vol,runs:st.runs,sl,slMin:Math.min(cap,LR.minMinutes),slSoft:Math.min(cap,r5(o.vol*LR.softShare)),slMax:Math.min(cap,r5(o.vol*LR.maxShare)),isMara:false});
+  const A=RULES.organization.assimilationActive,foot=fp.foot,cand=foot.slice().sort((a,b)=>b.min-a.min)[0];
+  if(cand){
+    const block=A.blockMinutes.slice().reverse().find(m=>m<=cand.min-A.preferredWarmup-A.cooldown)||A.blockMinutes[0];
+    cand.type='active';cand.assimilationActive=true;cand.activeRange=[block,block];cand.wu=cand.min-block-A.cooldown;cand.cd=A.cooldown;
+  }
+  foot.sort((a,b)=>Number(!!b.assimilationActive)-Number(!!a.assimilationActive));
+  const ld=foot.find(f=>f!==cand);if(ld&&B.ld)ld.ld='strides_optional';
+  const volume=fp.sl+foot.reduce((sum,f)=>sum+f.min,0),bd=emptyBd();bd.z1=volume*RULES.load.intensity.easy;
+  return{k:o.k,assim:true,target:o.vol,vol:volume,volume,sessions:[],foot,sl:fp.sl,slS1:0,slEA:null,slLoad:fp.sl*RULES.load.intensity.easy,
+    z:{z1:volume,z2:0,z3:0,z4:0},pct:0,qualityMinutes:0,qualityPct:0,load:bd.z1,loadMin:bd.z1,loadMax:bd.z1,loadBreakdown:bd,
+    heavy:false,workLoad:0,budget:[0,0],warns:fp.warns,ruleRefs:['volume.assimilationFactor','organization.activeEndurance','organization.assimilationActive','blocks.assimilation','recovery.footing'],
+    reminders:[{code:'strides_optional_week'},{code:'evaluation',params:{block:B.id,dist:B.dist}}]};
 }
 function buildPlan(st,pred){
   const B=getBlock(st,pred),N=st.N;
@@ -3899,9 +3924,9 @@ function placeWeek(wk,win,st){
       return score;
     };
     const afterQ=qDays.map(q=>addDays(q.d,1));
-    wk.foot.forEach(f=>{let d=null;
+    wk.foot.forEach(f=>{let d=f.assimilationActive&&st.q1Day!==''?byWd(st.q1Day):null;if(d&&!isFree(d))d=null;
       const choices=free(),okAfter=afterQ.filter(x=>x<=win.end&&st.avail[wd(x)]&&isFree(x));
-      if(f.type==='rec')d=choices.slice().sort((a,b)=>risk(b)-risk(a)||((qualityAt(addDays(b,-1))?.s.loadMax||0)-(qualityAt(addDays(a,-1))?.s.loadMax||0)))[0];
+      if(!d&&f.type==='rec')d=choices.slice().sort((a,b)=>risk(b)-risk(a)||((qualityAt(addDays(b,-1))?.s.loadMax||0)-(qualityAt(addDays(a,-1))?.s.loadMax||0)))[0];
       if(!d&&okAfter.length)d=okAfter.slice().sort((a,b)=>risk(a)-risk(b))[0];
       if(!d)d=spread(choices);
       if(d){if(f.type==='rec'){const prev=qualityAt(addDays(d,-1));if(prev)f.after=sessionKey(prev.s);}put(d,{kind:'foot',f});}else{f.unplaced=true;warns.push({code:'no_day_footing_reduce'});}});
@@ -4179,8 +4204,8 @@ function renderSession(s,role){
   if(!s.isLong)h+=`<div class="frame">Échauffement ${s.wu}' en EF avec quelques accélérations progressives, retour au calme ${s.cd}'.</div>`;
   return h+'</div>';
 }
-const activeRangeText=x=>x&&x.activeRange?`${Math.round(x.activeRange[0])} à ${Math.round(x.activeRange[1])}' EA`:'';
-const footLabel=x=>x.type==='active'?`Endurance active ${fmtFootDur(x.min)} (${activeRangeText(x)})`:`${FOOT[x.type].lab} ${fmtFootDur(x.min)}${x.after?` (lendemain de « ${sessionTitle(x.after)} »)`:''}${x.ld?LD_SUFFIX[x.ld]:''}${x.shortHills?' + côtes courtes':''}`;
+const activeRangeText=x=>x&&x.activeRange?`${Math.round(x.activeRange[0])}${x.activeRange[0]===x.activeRange[1]?'':' à '+Math.round(x.activeRange[1])}' EA`:'';
+const footLabel=x=>`${joggTitle(x)} ${fmtFootDur(x.min)}${x.type==='active'?` (${activeRangeText(x)})`:''}${x.shortHills?' + côtes courtes':''}`;
 function renderWeeks(st,plan){
   let h='<h2>Détail semaine par semaine</h2>';
   plan.weeks.forEach(w=>{
@@ -4190,7 +4215,7 @@ function renderWeeks(st,plan){
     w.sessions.forEach((s,i)=>{h+=renderSession(s,i===0?'Qualité 1':'Qualité 2');});
     h+='<div class="easy">';
     if(w.sl)h+=`<div><b>Sortie longue, ${fmtDur(w.sl)}, ${pts(w.slLoad)}</b><span>${w.slS1?`${fmtDur(w.sl-w.slS1)} en EF puis ${w.slS1}' au S1 (${paceRange(st.s1lo,st.s1hi)}).`:w.slEA?`20' faciles, puis ${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}' d’endurance active au choix (continu ou blocs), puis au moins 10' faciles. FC ≤ LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}.`:`En EF, plus lent que ${fmtPace(st.s1lo)}/km.`}</span></div>`;
-    if(w.foot.length)h+=`<div><b>${w.foot.map(footLabel).join(', ')}</b><span>${w.heavy?'Semaine chargée : les footings faciles sont orientés récupération.':'Les plages d’intensité sont calculées à partir de la vitesse LT1.'}</span></div>`;
+    if(w.foot.length)h+=`<div><b>${w.foot.map(footLabel).join(', ')}</b><span>${w.heavy?'Semaine chargée : adapte tes Jogg’ à ta fatigue.':'Les Jogg’ se courent faciles au ressenti, sans allure imposée.'}</span></div>`;
     h+='</div>';
     h+=`<div><b>Rappels</b><ul class="rap">${w.reminders.map(r=>`<li>${reminderText(r)}</li>`).join('')}</ul></div>`;
     h+='<div class="zline"><span>Minutes :</span>'+['z1','z2','z3','z4'].map(k=>`<span>${ZONES[k].lab} <b>${Math.round(w.z[k])}'</b></span>`).join('')+'</div>';
@@ -4246,8 +4271,8 @@ function itemShort(it,w){
   if(it.kind==='q'){const s=it.s,k=s.fam==='alternating'?'S1 / AS10':s.fam==='taper'?(C_dist2(s)?'Rappel AS10':'Rappel d\'allure'):s.isLong?'SL spécifique':SECT_SHORT[s.sector]||(s.fam==='hills'?'Côtes':s.fam==='spec'?'Spécifique':sessionTitle(s));
     return{k,s:compactTxt(vText(s.variants[0])),t:`≈ ${fmtDur(s.total)}`};}
   if(it.kind==='sl')return{k:'Sortie longue',s:fmtDur(w.sl),t:w.slS1?`dont ${w.slS1}' S1`:w.slEA?`${Math.round(w.slEA.range[0])}–${Math.round(w.slEA.range[1])}' actif`:(lastSt?efBandText('std',lastSt):'EF')};
-  if(it.kind==='veille')return{k:'Footing veille',s:`${it.min}'`,t:lastSt?efBandText('rec',lastSt):'Très facile'};
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return{k:'Footing actif',s:fmtFootDur(f.min),t:lastSt?efBandText('active',lastSt):activeRangeText(f)};return{k:{rec:'Footing récup',std:'EF normale',pro:'Footing prolongé'}[f.type],s:fmtFootDur(f.min),t:lastSt?efBandText(f.type,lastSt):(f.shortHills?'+ côtes courtes':f.ld?'+ lignes droites':'EF')};}
+  if(it.kind==='veille')return{k:'Jogg + LD',s:`${it.min}'`,t:'Veille de course, très facile'};
+  if(it.kind==='foot'){const f=it.f;return{k:joggTitle(f),s:fmtFootDur(f.min),t:f.type==='active'?activeRangeText(f):(lastSt?efBandText(f.type,lastSt):'Facile, au ressenti')};}
   return{k:'',s:'',t:''};
 }
 /* Résumé de case : la structure seule, raccourcie pour les formes longues (pyramides, mixtes…) */
@@ -4287,8 +4312,8 @@ function renderCalendarDayDetail(st,C,sel){
   if(it.kind==='q'){const s=it.s;return`<h4>${when}</h4>`+renderSession(s,s.fam==='taper'?'Rappel':s.isLong?'Sortie longue':w.sessions.indexOf(s)===0?'Qualité 1':'Qualité 2');}
   if(it.kind==='race'){const r=it.s;return`<h4>${when} : ${sessionTitle(r)}</h4><p class="purpose">${r.goal?'Objectif':'Estimation'} ${fmtTime(r.targetTime)}, ${fmtPace(r.targetPace)}/km, ${fmtSpd(r.targetPace)} km/h. Échauffement 20' avec quelques accélérations progressives, retour au calme 10'. Durée totale ≈ ${fmtDur(r.total)}, charge ${pts(r.load)}.</p>`;}
   if(it.kind==='sl')return`<h4>${when} : Sortie longue, ${fmtDur(w.sl)}</h4><p class="purpose">${w.slS1?`${fmtDur(w.sl-w.slS1)} en EF (plus lent que ${fmtPace(st.s1lo)}/km), puis ${w.slS1}' au S1 (${paceRange(st.s1lo,st.s1hi)}).`:w.slEA?`20' faciles, puis ${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}' d’endurance active au choix, en continu ou en blocs, puis au moins 10' faciles. Ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}.`:`Entièrement en EF, plus lent que ${fmtPace(st.s1lo)}/km.`} Charge ${pts(w.slLoad)}.</p>`;
-  if(it.kind==='veille')return`<h4>${when} : Footing de la veille, ${it.min}'</h4><p class="purpose">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}" avec récupération complète.</p>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return`<h4>${when} : Endurance active, ${fmtFootDur(f.min)}</h4><p class="purpose">${efBandText('active',st)}. 20' faciles, puis ${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}' d’endurance active au choix, en continu ou en blocs, puis 10' faciles. Critère principal : ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}. Ce n’est pas une séance de qualité. Charge ${pts(f.load)}.</p>`;const lab={rec:'Footing récupération (35 à 45\')',std:'Footing standard (40 à 60\')',pro:'Footing prolongé (60 à 75\')'}[f.type];
+  if(it.kind==='veille')return`<h4>${when} : Jogg + LD, ${it.min}'</h4><p class="purpose">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}" avec récupération complète.</p>`;
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return`<h4>${when} : ${joggTitle(f)}, ${fmtFootDur(f.min)}</h4><p class="purpose">${efBandText('active',st)}. ${f.wu}' faciles, puis ${activeRangeText(f)}${f.assimilationActive?' en un bloc':' au choix, en continu ou en blocs'}, puis ${f.cd}' faciles. Critère principal : ne pas dépasser la FC LT1${st.lt1Hr?' ('+Math.round(st.lt1Hr)+' bpm)':''}. Ce n’est pas une séance de qualité. Charge ${pts(f.load)}.</p>`;const lab=joggTitle(f);
     return`<h4>${when} : ${lab}</h4><p class="purpose">${fmtFootDur(f.min)} en EF, ${efBandText(f.type,st)}${f.after?`, le lendemain de « ${sessionTitle(f.after)} »`:''}.${f.ld?` En fin de footing : ${LD.split(' : ')[1]}.`:''}${f.shortHills?` En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte à ${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %, récupération complète. Travail neuromusculaire, pas une séance de qualité.`:''} Charge ${pts(f.load)}.</p>`;}
   return'';
 }
@@ -4327,7 +4352,7 @@ function agendaItem(it,w,st){
   if(it.kind==='race')return`<span class="race">${sessionTitle(it.s)} : ${C_goalTxt(it.s)}</span>`;
   if(it.kind==='q')return`<b>${sessionTitle(it.s)}</b> : ${vText(it.s.variants[0]).split(', récup')[0]} <span class="rest">ou</span> ${vText(it.s.variants[1]).split(', récup')[0]}`;
   if(it.kind==='sl')return`Sortie longue ${fmtDur(w.sl)}${w.slS1?`, dont ${w.slS1}' au S1 en fin`:''}`;
-  if(it.kind==='veille')return`Footing ${it.min}' très facile + ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites`;
+  if(it.kind==='veille')return`Jogg + LD ${it.min}' très facile + ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites`;
   if(it.kind==='foot')return footLabel(it.f);
   return'';
 }
@@ -4428,13 +4453,13 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.06.05';
+const APP_VERSION='2026.10.10.01';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${c.t}</span>`}`;
-  return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
+  return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
 /* Fonds SVG décoratifs propres à chaque rubrique, disponibles hors connexion. */
@@ -4516,7 +4541,7 @@ function appBlockWeeks(C,st){
   C.weeks.forEach((w,i)=>{const open=calOpen.has(i);
     h+=`<div class="cw${w.assim?' assimW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${w.assim?PHASE_C.assim:PHASE_C[C.B.id==='spec'?'spec':C.B.id]||'var(--line)'}"></i><div><b>Semaine ${i+1}</b><small>${w.assim?'Assimilation':'Charge'}</small></div><div class="v">${fmtDur(w.vol)}<small>${pts(w.load)}</small></div></button>`;
     if(open){h+='<div class="cwBody">'+w.sessions.map((s,qi)=>tileHtml({kind:'q',s},w,{w:i,q:qi})).join('')+
-      (w.sl?tileHtml({kind:'sl'},w,null):'')+w.foot.map(f=>tileHtml({kind:'foot',f},w,null)).join('')+'</div>';}
+      (w.sl?tileHtml({kind:'sl'},w,{w:i,sl:true}):'')+w.foot.map((f,fi)=>tileHtml({kind:'foot',f},w,{w:i,f:fi})).join('')+'</div>';}
     h+='</div>';});
   return h;
 }
@@ -4614,7 +4639,7 @@ function appSetHtml(){
     if(+$('qualityCount').value>=3)h+=`<div class="sf2">${fSel('Jour qualité 3','q3Day')}<span></span></div>`;
     h+=`<div class="sf2">${fSel('Jour sortie longue','slDay')}<span></span></div><div class="sfLab">Jours disponibles</div><div class="pills">${['L','M','M','J','V','S','D'].map((d,i)=>`<label><input type="checkbox" data-bind="av${i}"${$('av'+i).checked?' checked':''}><span>${d}</span></label>`).join('')}</div></div>`;
   }else if(!cal){
-    h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div>${fSw('2 séances de qualité en assimilation','assimQ2')}</div>`;
+    h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div><p class="lbl">Assimilation : un Jogg’ avec 10, 15 ou 20’ d’endurance active remplace la qualité.</p></div>`;
   }
 
   h+=`<details class="card settingsFold" data-settings-section="chrono"${settingsSections.chrono?' open':''}><summary><h2>Chronos de référence</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent">${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
@@ -4814,10 +4839,12 @@ function corosSessionSnapshot(){
   const base={title:'Planif · '+title,description,s2Kmh:st.s2,easyBand:efBand('std',st),s1Band:[st.s1lo,st.s1hi],activeBand:efBand('active',st),hrCue:st.lt1Hr?`Ne pas dépasser ${Math.round(st.lt1Hr)} bpm.`:'Ne pas dépasser le premier seuil.'};
   if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd,description:o.c.structure.type==='long_run'?description:qualityDescription,preparation:o.c.structure.type!=='long_run',activation:corosActivation(o.c)};}
   const w=lastPlan?.weeks?.[r.w],day=w?.days?.[r.d];let it=day?.items?.[r.i];if(r.q!==undefined&&w?.sessions?.[r.q])it={kind:'q',s:w.sessions[r.q]};
+  if(r.f!==undefined&&w?.foot?.[r.f])it={kind:'foot',f:w.foot[r.f]};
+  if(r.sl&&w)it={kind:'sl'};
   if(!it)throw new Error('Cette séance n’est plus disponible.');
   if(day?.date){const d=day.date;base.date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd,description:s.isLong?description:qualityDescription,preparation:!s.isLong,activation:corosActivation(v,s)};}
-  if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:efBand(it.f.type,st)};
+  if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:null};
   if(it.kind==='sl')return{...base,kind:'long',long:{totalMin:w.sl,s1Min:w.slS1,active:w.slEA}};
   if(it.kind==='race')return{...base,kind:'race',race:JSON.parse(JSON.stringify(it.s))};
   throw new Error('Ce format libre n’est pas encore exportable sans modifier ses consignes.');
@@ -4828,6 +4855,8 @@ function sessionScreenHtml(){
   const C=lastPlan,st=lastSt,r=appSession;const w=C&&C.weeks&&C.weeks[r.w];
   let day=w&&w.days&&w.days[r.d],it=day&&day.items[r.i];
   if(r.q!==undefined&&w&&w.sessions[r.q]){it={kind:'q',s:w.sessions[r.q]};day=null;}
+  if(r.f!==undefined&&w?.foot?.[r.f]){it={kind:'foot',f:w.foot[r.f]};day=null;}
+  if(r.sl&&w){it={kind:'sl'};day=null;}
   if(!it)return'<div class="card"><p class="lbl">Cette séance n\'existe plus dans le plan actuel.</p></div>';
   const when=day?fmtD(day.date):`Semaine ${r.w+1}`,ph=day?`${phaseLab(w.phase,C.race.distance)}, semaine ${w.index+1}`:`${blockLabel(C.B)}${w.assim?', assimilation':''}`,col=itemColor(it,w);
   const head=(t)=>`<div class="sHead" style="--c:${col}"><h2>${t}</h2><div class="lbl">${when}, ${ph}</div></div>`;
@@ -4843,10 +4872,10 @@ function sessionScreenHtml(){
       `<div class="card"><details class="info"><summary>ⓘ Charge de la course</summary><p>Charge estimée : ${pts(r2.load)}.</p></details></div>`;}
   if(it.kind==='sl')return head('Sortie longue')+`<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl-w.slS1)}</span>${w.slS1?`<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>`:w.slEA?`<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span>`:''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${efBandText('std',st)}</span>${w.slS1?`<span>Allure S1</span><span class="v">${paceRange(st.s1lo,st.s1hi)}</span>`:''}</div></div>`+
       `<div class="card"><details class="info"><summary>ⓘ Charge</summary><p>Charge estimée : ${pts(w.slLoad)}.</p></details></div>`;
-  if(it.kind==='veille')return head('Footing de la veille')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
-  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head('Footing actif')+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${Math.round(f.activeRange[0])} à ${Math.round(f.activeRange[1])}'</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${efBandText('active',st)}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">Continu ou blocs au choix. 92–98 % de la vitesse LT1, sans dépasser LT1.</p></div>`;const lab={rec:'Footing récupération',std:'EF normale',pro:'Footing prolongé'}[f.type];
+  if(it.kind==='veille')return head('Jogg + LD')+`<div class="card"><div class="big">${it.min}'</div><p class="lbl">Très facile, puis ${it.strides?it.strides[0]+' à '+it.strides[1]:'3 à 5'} lignes droites de ${it.seconds?it.seconds[0]+' à '+it.seconds[1]:'10 à 15'}", récupération complète.</p></div>`;
+  if(it.kind==='foot'){const f=it.f;if(f.type==='active')return head(joggTitle(f))+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${efBandText('active',st)}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr?Math.round(st.lt1Hr)+' bpm':'LT1'}</span></div><p class="lbl" style="margin-top:.6rem">${f.assimilationActive?'Un bloc de 10, 15 ou 20 min selon la durée du Jogg’. Remplace la qualité en assimilation.':'Continu ou blocs au choix.'} 92–98 % de la vitesse LT1, sans dépasser LT1.</p></div>`;const lab=joggTitle(f);
     return head(lab)+`<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${efBandText(f.type,st)}</span></div>${f.ld?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>`:''}${f.shortHills?`<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>`:''}</div>`+
-      `<div class="card"><details class="info"><summary>ⓘ Pourquoi ce footing</summary><p>${(()=>{const F=RULES.recovery.footing,r=x=>`${x[0]} à ${x[1]}'`;return f.after?`Le lendemain de « ${sessionTitle(f.after)} » : footing de récupération, plage de ${r(F.rec.range)}.`:f.type==='pro'?`Footing prolongé (${r(F.pro.range)}) : utilisé seulement quand le volume visé l'impose.`:f.type==='rec'?`Footing de récupération, plage de ${r(F.rec.range)}.`:`Footing standard (${r(F.std.range)}) en endurance fondamentale.`;})()}</p><p>Charge estimée : ${pts(f.load)}.</p></details></div>`;}
+      `<div class="card"><details class="info"><summary>ⓘ Pourquoi ce footing</summary><p>Jogg’ facile au ressenti : adapte l’effort à ta fatigue et au terrain, sans dépasser le premier seuil. La durée tient compte du volume hebdomadaire et des séances voisines.</p><p>Charge estimée : ${pts(f.load)}.</p></details></div>`;}
   return'';
 }
 function openSession(ref){appSession=ref;appOpt=0;renderApp();window.scrollTo(0,0);}
@@ -4875,7 +4904,7 @@ $('appShell').addEventListener('click',e=>{
   const ss=e.target.closest('[data-studyscope]');if(ss){studyScope=ss.dataset.studyscope;studyFilter='Toutes';renderApp();return;}
   const sf=e.target.closest('[data-studyfilter]');if(sf){studyFilter=sf.dataset.studyfilter;renderApp();return;}
   const tl=e.target.closest('[data-timeline]');if(tl){calendarTimelineOpen=!calendarTimelineOpen;renderApp();return;}
-  const o=e.target.closest('[data-open]');if(o){const p=o.dataset.open.split(',');openSession(p[1]==='q'?{w:+p[0],q:+p[2]}:{w:+p[0],d:+p[1],i:+p[2]});return;}
+  const o=e.target.closest('[data-open]');if(o){const p=o.dataset.open.split(',');openSession(p[1]==='q'?{w:+p[0],q:+p[2]}:p[1]==='f'?{w:+p[0],f:+p[2]}:p[1]==='sl'?{w:+p[0],sl:true}:{w:+p[0],d:+p[1],i:+p[2]});return;}
   const wk=e.target.closest('[data-week]');if(wk){const i=+wk.dataset.week;if(calOpen.has(i))calOpen.delete(i);else calOpen.add(i);renderApp();return;}
   const ol=e.target.closest('[data-openlib]');if(ol){appLib=true;renderApp();window.scrollTo(0,0);return;}
   const ls=e.target.closest('[data-lsec]');if(ls){libSector=ls.dataset.lsec;libFam='all';renderApp();return;}
@@ -4900,3 +4929,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
