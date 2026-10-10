@@ -307,6 +307,10 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .cwHead small{font-size:.78rem;line-height:1.35}
 .phaseList{font-size:.86rem}
 .dayRow .rest3{color:var(--muted);font-size:.9rem;padding:.7rem 0}
+.moveGrip{float:right;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-.4rem -.35rem -.4rem .2rem;font-size:1.5rem;color:var(--muted);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.calDragging{opacity:.4}
+.dayRow.calDropTarget{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.calDragGhost{position:fixed;z-index:10000;pointer-events:none;margin:0;box-sizing:border-box;box-shadow:0 8px 24px #0003;opacity:.95;background:var(--surface)}
 .cwFoot{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;padding:.3rem 0 .2rem}
 .phaseList{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.4rem .8rem;font-size:.9rem}
 .phaseList b{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
@@ -1088,6 +1092,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
+<script src="./planif-calendar-drag.js?v=2026.10.10.13"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4595,13 +4600,15 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.12';
+const APP_VERSION='2026.10.10.13';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
+let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}`;
-  return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}"><span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
+  const grip=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?`<span class="moveGrip" data-move-grip="${it.planifId}" aria-hidden="true" title="Glisser vers un autre jour de cette semaine">⠿</span>`:'';
+  return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${grip}<span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
 /* Fonds SVG décoratifs propres à chaque rubrique, disponibles hors connexion. */
@@ -4657,6 +4664,7 @@ function appCalendarWeeks(C,st){
     h+='</div>';
   }
   h+='</div>';
+  h+=`<p class="lbl">Glisse la poignée ⠿ vers un autre jour de la même semaine. Tu peux aussi ouvrir la séance pour choisir sa date.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
   C.weeks.forEach((w,i)=>{
     const open=calOpen.has(i),pos=w.phase!=='assim'&&w.segLen?` ${w.segK+1}/${w.segLen}`:'';
     h+=`<div class="cw${i===curIdx?' nowW':''}${w.assimilation?' assimW':''}${w.raceWeek?' raceW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>`+
@@ -4669,7 +4677,7 @@ function appCalendarWeeks(C,st){
         if(!it)return`<span>${lab}</span>`;
         return`<span class="on${it.kind==='race'?' raceS':''}" style="--c:${itemColor(it,w)}">${lab}</span>`;}).join('')+'</div>';
     }else{
-      h+='<div class="cwBody">'+w.days.map((x,di)=>`<div class="dayRow"><div class="dl"><b>${x.date.toLocaleDateString('fr-FR',{weekday:'short'})}</b>${x.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div><div>`+
+      h+='<div class="cwBody">'+w.days.map((x,di)=>`<div class="dayRow" data-move-week="${i}" data-move-date="${planDateKey(x.date)}"><div class="dl"><b>${x.date.toLocaleDateString('fr-FR',{weekday:'short'})}</b>${x.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div><div>`+
         (x.items.length?x.items.map((it,ii)=>tileHtml(it,w,{w:i,d:di,i:ii},{calendar:true})).join(''):'<div class="rest3">Repos</div>')+'</div></div>').join('');
       h+=`<div class="cwFoot"><span>Qualité ${Math.round(w.qualityMinutes)}' (${Math.round(w.pct)} %)</span><span>Cible ${fmtDur(w.targetVolume)}</span></div></div>`;
     }
@@ -5073,14 +5081,14 @@ function planifMoveHtml(){
   const moved=info.originalDate!==info.date,warning=lastPlan.moveWarnings?.[info.id];
   return `<div class="card">${moved?`<p class="lbl">Initialement prévue le ${fmtD(new Date(info.originalDate+'T12:00:00'))}.</p>`:''}${warning?`<p class="lbl">Déplacement suspendu : ${warning}</p>`:''}<details class="info"><summary>Déplacer la séance</summary><p>Choisis un autre jour dans cette semaine. Le contenu, le volume hebdomadaire et la validation sont conservés.</p><form data-planif-move><label class="sf"><span>Nouvelle date</span><select name="date">${source.w.days.map(d=>{const key=planDateKey(d.date);try{planifMoveCheck(lastPlan,info.id,key,lastSt);return `<option value="${key}"${key===info.date?' selected':''}>${fmtD(d.date)}</option>`;}catch{return '';}}).join('')}</select></label><p class="lbl" data-move-warning role="status"></p><button class="cta ghost" type="submit">Déplacer à cette date</button></form>${activePlan.moves?.[info.id]?'<button type="button" class="cta ghost" data-planif-restore>Rétablir la date initiale</button>':''}</details></div>`;
 }
-function movePlanifSession(date){
-  const info=planifSessionInfo(appSession);if(!info)return;
+function movePlanifSession(date,ref=appSession,keepCalendar=false){
+  const info=planifSessionInfo(ref);if(!info)return false;
   const check=planifMoveCheck(lastPlan,info.id,date,lastSt);if(info.date===date&&!activePlan.moves?.[info.id])return;
   if(check.warnings.length&&!window.confirm(check.warnings.join('\n')+'\nDéplacer quand même ?'))return;
   const moves={...activePlan.moves};if(date===info.originalDate)delete moves[info.id];else moves[info.id]={from:info.originalDate,to:date};
   check.source.day.items.splice(check.source.ref.i,1);check.day.items.push(check.source.it);
   activePlan={...activePlan,moves};saveActivePlan(lastSt,lastPlan);calSel=null;
-  render();appSession=findPlanifSession(lastPlan,info.id)?.ref||null;renderApp();
+  render();appSession=keepCalendar?null:findPlanifSession(lastPlan,info.id)?.ref||null;renderApp();return true;
 }
 function sessionScreenHtml(){
   if(appSession&&appSession.lib)return libSessionHtml(appSession.lib);
@@ -5150,6 +5158,7 @@ $('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEvent
 document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){appSession=null;appLib=false;appTab='set';setUi('app');}else{setBuilt=false;if(appTab==='set'&&!appSession&&!appLib)renderApp();}document.querySelectorAll('[data-coros]').forEach(b=>b.disabled=PlanifCoros.busy);});
 load();syncQualityPrereqs();render();renderApp();
 PlanifCoros.start();
+globalThis.PlanifCalendarDrag?.({root:$('scr-cal'),getSession:id=>findPlanifSession(lastPlan,id),check:(id,date)=>planifMoveCheck(lastPlan,id,date,lastSt),move:(date,ref)=>movePlanifSession(date,ref,true),say:message=>{calendarMoveMessage=message;const region=$('calMoveStatus');if(region)region.textContent=message;}});
 document.addEventListener('submit',e=>{if(!e.target.matches('[data-planif-move]'))return;e.preventDefault();try{movePlanifSession(e.target.elements.date.value);}catch(error){e.target.querySelector('[data-move-warning]').textContent=error.message;}});
 document.addEventListener('change',e=>{if(!e.target.matches('[data-planif-move] select'))return;const info=planifSessionInfo(appSession);if(!info)return;try{e.target.closest('form').querySelector('[data-move-warning]').textContent=planifMoveCheck(lastPlan,info.id,e.target.value,lastSt).warnings.join(' ');}catch(error){e.target.closest('form').querySelector('[data-move-warning]').textContent=error.message;}});
 document.addEventListener('click',e=>{if(!e.target.closest('[data-planif-restore]'))return;const info=planifSessionInfo(appSession);if(info)movePlanifSession(info.originalDate);});
@@ -5168,7 +5177,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.12"></script>
+<script src="./planif-strava.js?v=2026.10.10.13"></script>
 </body>
 </html>
 
