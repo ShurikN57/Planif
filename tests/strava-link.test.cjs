@@ -7,7 +7,7 @@ assert(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8').includes(`./plani
 assert(html.includes('firebase-auth-compat.js'));
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
 let popupUrl,listener,redraws=0,fetches=[],user=null,loginCount=0,logoutCount=0,forced=0,failOnce=false,popup;
-const makeUser=uid=>({uid,email:uid+'@example.test',displayName:uid,getIdToken:async(force)=>{if(force)forced++;return 'token-'+uid+(force?'-forced':'')}});
+const makeUser=uid=>({uid,email:uid+'@example.test',displayName:uid,getIdTokenResult:async(force)=>{if(force)forced++;return {token:'token-'+uid+(force?'-forced':''),expirationTime:new Date(Date.now()+3600000).toISOString()}}});
 const auth={get currentUser(){return user;},setPersistence:async mode=>assert.equal(mode,'local'),onAuthStateChanged(fn){listener=fn;fn(user);},async signOut(){logoutCount++;user=null;listener(null);},async signInWithEmailAndPassword(email){loginCount++;user=makeUser(email.split('@')[0]);listener(user);},async signInWithCustomToken(value){assert.equal(value,'CUSTOM');user=makeUser('lucas');listener(user);}};
 const firebase={apps:[],initializeApp:()=>({auth:()=>auth}),auth:Object.assign(()=>auth,{Auth:{Persistence:{LOCAL:'local'}}})};
 const delay=()=>new Promise(r=>setImmediate(r));

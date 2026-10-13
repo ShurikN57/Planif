@@ -12,10 +12,10 @@ window.PlanifStrava=(()=>{
   function redraw(){ctx.redraw();}
   async function token(force=false){
     const user=firebaseAuth?.currentUser;if(!user||auth?.uid!==user.uid)throw Error('Reconnecte ton compte athlète pour actualiser les données.');
-    const value=await user.getIdToken(force);
+    const result=await user.getIdTokenResult(force);
     if(firebaseAuth.currentUser!==user)throw Error('Le compte a changé. Réessaie.');
-    auth.expiresAt=Date.now()+50*60000;
-    return value;
+    auth.expiresAt=Date.parse(result.expirationTime)||0;
+    return result.token;
   }
   async function api(path,options={}){
     const uid=auth?.uid,seq=generation;
@@ -43,7 +43,7 @@ window.PlanifStrava=(()=>{
     if(window.firebase){
       const app=window.firebase.apps?.length?window.firebase.app():window.firebase.initializeApp({apiKey:'AIzaSyBe6x-D-jJuOmygqRbQBW34g6PwMFQbEuA',authDomain:'strava-mobile-2f93f.firebaseapp.com',projectId:'strava-mobile-2f93f'});
       firebaseAuth=app.auth();
-      firebaseAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).then(()=>{firebaseAuth.onAuthStateChanged(restore,e=>{verified=false;message='Session Firebase indisponible : '+e.message;redraw();});firebaseAuth.onIdTokenChanged?.(user=>{if(user&&auth?.uid===user.uid&&verified){auth.expiresAt=Date.now()+50*60000;redraw();}});}).catch(e=>{message='Session Firebase indisponible : '+e.message;redraw();});
+      firebaseAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).then(()=>{firebaseAuth.onAuthStateChanged(restore,e=>{verified=false;message='Session Firebase indisponible : '+e.message;redraw();});firebaseAuth.onIdTokenChanged?.(async user=>{if(user&&auth?.uid===user.uid&&verified){try{const result=await user.getIdTokenResult();if(firebaseAuth.currentUser===user&&auth?.uid===user.uid){auth.expiresAt=Date.parse(result.expirationTime)||0;redraw();}}catch{verified=false;redraw();}}});}).catch(e=>{message='Session Firebase indisponible : '+e.message;redraw();});
     }else message='Connexion Firebase indisponible. Vérifie la connexion Internet.';
   }catch(e){message='Connexion Firebase indisponible : '+e.message;}
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&firebaseAuth?.currentUser&&!verified)restore(firebaseAuth.currentUser);});
