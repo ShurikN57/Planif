@@ -7,9 +7,9 @@ function env({url='https://shurikn57.github.io/Planif/',local=storage(),session=
  const handlers={},calls=[],events=[],assigned=[];
  const context={URL,URLSearchParams,TextEncoder,Uint8Array,crypto:webcrypto,btoa:s=>Buffer.from(s,'binary').toString('base64'),AbortController,Blob,Event,Date,Error,TypeError,SyntaxError,Number,String,Array,JSON,Map,Set,Promise,console,
  setTimeout,clearTimeout,sessionStorage:session,localStorage:local,navigator:{onLine:online},history:{replaceState:(a,b,p)=>context.location.href='https://shurikn57.github.io'+p},location:{href:url,assign:u=>assigned.push(u)},document:{addEventListener:(name,f)=>handlers[name]=f,dispatchEvent:e=>events.push(e.type),getElementById:()=>({value:'eu'})},fetch:async(u,opts)=>{calls.push({u,opts});const result=responder?await responder(u,opts):respond(u,opts);return{ok:result.status===undefined||result.status===200,status:result.status||200,headers:{get:()=>result.sse?'text/event-stream':'application/json'},text:async()=>result.sse||JSON.stringify(result.body)};}};
- context.window=context;vm.createContext(context);vm.runInContext(source,context);
+ context.window=context;context.addEventListener=(name,fn)=>handlers[name]=fn;vm.createContext(context);vm.runInContext(source,context);
  const click=async act=>handlers.click({target:{closest:()=>({dataset:{coros:act}})}});
- return{api:context.PlanifCoros,calls,context,assigned,click,local,session};
+ return{api:context.PlanifCoros,calls,context,assigned,click,local,session,handlers};
 }
 function respond(u,opts){
  if(u.endsWith('/.well-known/oauth-authorization-server'))return{body:{issuer,authorization_endpoint:issuer+'/oauth2/authorize',token_endpoint:issuer+'/oauth2/token',registration_endpoint:issuer+'/connect/register',code_challenge_methods_supported:['S256'],token_endpoint_auth_methods_supported:['none']}};
@@ -68,14 +68,15 @@ async function sendCase(outcome,changedSchema=false,destination='library',invali
  assert(!u.href.includes(p.verifier));
  const b=env({url:p.redirect+'&code=PRIVATE_CODE&state='+p.state,local:a.local});await b.api.start();
  assert.equal(b.context.location.href,'https://shurikn57.github.io/Planif/index.html');assert.equal(b.local.getItem('planif-coros-v1-pending'),null);assert(b.api.settingsHtml().includes('class="connectionTag">Connecté'));assert(b.api.settingsHtml().includes('aria-label="Informations sur COROS"'));assert(b.api.settingsHtml().includes('Connexion vérifiée'));assert(b.api.settingsHtml().includes('Exporter les formats'));assert(!b.api.settingsHtml().includes('PRIVATE'));
- assert(b.session.getItem('planif-coros-v1-auth'));assert(![...b.local.data.values()].some(v=>v.includes('PRIVATE')));
+ assert(b.local.getItem('planif-coros-v1-auth'));assert(!b.session.getItem('planif-coros-v1-auth'));
+ const reopened=env({local:b.local});await reopened.api.start();assert(reopened.api.settingsHtml().includes('Connecté'));assert.equal(reopened.calls.filter(c=>c.u.endsWith('/mcp')).length,3,'reopening verifies the stored account');
  assert.equal(b.calls.filter(c=>c.u.endsWith('/mcp')).length,3);assert(b.calls.every(c=>c.opts.credentials==='omit'&&c.opts.cache==='no-store'));
- await b.click('disconnect');assert(!b.session.getItem('planif-coros-v1-auth'));assert(b.api.settingsHtml().includes('class="connectionTag off">Déconnecté'));
+ await b.click('disconnect');assert(!b.local.getItem('planif-coros-v1-auth'));assert(b.api.settingsHtml().includes('class="connectionTag off">Déconnecté'));
  const badLocal=storage();badLocal.setItem('planif-coros-v1-pending',JSON.stringify(p));const bad=env({url:p.redirect+'&code=PRIVATE_CODE&state=evil',local:badLocal});await bad.api.start();assert.equal(bad.calls.length,0);assert(bad.api.settingsHtml().includes('Relance'));
  const off=env({online:false});await off.click('connect');assert.equal(off.calls.length,0);assert(off.api.settingsHtml().includes('Internet'));
- const expiredSession=storage();expiredSession.setItem('planif-coros-v1-auth',JSON.stringify({issuer,clientId:'test-public-client',accessToken:'PRIVATE_ACCESS',refreshToken:'PRIVATE_REFRESH',expiresAt:0}));const expired=env({session:expiredSession});await expired.api.start();await expired.click('verify');assert.equal(expired.calls.filter(c=>c.u.endsWith('/oauth2/token')).length,1);assert(expired.api.settingsHtml().includes('Connexion vérifiée'));
+ const expiredSession=storage();expiredSession.setItem('planif-coros-v1-auth',JSON.stringify({issuer,clientId:'test-public-client',accessToken:'PRIVATE_ACCESS',refreshToken:'PRIVATE_REFRESH',expiresAt:0}));const expired=env({session:expiredSession});await expired.api.start();await expired.click('verify');assert.equal(expired.calls.filter(c=>c.u.endsWith('/oauth2/token')).length,1);assert(expired.local.getItem('planif-coros-v1-auth'));assert(expired.api.settingsHtml().includes('Connexion vérifiée'));
  const denied=env({responder:()=>({status:400})});await denied.click('connect');assert.equal(denied.assigned.length,0);assert(denied.api.settingsHtml().includes('HTTP 400'));
  assert(a.calls.concat(b.calls).every(c=>!c.opts.body||!c.opts.body.includes('tools/call')));assert(!source.includes('client_secret'));
  for(const outcome of ['saved','timeout','401','reject'])await sendCase(outcome);await sendCase('saved',true);for(const outcome of ['saved','timeout','401','reject'])await sendCase(outcome,false,'calendar');await sendCase('saved',true,'calendar');await sendCase('saved',false,'calendar',true);await sendCase('saved',false,'calendar',false,true);await sendCase('saved',false,'calendar',false,true,true);
- console.log('OK : OAuth PKCE, retour/state, nettoyage URL, jetons limités à la session, découverte paginée/SSE, refresh, refus et hors connexion ; aucune écriture lors de la connexion ; envoi simulé, double clic, doublon, schéma changé et erreur sans répétition automatique.');
+ console.log('OK : OAuth PKCE, retour/state, nettoyage URL, jetons persistants et renouvelés, découverte paginée/SSE, refresh, refus et hors connexion ; aucune écriture lors de la connexion ; envoi simulé, double clic, doublon, schéma changé et erreur sans répétition automatique.');
 })();

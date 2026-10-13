@@ -356,12 +356,15 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .connectionTitle h2{margin-right:auto;min-width:0}
 .connectionTag{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--ok)}
 .connectionTag.off{color:#c62828}
+.connectionTag.pending{color:#b26a00}
 .connectionInfo{flex-shrink:0}
 .connectionInfo summary{list-style:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;color:var(--accent);font-size:1.4rem;cursor:pointer}
 .connectionInfo summary::-webkit-details-marker{display:none}
 .connectionInfoBody{position:absolute;left:.8rem;right:.8rem;top:3.7rem;max-height:65vh;overflow:auto;z-index:25;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.8rem;box-shadow:0 4px 16px #0002}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .connectionTag.off{color:#ff8585}}
 :root[data-theme="dark"] .connectionTag.off{color:#ff8585}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .connectionTag.pending{color:#ffbd69}}
+:root[data-theme="dark"] .connectionTag.pending{color:#ffbd69}
 .settingsTitle h2{margin:0}
 .lockTag{font-size:.75rem;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.2rem .5rem}
 .timeWheel{display:flex;align-items:end;gap:.35rem;margin-bottom:.7rem}
@@ -701,7 +704,7 @@ window.PlanifCoros=(()=>{
   const profileOptions=selected=>`<option value="manual" ${selected==='manual'?'selected':''}>Au ressenti · manuel</option><option value="guided" ${selected==='guided'?'selected':''}>Guidé · chronométré</option>`;
   const KEY='planif-coros-v1',SCOPES='openid offline_access mcp.tools';
   const REGIONS={eu:'https://mcpeu.coros.com',us:'https://mcpus.coros.com',cn:'https://mcpcn.coros.com'};
-  let auth=null,catalog=null,busy=false,message='',refreshing=null,requestId=0,currentDraft=null,currentDate='';
+  let auth=null,catalog=null,verified=false,busy=false,message='',refreshing=null,requestId=0,currentDraft=null,currentDate='';
   const callback=new URL(location.href).searchParams.get('coros_callback')==='1';
   const read=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null');}catch(_){return null;}};
   const write=(store,key,value)=>{store.setItem(key,JSON.stringify(value));};
@@ -732,7 +735,7 @@ window.PlanifCoros=(()=>{
     if(p.token_type&&p.token_type.toLowerCase()!=='bearer')fail('Ce type de connexion COROS n’est pas pris en charge.');
     return{issuer,clientId,accessToken:p.access_token,refreshToken:p.refresh_token||previous?.refreshToken,expiresAt:Date.now()+p.expires_in*1000};
   }
-  function saveAuth(value){write(sessionStorage,KEY+'-auth',value);auth=value;}
+  function saveAuth(value){write(localStorage,KEY+'-auth',value);sessionStorage.removeItem(KEY+'-auth');auth=value;}
   async function connect(region){
     if(busy)return;busy=true;message='Ouverture de COROS…';emit();
     try{
@@ -767,7 +770,7 @@ window.PlanifCoros=(()=>{
   async function access(){
     if(!auth)fail('Connecte ton compte COROS dans Réglages.');
     if(auth.expiresAt>Date.now()+60000)return auth.accessToken;
-    if(!refreshing)refreshing=(async()=>{try{if(!auth.refreshToken)fail('Reconnecte ton compte COROS.');const old=auth,p=await request(old.issuer+'/oauth2/token',form({grant_type:'refresh_token',client_id:old.clientId,refresh_token:old.refreshToken}));saveAuth(tokenSet(p,old.clientId,old.issuer,old));return auth.accessToken;}finally{refreshing=null;}})();
+    if(!refreshing)refreshing=(async()=>{try{if(!auth.refreshToken)fail('Reconnecte ton compte COROS.');const old=auth,p=await request(old.issuer+'/oauth2/token',form({grant_type:'refresh_token',client_id:old.clientId,refresh_token:old.refreshToken}));if(auth!==old)fail('La connexion COROS a changé.');saveAuth(tokenSet(p,old.clientId,old.issuer,old));return auth.accessToken;}finally{refreshing=null;}})();
     return refreshing;
   }
   async function rpc(method,params,retried=false){
@@ -781,18 +784,18 @@ window.PlanifCoros=(()=>{
     await rpc('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'Planif',version:'1.0.0'}});
     const tools=[],seen=new Set();let cursor;
     do{const r=await rpc('tools/list',cursor?{cursor}:{});if(!Array.isArray(r.tools))fail('COROS n’a pas fourni ses formats.');tools.push(...r.tools);cursor=r.nextCursor;if(cursor){if(seen.has(cursor)||seen.size>=20)fail('La liste des fonctionnalités COROS est incomplète.');seen.add(cursor);}}while(cursor);
-    catalog=tools.map(({name,description,inputSchema})=>({name,description,inputSchema}));
+    catalog=tools.map(({name,description,inputSchema})=>({name,description,inputSchema}));verified=true;
     message=catalog.some(t=>t.name==='createSingleWorkout')?'Connexion vérifiée. Tu peux envoyer une séance au calendrier ou à la bibliothèque COROS.':'Connexion vérifiée. Ton serveur COROS ne propose pas encore l’envoi de séances.';
   }
-  async function verify(){if(busy)return;busy=true;message='Vérification de COROS…';emit();try{await discover();}catch(e){catalog=null;message=e.message;}finally{busy=false;emit();}}
-  function disconnect(){if(busy)return;auth=null;catalog=null;sessionStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-pending');message='Compte déconnecté de Planif.';emit();}
+  async function verify(){if(busy)return;busy=true;message='Vérification de COROS…';emit();try{await discover();}catch(e){catalog=null;verified=false;message=e.message;}finally{busy=false;emit();}}
+  function disconnect(){if(busy)return;auth=null;catalog=null;verified=false;sessionStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-auth');localStorage.removeItem(KEY+'-pending');message='Compte déconnecté de Planif.';emit();}
   function downloadCatalog(){
     if(!catalog) return;
     const data={format:'planif-coros-capabilities-v1',date:new Date().toISOString(),region:Object.keys(REGIONS).find(k=>REGIONS[k]===auth?.issuer),tools:catalog};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Planif-formats-COROS.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
   function settingsHtml(){
-    return `<div class="card connectionCard"><div class="settingsTitle connectionTitle"><h2>COROS</h2><span class="connectionTag${auth?'':' off'}">${auth?'Connecté':'Déconnecté'}</span><details class="connectionInfo"><summary aria-label="Informations sur COROS" title="Connexion et envoi">ⓘ</summary><div class="connectionInfoBody"><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p><p class="lbl">Repris à chaque envoi. Au ressenti : aucune cible d’allure, toutes les récupérations et le retour au calme au bouton Tour. Guidé : allures prévues, récupérations chronométrées et 10 min de retour au calme. Planif comptabilise toujours 24 ou 27 min de préparation et 10 min de retour au calme.</p><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle est conservée uniquement pour cette session de navigateur.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></div></details></div><label class="sf"><span>Profil COROS favori</span><select data-coros-profile>${profileOptions(getProfile())}</select></label>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p></div>`;
+    return `<div class="card connectionCard"><div class="settingsTitle connectionTitle"><h2>COROS</h2><span class="connectionTag${verified&&auth?.expiresAt>Date.now()?'':auth?' pending':' off'}">${verified&&auth?.expiresAt>Date.now()?'Connecté':auth?'À vérifier':'Déconnecté'}</span><details class="connectionInfo"><summary aria-label="Informations sur COROS" title="Connexion et envoi">ⓘ</summary><div class="connectionInfoBody"><p class="lbl">Envoyer une séance dans ton calendrier ou ta bibliothèque COROS, après aperçu et confirmation.</p><p class="lbl">Repris à chaque envoi. Au ressenti : aucune cible d’allure, toutes les récupérations et le retour au calme au bouton Tour. Guidé : allures prévues, récupérations chronométrées et 10 min de retour au calme. Planif comptabilise toujours 24 ou 27 min de préparation et 10 min de retour au calme.</p><p>La connexion passe par le site officiel COROS. Planif ne reçoit jamais ton mot de passe. Elle reste active sur cet appareil jusqu’à ta déconnexion.</p><p>L’envoi ajoute une séance neuve au calendrier à la date choisie, ou dans la bibliothèque. Il ne remplace aucun entraînement existant. Les dates du calendrier vont d’aujourd’hui à 90 jours, selon le fuseau COROS. Retrouve-la dans COROS pour la synchroniser avec la montre. L’export des formats ne contient ni jeton ni activité personnelle.</p><p>Sur iPhone, si COROS revient dans Safari plutôt que dans la PWA, réalise la connexion depuis Planif ouvert dans Safari. Tu peux retirer l’autorisation dans ton compte COROS.</p></div></details></div><label class="sf"><span>Profil COROS favori</span><select data-coros-profile>${profileOptions(getProfile())}</select></label>${auth?'<button type="button" class="cta ghost" data-coros="verify">Vérifier la connexion</button>':'<label class="sf"><span>Région du compte COROS</span><select id="corosRegion"><option value="eu">Europe</option><option value="us">États-Unis</option><option value="cn">Chine</option></select></label><button type="button" class="cta ghost" data-coros="connect">Connecter COROS</button>'}${catalog?'<button type="button" class="cta ghost" data-coros="formats">Exporter les formats COROS</button>':''}${auth?'<button type="button" class="cta ghost" data-coros="disconnect">Déconnecter de Planif</button>':''}<p class="lbl corosStatus" role="status">${escape(message)}</p></div>`;
   }
   const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))).map(n=>n.toString(16).padStart(2,'0')).join('');
@@ -876,9 +879,10 @@ window.PlanifCoros=(()=>{
     const act=b.dataset.coros;if(act==='connect')await connect(document.getElementById('corosRegion')?.value||'eu');else if(act==='verify')await verify();else if(act==='formats')downloadCatalog();else if(act==='disconnect')disconnect();
   });
   async function start(){
-    const saved=read(sessionStorage,KEY+'-auth');if(saved&&safeIssuer(saved.issuer)&&typeof saved.accessToken==='string'&&typeof saved.clientId==='string'&&Number.isFinite(saved.expiresAt))auth=saved;
-    if(callback){busy=true;message='Finalisation de la connexion COROS…';emit();try{await finish();await discover();}catch(e){message=e.message;}finally{busy=false;emit();}}else emit();
+    const saved=read(localStorage,KEY+'-auth')||read(sessionStorage,KEY+'-auth');if(saved&&safeIssuer(saved.issuer)&&typeof saved.accessToken==='string'&&typeof saved.clientId==='string'&&Number.isFinite(saved.expiresAt)){auth=saved;saveAuth(saved);}
+    if(callback){busy=true;message='Finalisation de la connexion COROS…';emit();try{await finish();await discover();}catch(e){message=e.message;}finally{busy=false;emit();}}else if(auth&&navigator.onLine){try{await discover();emit();}catch(e){verified=false;catalog=null;message=e.message;emit();}}else emit();
   }
+  window.addEventListener('storage',e=>{if(e.key===KEY+'-auth'){auth=read(localStorage,KEY+'-auth');catalog=null;verified=false;emit();}});
   document.addEventListener('change',e=>{if(e.target.matches?.('[data-coros-profile]'))setProfile(e.target.value);});
   return{start,settingsHtml,preview,getProfile,setProfile,get busy(){return busy;},get callback(){return callback;}};
 })();
@@ -1110,7 +1114,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.10.16"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.13.01"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4618,7 +4622,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.10.16';
+const APP_VERSION='2026.10.13.01';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5191,7 +5195,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./planif-strava.js?v=2026.10.10.16"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="./planif-strava.js?v=2026.10.13.01"></script>
 </body>
 </html>
 

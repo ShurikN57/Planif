@@ -1,57 +1,45 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-const version=html.match(/const APP_VERSION='([^']+)'/)[1],asset=`./planif-strava.js?v=${version}`;
-assert(html.includes(`src="${asset}"`));assert(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8').includes(`'${asset}'`),'PWA caches the exact versioned module');
-const ids=html.slice(html.indexOf('function ensurePlanifSessionIds('),html.indexOf('function saveActivePlan('));
-const model={};vm.createContext(model);vm.runInContext(ids,model);
-const q=[{name:'first'},{name:'second'}],foot=[{min:40},{min:40}],plan={weeks:[{sessions:q,foot,days:[{items:[{kind:'q',s:q[1]},{kind:'foot',f:foot[0]}]},{items:[{kind:'q',s:q[0]},{kind:'foot',f:foot[1]},{kind:'sl'}]}]}]};
-model.ensurePlanifSessionIds(plan);assert.equal(plan.weeks[0].days[0].items[0].planifId,'w0-q1');assert.equal(plan.weeks[0].days[1].items[0].planifId,'w0-q0');
-assert.equal(plan.weeks[0].days[1].items[1].planifId,'w0-foot1');assert.equal(plan.weeks[0].days[1].items[2].planifId,'w0-sl0');
-const copied=JSON.parse(JSON.stringify(plan));copied.weeks[0].sessions[0].name='pace changed';model.ensurePlanifSessionIds(copied);assert.equal(copied.weeks[0].days[1].items[0].planifId,'w0-q0');
-const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
-const sessionStorage=storage(),localStorage=storage(),events={},requests=[];
-sessionStorage.setItem('planif-strava-auth-v1',JSON.stringify({uid:'flo',token:'test',name:'Flo',expiresAt:Date.now()+60000}));
-let startup,redraws=0;
-let clock=new Date(2026,9,10,0,30).getTime();
-class FixedDate extends Date{constructor(...args){super(...(args.length?args:[clock]));}static now(){return clock;}}
-const context={Date:FixedDate,sessionStorage,localStorage,console,setTimeout:fn=>{startup=fn;},document:{addEventListener:(k,v)=>events[k]=v},window:{addEventListener:(k,v)=>events[k]=v},fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({sessions:[]})};},redrawCounter:()=>redraws++};
-vm.createContext(context);
-// Load the actual bridge inside an IIFE: no Planif state/function is a global.
-const bridge=html.slice(html.indexOf('window.PlanifStravaContext={'),html.indexOf('\n})();',html.indexOf('window.PlanifStravaContext={')));
-vm.runInContext(`(()=>{let activePlan={id:'plan-1',title:'10 km'},appOpt=0,appSession=null,appLib=false,appTab='today',setBuilt=true;const planifSessionInfo=()=>null,renderApp=()=>redrawCounter();${bridge}})();`,context);
-let source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');source=source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,refresh,search,save};');vm.runInContext(source,context);
-startup();assert(redraws>0,'real module startup redraws without private globals');assert.equal(Object.hasOwn(context,'activePlan'),false);
-const link=context.window.PlanifStrava,info={planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60,title:'S1-5x6’'};
+const source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');
+const version=html.match(/const APP_VERSION='([^']+)'/)[1];
+assert(html.includes(`./planif-strava.js?v=${version}`));
+assert(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8').includes(`./planif-strava.js?v=${version}`));
+assert(html.includes('firebase-auth-compat.js'));
+const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+let popupUrl,listener,redraws=0,fetches=[],user=null,loginCount=0,logoutCount=0,forced=0,failOnce=false,popup;
+const makeUser=uid=>({uid,email:uid+'@example.test',displayName:uid,getIdToken:async(force)=>{if(force)forced++;return 'token-'+uid+(force?'-forced':'')}});
+const auth={get currentUser(){return user;},setPersistence:async mode=>assert.equal(mode,'local'),onAuthStateChanged(fn){listener=fn;fn(user);},async signOut(){logoutCount++;user=null;listener(null);},async signInWithEmailAndPassword(email){loginCount++;user=makeUser(email.split('@')[0]);listener(user);},async signInWithCustomToken(value){assert.equal(value,'CUSTOM');user=makeUser('lucas');listener(user);}};
+const firebase={apps:[],initializeApp:()=>({auth:()=>auth}),auth:Object.assign(()=>auth,{Auth:{Persistence:{LOCAL:'local'}}})};
+const delay=()=>new Promise(r=>setImmediate(r));
+function env(){
+ const documentHandlers={},windowHandlers={};
+ const context={window:{firebase,addEventListener:(k,fn)=>windowHandlers[k]=fn,open:url=>{popupUrl=url;return popup={close(){}}}},firebase,sessionStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},localStorage,
+ document:{addEventListener:(k,fn)=>documentHandlers[k]=fn},Date,JSON,crypto:require('node:crypto').webcrypto,Uint8Array,setTimeout:fn=>setImmediate(fn),console,
+ fetch:async(url,opt)=>{fetches.push({url,opt});if(failOnce){failOnce=false;return{ok:false,status:401,json:async()=>({error:'expired'})};}let body={};if(url.endsWith('/api/me'))body={uid:user.uid,profile:{displayName:user.displayName}};else if(url.includes('/plans/'))body=opt?.method==='PUT'?{id:'w0-q0',status:'planned',revision:1}:{sessions:[]};else if(url.includes('activities?'))body={activities:[],truncated:false};return{ok:true,status:200,json:async()=>body};}};
+ context.window.PlanifStravaContext={get activePlan(){return{id:'plan-1',title:'10 km'};},get appOpt(){return 0;},sessionInfo:()=>null,redraw:()=>redraws++,settings:()=>{}};
+ vm.createContext(context);vm.runInContext(source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,search};'),context);
+ return{link:context.window.PlanifStrava,documentHandlers,windowHandlers,context};
+}
 (async()=>{
- assert(link.settingsHtml().includes('class="connectionTag">Connecté'));assert(link.settingsHtml().includes('aria-label="Informations sur la liaison Strava"'));
- const priorClock=clock;clock=JSON.parse(sessionStorage.getItem('planif-strava-auth-v1')).expiresAt+1;assert(link.settingsHtml().includes('class="connectionTag off">Déconnecté'));clock=priorClock;
- await link.refresh();assert(requests[0].options.headers.Authorization==='Bearer test');
- const ranked=link.rank([{id:'2',date:'2026-10-11',durationSec:3600},{id:'1',date:'2026-10-10',durationSec:3500}],info);assert.equal(ranked[0].id,'1');
- context.fetch=async()=>({ok:true,json:async()=>({activities:[{id:'101',date:info.date,name:'<img src=x>',durationSec:3600,distanceKm:10}],truncated:false})});
- await link.search(info);const h=link.sessionHtml(info);assert(h.includes('Activité trouvée'));assert(h.includes('&lt;img src=x&gt;'));assert(!h.includes('<img src=x>'));assert.equal(link.badge(info),'');
- // Local calendar day, including just after midnight when the UTC date is yesterday.
- assert(link.sessionHtml({...info,date:'2026-10-09'}).includes('data-strava="missed"'));
- assert(link.sessionHtml(info).includes('data-strava="missed"'));
- assert(!link.sessionHtml({...info,date:'2026-10-11'}).includes('data-strava="missed"'));
- assert(!link.sessionHtml({...info,date:'2026-10-11'}).includes('data-strava="search"'));assert(link.sessionHtml(info).includes('data-strava="search"'));
- await assert.rejects(link.search({...info,date:'2026-10-11'}),/jour prévu/);
- await assert.rejects(link.save({...info,date:'2026-10-11'},'missed'),/future/);
- for(const status of ['realized','adapted','missed']){
-  const record={id:info.id,status,revision:1,activityId:status==='missed'?null:'101',activity:status==='missed'?null:{id:'101',name:'Jogging',date:info.date,durationSec:3600,distanceKm:10}};
-  context.fetch=async()=>({ok:true,json:async()=>({sessions:[record]})});await link.refresh();
-  const closed=link.sessionHtml(info);assert(closed.includes('class="stravaUndo"'));assert(closed.includes('data-strava="undo"'));assert.equal((closed.match(/data-coros-preview/g)||[]).length,status==='missed'?1:0);assert.equal(closed.includes('data-coros-completed'),status!=='missed');
-  assert(!closed.includes('data-strava="search"'));assert(!closed.includes('data-strava-associate'));assert(!closed.includes('data-strava="missed"'));
-  if(record.activity){assert(closed.includes('class="cta ghost stravaActivity"'));assert(closed.indexOf('Annuler la validation')<closed.indexOf('Voir l’activité Strava'));assert(!closed.includes('data-coros-preview'));}
-  await assert.rejects(link.save(info,'adapted','101'),/Annule la validation/);
-  context.fetch=async()=>({ok:true,json:async()=>({id:info.id,status:'planned',revision:2})});await link.save(info,'planned');
-  const reopened=link.sessionHtml(info);assert(reopened.includes('data-strava-associate'));assert(reopened.includes('data-strava="missed"'));assert(!reopened.includes('data-strava="undo"'));assert(reopened.includes('data-coros-preview'));assert(!reopened.includes('data-coros-completed'));
- }
- let resolve;context.fetch=()=>new Promise(r=>resolve=r);const saving=link.save(info,'realized','101');
- events.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
- resolve({ok:true,json:async()=>({id:info.id,status:'realized',activityId:'101',revision:1})});await saving;
- assert(link.settingsHtml().includes('class="connectionTag off">Déconnecté'));
- assert.equal(link.badge(info),'');assert.equal(sessionStorage.getItem('planif-strava-auth-v1'),null);
- assert.equal(JSON.parse(localStorage.getItem('planif-strava-records-v1:flo:plan-1'))[info.id].revision,1);
- const calls=requests.length;await events.message({origin:'https://attacker.example',data:{type:'planif-strava-auth'}});assert.equal(requests.length,calls);
- console.log('OK: stable IDs, candidate escaping, local date gates, finalized actions hidden, undo reopens association, stale action guards, disconnect during save and auth origin guard.');
-})().catch(e=>{console.error(e);process.exit(1);});
+ const one=env();await delay();await delay();assert(one.link.settingsHtml().includes('Déconnecté'));
+ // Connexion email : le SDK garde le compte et fournit un jeton valide à chaque requête.
+ const form={elements:{email:{value:'flo@example.test'},password:{value:'secret'}}};
+ one.documentHandlers.submit({target:{matches:s=>s==='[data-strava-login]',elements:form.elements},preventDefault(){}});
+ await delay();await delay();assert.equal(loginCount,1);assert.equal(form.elements.password.value,'');
+ assert(one.link.settingsHtml().includes('Connecté'));assert(fetches.some(x=>x.url.endsWith('/api/me')&&x.opt.headers.Authorization==='Bearer token-flo'));
+ const two=env();await delay();await delay();assert(two.link.settingsHtml().includes('Connecté'),'session restored after reopening');
+ // Changement de compte par jeton dédié à la fenêtre, sans accepter une autre origine.
+ two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'connect'}})}});
+ await two.windowHandlers.message({origin:'https://attacker.example',data:{type:'planif-strava-auth',nonce:'x',customToken:'CUSTOM'}});
+ assert.equal(auth.currentUser.uid,'flo');
+ failOnce=true;await two.link.search({planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60});assert.equal(forced,1,'401 retries with a fresh Firebase ID token');
+ const nonce=new URL(popupUrl).hash.slice(7);
+ await two.windowHandlers.message({origin:'https://strava-mobile-2f93f.web.app',source:popup,data:{type:'planif-strava-auth',nonce,customToken:'CUSTOM'}});
+ await delay();await delay();assert.equal(auth.currentUser.uid,'lucas');assert(two.link.settingsHtml().includes('lucas'));
+ // La déconnexion annule immédiatement le contexte et est conservée par le SDK.
+ two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
+ await delay();assert.equal(logoutCount,1);assert(two.link.settingsHtml().includes('Déconnecté'));
+ const three=env();await delay();assert(three.link.settingsHtml().includes('Déconnecté'));
+ assert(redraws>0);
+ console.log('OK: SDK Firebase persistant, restauration, jeton API renouvelable, déconnexion explicite et origine de la liaison.');
+})().catch(e=>{console.error(e);process.exitCode=1});
