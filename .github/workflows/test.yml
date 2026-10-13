@@ -20,11 +20,17 @@ jobs:
       - name: Run tests
         run: TZ=Europe/Paris node --test tests/*.test.cjs
       - name: Verify live files
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push'
         run: |
-          curl -fsSL -H 'Cache-Control: no-cache' 'https://shurikn57.github.io/Planif/?verify=${GITHUB_SHA}' -o /tmp/planif-live.html
-          curl -fsSL -H 'Cache-Control: no-cache' 'https://shurikn57.github.io/Planif/planif-strava.js?v=2026.10.13.03' -o /tmp/planif-live-strava.js
-          curl -fsSL -H 'Cache-Control: no-cache' 'https://shurikn57.github.io/Planif/sw.js?verify=${GITHUB_SHA}' -o /tmp/planif-live-sw.js
-          cmp index.html /tmp/planif-live.html
-          cmp planif-strava.js /tmp/planif-live-strava.js
-          cmp sw.js /tmp/planif-live-sw.js
+          for attempt in {1..30}; do
+            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live.html || true
+            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/planif-strava.js?v=2026.10.13.03&verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-strava.js || true
+            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/sw.js?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-sw.js || true
+            if cmp -s index.html /tmp/planif-live.html && cmp -s planif-strava.js /tmp/planif-live-strava.js && cmp -s sw.js /tmp/planif-live-sw.js; then
+              echo "Live index.html, planif-strava.js and sw.js match main."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Live files did not match main." >&2
+          exit 1
