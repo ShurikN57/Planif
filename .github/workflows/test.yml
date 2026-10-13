@@ -1,0 +1,21 @@
+name: Test Planif
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check JavaScript syntax
+        run: |
+          node --check planif-strava.js
+          node --check planif-calendar-drag.js
+          node --check sw.js
+          node -e "const fs=require('fs'),vm=require('vm'); const html=fs.readFileSync('index.html','utf8'); for(const [,body] of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) if(body.trim())new vm.Script(body);"
+      - name: Run tests
+        run: TZ=Europe/Paris node --test tests/*.test.cjs
