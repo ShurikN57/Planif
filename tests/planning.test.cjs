@@ -3,9 +3,13 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 const start=html.indexOf('const RULES='),end=html.indexOf('const CAPLAB=');
-vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,buildPlan,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek,efBand,efBandText,joggTitle};`,context);
+vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,buildPlan,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek,efBand,efBandText,joggTitle,s2Group,s2Range,recS2Range};`,context);
 const E=context.engine;
 const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
+assert.deepEqual(Array.from(E.s2Range(E.s2Group(3),9,state)),[13.86,14.42]);
+assert.deepEqual(Array.from(E.recS2Range(3)).map(x=>Math.round(x*60)),[40,50]);
+assert.deepEqual(Array.from(E.recS2Range(2.5)).map(x=>Math.round(x*60)),[30,45]);
+assert.deepEqual(Array.from(E.s2Range(E.s2Group(4),20,state)),[14.2,14.4]);
 const pred=E.predict(state);
 for(let n=5;n<=24;n++){
  const plan=E.planPhases(n,1);assert.equal(plan.length,n);
@@ -42,6 +46,11 @@ const preparedAs10=E.prepareSession({fam:'spec',dist:1,variants:[{total:25}],wu:
 // Regression: the October transition used to add 40 min S1 and 18 min S2.
 const transition=c.weeks[1].sessions[0];assert.equal(transition.fam,'mixed');
 for(const option of transition.variants){const [a,b]=option.structure.components;assert(a.variant.work<=25);assert(b.variant.work<=10);assert(option.work<=35);assert(E.presentVariantRaw(option).chips.every(chip=>/km\/h|km/.test(chip)));}
+const threeMinute=transition.variants.flatMap(v=>v.structure.components).find(c=>c.fam==='s2'&&c.variant.structure.durationMin===3);
+assert(threeMinute,'the transition must include a three-minute S2 component');
+assert.equal(threeMinute.variant.intensity.minKmh,13.86);
+assert.equal(threeMinute.variant.intensity.maxKmh,14.42);
+assert.deepEqual(Array.from(threeMinute.variant.structure.recoveryRangeMin).map(x=>Math.round(x*60)),[40,50]);
 // Every mixture stays within its component limits and its requested shared envelope.
 for(const [key,cfg] of Object.entries(E.RULES.mixed.combinations))for(const role of cfg.contexts)for(const budget of [12,18,25,30,35,50]){
  const [a,b]=key.split('>'),mix=E.makeMixedSession(a,b,60,20,role,1,1,state,{maxMixedWork:budget});

@@ -1114,7 +1114,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.13.03"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.13.04"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -1169,7 +1169,7 @@ const RULES={
   },
   s2:{
     /* fourchette relative au S2 (km/h) selon la durée de fraction */
-    paceBands:[{max:4,r:[0,0.4]},{max:6,r:[-0.1,0.2]},{max:8,r:[-0.2,0.1]},{max:10,r:[-0.3,0]}],
+    paceBands:[{max:3,pct:[0.99,1.03]},{max:4,r:[0,0.4]},{max:6,r:[-0.1,0.2]},{max:8,r:[-0.2,0.1]},{max:10,r:[-0.3,0]}],
     densePaceBand:[0.2,0.6],
     densePaceOffsetForDuration:0.4,
     band:{workAtTop:18,workAtBottom:35},
@@ -1187,7 +1187,8 @@ const RULES={
     recovery:{
       /* une seule logique selon la durée réelle de fraction, qu'elle soit exprimée en temps ou en distance */
       byFractionDuration:[
-        {max:3,r:[0.5,0.75]},
+        {max:2.75,r:[0.5,0.75]},
+        {max:3,r:[2/3,5/6]},
         {max:5,r:[0.75,1]},
         {max:6,r:[1,1.25]},
         {max:8,r:[1.25,1.5]},
@@ -2797,9 +2798,9 @@ const RULE_META=(()=>{
   's2.formats.progressive':m('Q_S2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's2.formats.pyramids':m('Q_S2_STRUCTURE','physiological',{origin:'product_choice',confidence:'low',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Variante de programmation, sans supériorité physiologique démontrée.'}),
   's2.formats.times':m('Q_S2_STRUCTURE','physiological'),
-  's2.paceBands':m("Q_S2_INTENSITY_BY_REP_DURATION","physiological",{"origin": "partial_science", "confidence": "moderate", "decision": "monitor", "findings": ["FND_016", "FND_023"], "lastReview": "2026-10-03", "reviewSummary": "SRC_018 décrit le contrôle interne par lactate et SRC_019 les interactions de programmation. Soutien indirect au principe d’ajustement ; la table précise de dixièmes de km/h Planif n’est pas validée."}),
+  's2.paceBands':m("Q_S2_INTENSITY_BY_REP_DURATION","physiological",{"origin": "partial_science", "confidence": "moderate", "decision": "monitor", "findings": ["FND_016", "FND_023"], "lastReview": "2026-10-13", "reviewSummary": "SRC_018 décrit le contrôle interne par lactate et SRC_019 les interactions de programmation. Soutien indirect au principe d’ajustement ; la plage de 99 à 103 % du repère S2 jusqu’à 3 min est un choix de l’utilisateur, non validé comme optimum par ces études."}),
   's2.recovery.blocs':m('Q_S2_RECOVERY','physiological'),
-  's2.recovery.byFractionDuration':m("Q_S2_RECOVERY","physiological",{"origin": "internal_heuristic", "confidence": "low", "decision": "modify", "findings": ["FND_023"], "lastReview": "2026-10-03", "reviewSummary": "SRC_019 documente l’interaction travail-récupération, sans démontrer les ratios Planif autour de S2. Valeurs exactes et choix actif/passif : heuristiques, question encore ouverte."}),
+  's2.recovery.byFractionDuration':m("Q_S2_RECOVERY","physiological",{"origin": "internal_heuristic", "confidence": "low", "decision": "modify", "findings": ["FND_023"], "lastReview": "2026-10-13", "reviewSummary": "SRC_019 documente l’interaction travail-récupération sans démontrer les ratios Planif autour de S2. Récupération de 40 à 50 s pour une fraction proche de 3 min : choix de l’utilisateur, non validé comme optimum ; les autres durées sont conservées."}),
   's2.recovery.denseByDistance':m('Q_S2_RECOVERY','physiological'),
   'safeguards.above105OfVma':m('Q_SESSION_MAX_WORK','physiological'),
   'safeguards.caps.above105':m('Q_SESSION_MAX_WORK','physiological'),
@@ -3142,9 +3143,11 @@ function paceHtml(text){
 }
 
 /* ----- Intensité ----- */
-/* S2 : fourchette relative au S2 selon la durée de fraction (RULES.s2.paceBands), position selon le volume total (18' haut, 35' bas) */
+/* S2 : jusqu'à 3' en % du repère S2 ; au-delà, marge selon durée et volume total. */
 const s2Group=d=>RULES.s2.paceBands.find(g=>d<=g.max)||RULES.s2.paceBands[RULES.s2.paceBands.length-1];
-function s2Range(rng,work,st){
+function s2Range(group,work,st){
+  if(group.pct)return group.pct.map(p=>Math.round(st.s2*p*100)/100);
+  const rng=Array.isArray(group)?group:group.r;
   const B=RULES.s2.band,pos=clamp((B.workAtBottom-work)/(B.workAtBottom-B.workAtTop),0,1),w=(rng[1]-rng[0])/2;
   const lo=Math.round((rng[0]+pos*(rng[1]-rng[0]-w))*10)/10,hi=Math.round((lo+w)*10)/10;
   return[st.s2+lo,st.s2+hi];
@@ -3233,18 +3236,18 @@ function s1Mix(W,st){const R=RULES.s1.recovery.mixed;return RULES.s1.formats.mix
 /* ======== Familles S2 ======== */
 function s2Dist(table,fam,dense){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
   let rm=d/1000/(st.s2+(dense?RULES.s2.densePaceOffsetForDuration:0))*60;const n=clamp(Math.round(W/rm),a,b);
-  const[lo,hi]=s2Range(dense?RULES.s2.densePaceBand:s2Group(rm).r,n*rm,st),v=(lo+hi)/2;rm=d/1000/v*60;
+  const[lo,hi]=s2Range(dense?RULES.s2.densePaceBand:s2Group(rm),n*rm,st),v=(lo+hi)/2;rm=d/1000/v*60;
   const rr=dense?null:recS2Range(rm),rec=dense?stepLookup(RULES.s2.recovery.denseByDistance,d):rangeMid(rr),work=n*rm;
   return cand({sector:'s2',fam,kind:'dist',key:`s2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryRangeMin:rr||[rec,rec],recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},cues:dense?['s2_dense']:[],parts:[[work,v]],rec:(n-1)*rec,recEach:rec,work});});}
 function s2Time(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
-  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s2Range(s2Group(d).r,work,st),rr=recS2Range(d),rec=rangeMid(rr);
+  const n=clamp(Math.round(W/d),a,b),work=n*d,[lo,hi]=s2Range(s2Group(d),work,st),rr=recS2Range(d),rec=rangeMid(rr);
   return cand({sector:'s2',fam,kind:'time',key:`s2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'speed_range',minKmh:lo,maxKmh:hi},parts:[[work,(lo+hi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
 function s2Mixed(durs,shape,fam,key,st,sets){
   const work=durs.reduce((x,y)=>x+y,0);let rec=0;
   const RB=RULES.s2.recovery.blocs;if(sets)rec=sets*rangeMid(RB.betweenFractions)+(sets-1)*rangeMid(RB.betweenSets);else for(let i=0;i<durs.length-1;i++)rec+=recS2(durs[i]);
   const groups=[...new Set(durs.map(s2Group))];
-  const bands=groups.map(g=>{const ds=[...new Set(durs.filter(d=>s2Group(d)===g))].sort((x,y)=>x-y),[lo,hi]=s2Range(g.r,work,st);return{durationsMin:ds,minKmh:lo,maxKmh:hi};});
-  const parts=durs.map(d=>{const[lo,hi]=s2Range(s2Group(d).r,work,st);return[d,(lo+hi)/2];});
+  const bands=groups.map(g=>{const ds=[...new Set(durs.filter(d=>s2Group(d)===g))].sort((x,y)=>x-y),[lo,hi]=s2Range(g,work,st);return{durationsMin:ds,minKmh:lo,maxKmh:hi};});
+  const parts=durs.map(d=>{const[lo,hi]=s2Range(s2Group(d),work,st);return[d,(lo+hi)/2];});
   const rrs=durs.slice(0,-1).map(recS2Range),rlo=rrs.length?Math.min(...rrs.map(x=>x[0])):0,rhi=rrs.length?Math.max(...rrs.map(x=>x[1])):0;
   const structure=sets?{type:'sets',sets,durationsMin:durs.slice(0,2),recoveryBetweenFractionsMin:rangeMid(RB.betweenFractions),recoveryBetweenFractionsRangeMin:RB.betweenFractions,recoveryBetweenSetsMin:rangeMid(RB.betweenSets),recoveryBetweenSetsRangeMin:RB.betweenSets,recoveryType:'free'}
     :{type:'ladder',shape,durationsMin:durs,recoveryType:'free',recoveryRangeMin:[rlo,rhi]};
@@ -4622,7 +4625,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.13.03';
+const APP_VERSION='2026.10.13.04';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5197,7 +5200,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.13.03"></script>
+<script src="./planif-strava.js?v=2026.10.13.04"></script>
 </body>
 </html>
 
