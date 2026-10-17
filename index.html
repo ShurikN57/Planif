@@ -578,7 +578,6 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
     <div class="actions">
       <button type="button" class="ghost" id="toApp">Application mobile</button>
       <button type="button" id="copyBtn">Copier le plan</button>
-      <button type="button" class="ghost" id="resetBtn">Valeurs par défaut</button>
     </div>
   </header>
 
@@ -1119,7 +1118,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.05"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.06"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -2936,6 +2935,41 @@ const captureIds=ids=>{const d={};ids.forEach(id=>{const el=$(id);d[id]=isCheck(
 const applyIds=(d,ids)=>{if(!d)return;ids.forEach(id=>{if(d[id]===undefined)return;const el=$(id);if(isCheck(el))el.checked=!!d[id];else el.value=d[id];});};
 let CURRENT_MODE='bloc',activePlan=null,planHistory=[],structureEditing=false;
 
+const RECOVERY_BACKUP='planif-recovery-before-2026101706';
+const RECOVERY_STATE='planif-recovery-state-v1';
+let recoveryState=null;
+function validSavedPlan(p){return !!(p?.id&&p.structure&&p.plan?.race&&p.plan?.weeks?.length&&p.plan.weeks.every(w=>Array.isArray(w.days)));}
+function protectPlanRecovery(){
+  const existing=getJson(STORE.active);
+  if(!validSavedPlan(existing))return;
+  // Keep the original storage strings, once only, before load/render can write.
+  if(!localStorage.getItem(RECOVERY_BACKUP)){
+    const backup={savedAt:new Date().toISOString(),values:{}};
+    for(const key of Object.values(STORE))backup.values[key]=localStorage.getItem(key);
+    localStorage.setItem(RECOVERY_BACKUP,JSON.stringify(backup));
+  }
+  const savedRecovery=getJson(RECOVERY_STATE);
+  recoveryState=savedRecovery?.id===existing.id&&['pending','restored'].includes(savedRecovery.status)?savedRecovery:null;
+  const globals=getJson(STORE.global,{});
+  const reset=GLOBAL_IDS.every(id=>String(globals[id]??'')===String(DEFAULTS[id]??''));
+  if(!recoveryState&&reset&&!(savedRecovery?.id===existing.id&&savedRecovery.status==='resumed')){recoveryState={id:existing.id,status:'pending'};localStorage.setItem(RECOVERY_STATE,JSON.stringify(recoveryState));}
+}
+function reviveSavedPlan(plan){
+  return JSON.parse(JSON.stringify(plan),(key,value)=>['date','start','startDate','endDate'].includes(key)&&typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(value)?new Date(value):value);
+}
+function recoveryHtml(){
+  if(!recoveryState)return '';
+  return '<div class="card"><h2>'+ (recoveryState.status==='pending'?'Plan sauvegardé retrouvé':'Plan récupéré · séances conservées')+'</h2><p>Une copie de sécurité a été conservée sur cet appareil. Les séances enregistrées ne sont pas recalculées.</p><p>Les valeurs de physiologie et les chronos ont pu être réinitialisés. Vérifie-les dans Repères avant de reprendre les calculs. Les allures complémentaires dépendant de ces valeurs restent à vérifier.</p>'+
+    (recoveryState.status==='pending'?'<button type="button" class="cta" data-recovery="restore">Récupérer mon plan sauvegardé</button>':'<button type="button" class="cta ghost" data-goto="ref">Vérifier mes repères</button><button type="button" class="cta ghost" data-recovery="resume">Reprendre les calculs avec mes repères</button>')+'</div>';
+}
+function recoverSavedPlan(){
+  if(!validSavedPlan(activePlan))return;
+  recoveryState={id:activePlan.id,status:'restored'};
+  localStorage.setItem(RECOVERY_STATE,JSON.stringify(recoveryState));
+  restoreActiveStructure();$('calGoal').value=activePlan.plan.race.goal?fmtTime(activePlan.plan.race.goal):'';CURRENT_MODE='cal';$('modeCal').checked=true;$('modeBloc').checked=false;
+  localStorage.setItem(STORE.mode,'cal');
+  render();setBuilt=false;appTab='cal';renderApp();
+}
 function loadModeState(mode){
   applyIds(getJson(mode==='cal'?STORE.calendar:STORE.block,null),mode==='cal'?CAL_IDS:BLOCK_IDS);
 }
@@ -2943,7 +2977,7 @@ function saveModeState(mode){
   putJson(mode==='cal'?STORE.calendar:STORE.block,captureIds(mode==='cal'?CAL_IDS:BLOCK_IDS));
 }
 function switchModeState(mode){
-  if(mode===CURRENT_MODE)return;
+  if(mode===CURRENT_MODE){$('modeCal').checked=mode==='cal';$('modeBloc').checked=mode==='bloc';return;}
   saveModeState(CURRENT_MODE);
   CURRENT_MODE=mode;
   $('modeCal').checked=mode==='cal';$('modeBloc').checked=mode==='bloc';
@@ -2952,6 +2986,7 @@ function switchModeState(mode){
   syncQualityPrereqs();
 }
 function load(){
+  protectPlanRecovery();
   const legacy=getJson(KEY,null);
   if(legacy&&!getJson(STORE.global,null)){
     applyIds(legacy,IDS);
@@ -2968,6 +3003,7 @@ function load(){
   planHistory=getJson(STORE.history,[])||[];
 }
 function save(){
+  if(recoveryState?.status==='pending')return;
   putJson(STORE.global,captureIds(GLOBAL_IDS));
   saveModeState(CURRENT_MODE);
   try{localStorage.setItem(STORE.mode,CURRENT_MODE);}catch(_){}
@@ -3055,7 +3091,7 @@ function planifMoveCheck(C,id,date,st){
   return {source,day,warnings:[...new Set(warnings)]};
 }
 function saveActivePlan(st,C,forceNew=false){
-  if(!C||C.error||st.mode!=='cal')return;
+  if(recoveryState||!C||C.error||st.mode!=='cal')return;
   ensurePlanifSessionIds(C);
   const structure=calendarStructure();
   if(!activePlan||forceNew){
@@ -4309,6 +4345,14 @@ const vText=v=>presentVariant(v).text,vChips=v=>presentVariant(v).chips;
 /* ---------- rendu ---------- */
 let lastPlan=null,lastPred=null,lastSt=null;
 function render(){
+  if(recoveryState){
+    lastCalError=null;
+    if(recoveryState.status==='restored'){
+      restoreActiveStructure();CURRENT_MODE='cal';$('modeCal').checked=true;$('modeBloc').checked=false;
+      save();lastPlan=reviveSavedPlan(activePlan.plan);lastSt={...readState(),mode:'cal',calGoal:lastPlan.race.goal,calDist:lastPlan.race.distance};lastPred=null;
+    }else{lastPlan=null;lastSt=null;}
+    return;
+  }
   const st=readState();save();
   $('specRow').style.display=st.block==='spec'?'':'none';
   const bad=[st.vma,st.s2,st.s1lo,st.s1hi].some(x=>!x||x<=0)||!st.vol;
@@ -4585,7 +4629,6 @@ $('copyBtn').addEventListener('click',async()=>{
   catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='Plan copié';}catch(_){b.textContent='Copie impossible';}ta.remove();}
   setTimeout(()=>{b.textContent='Copier le plan';},1800);
 });
-$('resetBtn').addEventListener('click',()=>{IDS.forEach(id=>{const el=$(id);if(isCheck(el))el.checked=DEFAULTS[id];else el.value=DEFAULTS[id];});render();});
 $('f').addEventListener('input',render);$('f').addEventListener('change',render);
 $('f').addEventListener('input',()=>{syncQualityPrereqs();if(!$('auditSec').hidden)renderAudit();});
 
@@ -4630,7 +4673,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.05';
+const APP_VERSION='2026.10.17.06';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4657,6 +4700,7 @@ function homeArt(kind){
 function homeRestArt(){return '<svg viewBox="0 0 140 115" aria-hidden="true" focusable="false"><path d="M16 92C0 65 23 10 66 8s71 39 57 84" fill="#D9EFF0"/><path d="M11 102h122" stroke="#6E986C" stroke-width="3"/><g fill="#BDD88E" stroke="#7C9B6A" stroke-width="2"><ellipse cx="24" cy="70" rx="14" ry="20"/><ellipse cx="114" cy="56" rx="18" ry="25"/></g><path d="M24 69v34m90-48v47" stroke="#7C9B6A" stroke-width="2"/><circle cx="71" cy="37" r="9" fill="#EDC8A7"/><path d="m60 50 21-2 7 28-29 1z" fill="#DB9B82"/><path d="m64 77-8 27m22-26 14 25" fill="none" stroke="#768EB6" stroke-width="10"/><path d="m62 51-7-17 14-19m11 37 12 13-16 3" fill="none" stroke="#C68E70" stroke-width="6" stroke-linecap="round"/><path d="m66 14 13-1m-27 94h10m26-1h12" stroke="#4B5967" stroke-width="4" stroke-linecap="round"/></svg>';}
 function homeSessionHtml(it,w,ref){return tileHtml(it,w,ref).replace('class="tile','class="tile homeSession').replace('</button>',homeArt('track')+'</button>');}
 function appTodayHtml(){
+  if(recoveryState?.status==='pending')return recoveryHtml();
   const C=lastPlan,st=lastSt;
   if(!C||!st||(st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${st&&st.mode==='cal'&&lastCalError?warnText(lastCalError):'Complète tes repères et les paramètres du plan.'}</p><button type="button" class="cta" data-goto="ref">Ouvrir les repères</button><button type="button" class="cta ghost" data-goto="set">Ouvrir les réglages</button></div>`;
   if(st.mode!=='cal'||!C.weeks||!C.weeks[0].days)return`<div class="card"><h2>Pas encore de calendrier</h2><p class="lbl">Le mode Bloc n'a pas de dates. Crée un calendrier course pour voir ta séance du jour.</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
@@ -4680,9 +4724,10 @@ function appTodayHtml(){
 /* ---------- Calendrier mobile (v9.1) : semaines repliables, lecture directe de w.days ---------- */
 let calOpen=null,calendarTimelineOpen=false;
 function appCalHtml(){
+  if(recoveryState?.status==='pending')return recoveryHtml();
   const C=lastPlan,st=lastSt;if(!C||!C.weeks||(st&&st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${lastCalError?warnText(lastCalError):'Aucun plan.'}</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
   const isCal=st.mode==='cal'&&C.weeks[0]&&C.weeks[0].days;
-  return isCal?appCalendarWeeks(C,st):appBlockWeeks(C,st);
+  return recoveryHtml()+(isCal?appCalendarWeeks(C,st):appBlockWeeks(C,st));
 }
 function appCalendarWeeks(C,st){
   const t=today0(),d=C.race.distance;
@@ -4840,7 +4885,7 @@ function chronoFieldsHtml(){
 function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p>`;}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
-  let h='';
+  let h=recoveryHtml();
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
@@ -4848,7 +4893,7 @@ function appSetHtml(){
     h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
   }
 
-  if(cal&&(!activePlan||structureEditing)){
+  if(!recoveryState&&cal&&(!activePlan||structureEditing)){
     h+=`<div class="card"><div class="settingsTitle"><h2>1. Course</h2></div>${fSel('Distance à préparer','calDist')}<div class="sf2">${fDate('Date de la course','calRace')}${fDate('Début du plan','calStart')}</div>${fText('Objectif (facultatif)','calGoal')}</div>`;
 
     h+=`<div class="card"><div class="settingsTitle"><h2>2. Structure</h2></div><div class="sf2">${fSel('Sorties par semaine','runs')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Jours de qualité','qualityCount')}<span></span></div><p class="lbl" id="setQualityHint"></p>`;
@@ -4862,7 +4907,7 @@ function appSetHtml(){
   h+=PlanifCoros.settingsHtml();
   h+=globalThis.PlanifStrava?.settingsHtml()||'';
 
-  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="reset">Valeurs par défaut</button><button type="button" class="cta ghost" data-act="audit">Audit des règles (interne)</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button></div>`;
+  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
 function themeButtonText(){return document.documentElement.dataset.theme==='dark'?'Passer en mode clair':'Passer en mode sombre';}
@@ -4948,13 +4993,24 @@ async function updateApp(btn){
   }
 }
 $('appShell').addEventListener('click',e=>{
+  const recovery=e.target.closest('[data-recovery]');
+  if(recovery){
+    if(recovery.dataset.recovery==='restore')recoverSavedPlan();
+    else if(recovery.dataset.recovery==='resume'&&confirm('As-tu vérifié ta physiologie et tes chronos dans Repères ? Les séances futures seront recalculées. La copie de sécurité restera conservée.')){
+      localStorage.setItem(RECOVERY_STATE,JSON.stringify({id:activePlan.id,status:'resumed'}));recoveryState=null;restoreActiveStructure();
+      CURRENT_MODE='cal';$('modeCal').checked=true;$('modeBloc').checked=false;
+      render();setBuilt=false;renderApp();
+    }
+    return;
+  }
   if(!e.target.closest('#scr-set, #scr-ref'))return;
-  const m=e.target.closest('[data-mode]');if(m){switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
+  const m=e.target.closest('[data-mode]');if(m){if(recoveryState){if(m.dataset.mode==='cal')recoverSavedPlan();return;}switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='theme'){toggleTheme();return;}
   if(a.dataset.act==='update'){updateApp(a);return;}
   if(a.dataset.act==='add-ref2'){ref2Open=true;setBuilt=false;renderApp();return;}
   if(a.dataset.act==='remove-ref2'){ref2Open=false;$('ref2Time').value='';save();render();setBuilt=false;renderApp();return;}
+  if(a.dataset.act==='edit-structure'&&recoveryState){alert('Vérifie tes repères puis reprends les calculs avant de modifier la structure.');return;}
   if(a.dataset.act==='edit-structure'){structureEditing=true;setBuilt=false;renderApp();return;}
   if(a.dataset.act==='cancel-structure'){structureEditing=false;restoreActiveStructure();render();setBuilt=false;calOpen=null;renderApp();return;}
   if(a.dataset.act==='commit-structure'){
@@ -4965,7 +5021,6 @@ $('appShell').addEventListener('click',e=>{
     setBuilt=false;calOpen=null;renderApp();return;
   }
   if(a.dataset.act==='copy')$('copyBtn').click(),a.textContent='Plan copié',setTimeout(()=>{a.textContent='Copier le plan';},1800);
-  if(a.dataset.act==='reset'){$('resetBtn').click();setBuilt=false;calOpen=null;renderApp();}
   if(a.dataset.act==='audit'){setUi('expert');if($('auditSec').hidden)$('auditBtn').click();$('auditSec').scrollIntoView();}
 });
 
@@ -5095,6 +5150,7 @@ function libSessionHtml(r){
 /* Copie de la séance affichée : la conversion ne modifie ni le plan ni ses variantes. */
 function corosActivation(v,s={}){return preparationActivation(v,s);}
 function corosSessionSnapshot(){
+  if(recoveryState)throw new Error('Vérifie tes repères puis reprends les calculs avant un envoi COROS.');
   const st=lastSt,r=appSession;if(!st||!r)throw new Error('Ouvre une séance pour la préparer.');
   const copy=v=>{
     const out=JSON.parse(JSON.stringify(v)),S=out.structure,I=out.intensity||{};
@@ -5146,6 +5202,7 @@ function planifMoveNoticeHtml(){
   return (info.originalDate!==info.date?`<p class="lbl">Initialement prévue le ${fmtD(new Date(info.originalDate+'T12:00:00'))}.</p>`:'')+(warning?`<p class="lbl">Déplacement suspendu : ${warning}</p>`:'');
 }
 function movePlanifSession(date,ref=appSession,keepCalendar=false){
+  if(recoveryState){alert('Vérifie tes repères puis reprends les calculs avant de déplacer une séance.');return;}
   const info=planifSessionInfo(ref);if(!info)return false;
   const check=planifMoveCheck(lastPlan,info.id,date,lastSt);if(info.date===date&&!activePlan.moves?.[info.id])return;
   if(check.warnings.length&&!window.confirm(check.warnings.join('\n')+'\nDéplacer quand même ?'))return;
@@ -5239,7 +5296,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.05"></script>
+<script src="./planif-strava.js?v=2026.10.17.06"></script>
 </body>
 </html>
 
