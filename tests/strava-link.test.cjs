@@ -22,6 +22,10 @@ function env(){
 }
 (async()=>{
  const one=env();await delay();await delay();assert(one.link.settingsHtml().includes('Déconnecté'));
+ assert(one.link.settingsHtml().includes('data-strava="connect"'));
+ assert(!one.link.settingsHtml().includes('<form data-strava-login>'));
+ one.documentHandlers.click({target:{closest:()=>({dataset:{strava:'connect'}})}});
+ assert(one.link.settingsHtml().includes('<form data-strava-login>'));
  // Connexion email : le SDK garde le compte et fournit un jeton valide à chaque requête.
  const form={elements:{email:{value:'flo@example.test'},password:{value:'secret'}}};
  one.documentHandlers.submit({target:{matches:s=>s==='[data-strava-login]',elements:form.elements},preventDefault(){}});
@@ -30,14 +34,18 @@ function env(){
  const two=env();await delay();await delay();assert(two.link.settingsHtml().includes('Connecté'),'session restored after reopening');
  // Le bouton ouvre le formulaire local sans fenêtre externe.
  two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'connect'}})}});
- assert(two.link.settingsHtml().includes('<details class="info" open>'));
+ assert(!two.link.settingsHtml().includes('<form data-strava-login>'));assert(!two.link.settingsHtml().includes('data-strava="connect"'));assert(!two.link.settingsHtml().includes('connectionInfo'));
  failOnce=true;await two.link.search({planId:'plan-1',id:'w0-q0',date:'2026-10-10',minutes:60});assert.equal(forced,1,'401 retries with a fresh Firebase ID token');
+ two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
+ await delay();
+ two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'connect'}})}});
+ assert(two.link.settingsHtml().includes('<form data-strava-login>'));
  const other={elements:{email:{value:'lucas@example.test'},password:{value:'secret'}}};
  two.documentHandlers.submit({target:{matches:selector=>selector==='[data-strava-login]',elements:other.elements},preventDefault(){}});
  await delay();await delay();assert.equal(auth.currentUser.uid,'lucas');assert(two.link.settingsHtml().includes('lucas'));
  // La déconnexion annule immédiatement le contexte et est conservée par le SDK.
  two.documentHandlers.click({target:{closest:()=>({dataset:{strava:'disconnect'}})}});
- await delay();assert.equal(logoutCount,1);assert(two.link.settingsHtml().includes('Déconnecté'));
+ await delay();assert.equal(logoutCount,2);assert(two.link.settingsHtml().includes('Déconnecté'));
  const three=env();await delay();assert(three.link.settingsHtml().includes('Déconnecté'));
  assert(redraws>0);
  console.log('OK: SDK Firebase persistant, restauration, jeton API renouvelable, déconnexion explicite et formulaire local.');

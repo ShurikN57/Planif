@@ -34,7 +34,7 @@ window.PlanifStrava=(()=>{
       await token();const me=await api('me');
       if(generation!==seq||me.uid!==user.uid||!me.profile)throw Error('Compte athlète introuvable.');
       auth.name=me.profile.displayName||auth.name;verified=true;
-      message='Compte lié. Les validations sont enregistrées pour cet athlète.';
+      message='';
       await refresh();
     }catch(e){if(generation===seq){verified=false;message='Connexion à vérifier : '+e.message;}}
     if(generation===seq)redraw();
@@ -47,7 +47,7 @@ window.PlanifStrava=(()=>{
     }else message='Connexion Firebase indisponible. Vérifie la connexion Internet.';
   }catch(e){message='Connexion Firebase indisponible : '+e.message;}
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&firebaseAuth?.currentUser&&!verified)restore(firebaseAuth.currentUser);});
-  function connect(){showLogin=true;message='Saisis une seule fois les identifiants de ton compte Flow Strava.';redraw();}
+  function connect(){if(auth)return;showLogin=true;message='Saisis une seule fois les identifiants de ton compte Flow Strava.';redraw();}
   async function login(form){
     const email=form.elements.email.value.trim(),password=form.elements.password.value;
     try{
@@ -69,7 +69,7 @@ window.PlanifStrava=(()=>{
   const finalized=record=>['realized','adapted','missed'].includes(record?.status);
   const todayKey=()=>{const now=new Date();return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');};
   function badge(info){const record=currentRecords(info)[info?.id];return record&&record.status!=='planned'?`<span class="inPlan">${record.status==='missed'?'':'✓ '}${statusLabel(record.status)}</span>`:'';}
-  function settingsHtml(){return `<div class="card connectionCard"><div class="settingsTitle connectionTitle"><h2>Liaison Strava</h2><span class="connectionTag${ready()?'':auth?' pending':' off'}">${ready()?'Connecté':auth?'À vérifier':'Déconnecté'}</span><details class="connectionInfo"><summary aria-label="Informations sur la liaison Strava" title="Liaison Strava">ⓘ</summary><div class="connectionInfoBody"><p>Retrouve les sorties déjà synchronisées dans ton application Strava.</p><p>Une activité est associée uniquement après ta confirmation. La liaison ne modifie aucune activité Strava. La connexion reste active sur cet appareil jusqu’à ta déconnexion ; les validations restent sauvegardées.</p><p>Connecte-toi avec les identifiants de ton application Flow Strava. Le mot de passe est transmis à Firebase pour cette connexion et n’est pas enregistré par Planif.</p></div></details></div><p class="lbl">${auth?'Compte : '+esc(auth.name)+(ready()?'':' · connexion à vérifier'):''}</p><button type="button" class="cta ghost" data-strava="connect">${auth?'Changer de compte':'Lier mon compte athlète'}</button><details class="info" ${showLogin?'open':''}><summary>Connexion au compte Flow Strava</summary><form data-strava-login><label class="sf"><span>Email</span><input name="email" type="email" autocomplete="username" required></label><label class="sf"><span>Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label><button class="cta" type="submit">Se connecter</button></form></details>${auth?'<button type="button" class="cta ghost" data-strava="refresh">Actualiser les validations</button><button type="button" class="cta ghost" data-strava="disconnect">Déconnecter Planif</button>':''}<p class="lbl" role="status">${esc(message)}</p></div>`;}
+  function settingsHtml(){return `<div class="card connectionCard"><div class="settingsTitle connectionTitle"><h2>Liaison Strava</h2><span class="connectionTag${ready()?'':auth?' pending':' off'}">${ready()?'Connecté':auth?'À vérifier':'Déconnecté'}</span></div>${auth?'<p class="lbl">Compte : '+esc(auth.name)+'</p>':''}${auth?'<button type="button" class="cta ghost" data-strava="refresh">Actualiser les validations</button><button type="button" class="cta ghost" data-strava="disconnect">Déconnecter Planif</button>':'<button type="button" class="cta ghost" data-strava="connect" aria-expanded="'+showLogin+'">Connexion</button>'}${showLogin&&!auth?'<form data-strava-login><label class="sf"><span>Email</span><input name="email" type="email" autocomplete="username" required></label><label class="sf"><span>Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label><button class="cta" type="submit">Se connecter</button></form>':''}${message?'<p class="lbl" role="status">'+esc(message)+'</p>':''}</div>`;}
   const candidateKey=info=>info.planId+':'+info.id+':'+info.date;
   const offset=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*86400000).toISOString().slice(0,10);
   function rank(list,info){return list.map(a=>({...a,score:Math.abs(Date.parse(a.date)-Date.parse(info.date))/86400000*3+Math.abs(a.durationSec/60-info.minutes)/Math.max(1,info.minutes)})).sort((a,b)=>a.score-b.score);}
@@ -120,7 +120,7 @@ window.PlanifStrava=(()=>{
     const action=b.dataset.strava;
     if(action==='settings'){ctx.settings();return;}
     if(action==='connect'){connect();return;}
-    if(action==='disconnect'){const previous=firebaseAuth?.currentUser;try{sessionStorage.removeItem('planif-strava-auth-v1');}catch{};++generation;verified=false;auth=null;records={};activities={};loadedPlan=null;message='Déconnexion en cours…';redraw();perform(async()=>{try{await firebaseAuth?.signOut();message='Planif déconnecté. Les validations restent enregistrées pour ton compte.';}catch(e){if(previous)await restore(previous);throw Error('La déconnexion n’a pas abouti. Réessaie.');}});return;}
+    if(action==='disconnect'){const previous=firebaseAuth?.currentUser;try{sessionStorage.removeItem('planif-strava-auth-v1');}catch{};++generation;verified=false;auth=null;showLogin=false;records={};activities={};loadedPlan=null;message='Déconnexion en cours…';redraw();perform(async()=>{try{await firebaseAuth?.signOut();message='Planif déconnecté. Les validations restent enregistrées pour ton compte.';}catch(e){if(previous)await restore(previous);throw Error('La déconnexion n’a pas abouti. Réessaie.');}});return;}
     if(action==='refresh'){perform(refresh);return;}
     const info=ctx.sessionInfo();if(!info)return;
     if(action==='search')perform(()=>search(info));

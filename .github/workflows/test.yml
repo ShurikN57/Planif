@@ -24,7 +24,7 @@ jobs:
         run: |
           for attempt in {1..30}; do
             curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live.html || true
-            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/planif-strava.js?v=2026.10.17.04&verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-strava.js || true
+            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/planif-strava.js?v=2026.10.17.05&verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-strava.js || true
             curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/sw.js?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-sw.js || true
             if cmp -s index.html /tmp/planif-live.html && cmp -s planif-strava.js /tmp/planif-live-strava.js && cmp -s sw.js /tmp/planif-live-sw.js; then
               echo "Live index.html, planif-strava.js and sw.js match main."
