@@ -477,6 +477,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-ref .refHelp h2{margin:0;font-size:1.4rem;color:var(--ink)}
 .refInfoIcon{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;border-radius:50%;color:var(--accent);font-size:1.15rem;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .refHelp[open] .refInfoIcon{background:var(--accent);color:var(--accent-ink)}
+.refEditIcon{font-size:1.05rem}
 .refHelp>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
 .refHelpBody{padding:.55rem .7rem;background:var(--surface-2);border-radius:12px;color:var(--muted);font-size:.9rem;line-height:1.45;margin:.35rem 0 .65rem}
 .refHelpBody p{margin:.2rem 0 .5rem}
@@ -515,8 +516,8 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .settingsContent{padding-top:.7rem}
 .physioSpeeds{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));gap:.65rem}
 .physioHr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
-#scr-set .physioSpeeds .sf,#scr-set .physioHr .sf{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
-#scr-set .physioSpeeds input,#scr-set .physioHr input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;font-size:16px;padding:.45rem .25rem;text-align:center}
+#scr-ref .physioSpeeds .sf,#scr-ref .physioHr .sf{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+#scr-ref .physioSpeeds input,#scr-ref .physioHr input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;font-size:16px;padding:.45rem .25rem;text-align:center}
 .physioSpeeds .sf>span,.physioHr .sf>span{text-align:center;white-space:nowrap;font-size:.8rem}
 .s1Hint{margin:0 0 .8rem;font-size:.78rem}
 .speedUnit{max-width:11rem}
@@ -1114,7 +1115,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.13.04"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.01"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4625,7 +4626,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.13.04';
+const APP_VERSION='2026.10.17.01';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4652,7 +4653,7 @@ function homeRestArt(){return '<svg viewBox="0 0 140 115" aria-hidden="true" foc
 function homeSessionHtml(it,w,ref){return tileHtml(it,w,ref).replace('class="tile','class="tile homeSession').replace('</button>',homeArt('track')+'</button>');}
 function appTodayHtml(){
   const C=lastPlan,st=lastSt;
-  if(!C||!st||(st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${st&&st.mode==='cal'&&lastCalError?warnText(lastCalError):'Renseigne tes repères dans les réglages.'}</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
+  if(!C||!st||(st.mode==='cal'&&lastCalError))return`<div class="card"><h2>Plan à compléter</h2><p class="lbl">${st&&st.mode==='cal'&&lastCalError?warnText(lastCalError):'Complète tes repères et les paramètres du plan.'}</p><button type="button" class="cta" data-goto="ref">Ouvrir les repères</button><button type="button" class="cta ghost" data-goto="set">Ouvrir les réglages</button></div>`;
   if(st.mode!=='cal'||!C.weeks||!C.weeks[0].days)return`<div class="card"><h2>Pas encore de calendrier</h2><p class="lbl">Le mode Bloc n'a pas de dates. Crée un calendrier course pour voir ta séance du jour.</p><button type="button" class="cta" data-goto="set">Ouvrir les réglages</button></div>`;
   const t=today0(),days=C.weeks.flatMap(w=>w.days.map(x=>({w,x})));
   let h='';
@@ -4721,12 +4722,14 @@ function appBlockWeeks(C,st){
   return h;
 }
 function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;}
+const refEditorOpen={physio:false,chrono:false};
+function refEditHtml(title,key,body){return `<details class="refHelp refEditor" data-ref-section="${key}"${refEditorOpen[key]?' open':''}><summary><h2>${title}</h2><span class="refInfoIcon refEditIcon" aria-hidden="true">✎</span><span class="srOnly"> — modifier ${key==='physio'?'la physiologie':'les chronos de référence'}</span></summary><div class="refHelpBody settingsContent">${body}</div></details>`;}
 function appRefHtml(){
-  const st=lastSt,C=lastPlan;if(!st)return'';
+  const st=readState(),C=lastPlan,valid=[st.s1lo,st.s1hi,st.s2,st.vma].every(v=>Number.isFinite(v)&&v>0),pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
-  let h=`<div class="refOverview">${refHelpHtml('Repères et zones',`<p>Les trois repères sont indépendants : le moteur ne déduit aucun seuil de la VMA. Le second seuil correspond à l'allure tenable environ une heure ; l'endurance fondamentale se court plus lentement que ${paceHtml(kmh(st.s1lo,st.s1lo))}.</p><p>Zones utilisées pour la charge : EF sous le S1, entre S1 et S2, autour du S2, VO₂max à partir de ${Math.round(RULES.load.zones.z4OfVma*100)} % de VMA.</p>`)}<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div></div>`;
-  if(lastPred){h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refHelpHtml('Chronos estimés',`<p>Estimation empirique, profil ${profileLabel(st)} : écart de vitesse constant par palier entre distances. C'est un repère de terrain, pas un modèle physiologique.</p>`)}<div class="kv">`+lastPred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div></div>';}
-  if(C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
+  let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
+  h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
+  if(valid&&C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
     h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
       '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
@@ -4771,7 +4774,6 @@ function timeWheelHtml(target,dist){
     `<label>min<select data-timepart="m">${range(0,long?59:99,m)}</select></label><span class="timeSep">:</span><label>sec<select data-timepart="s">${range(0,59,ss)}</select></label></div>`;
 }
 /* Conversion de saisie uniquement : le moteur conserve ses repères en km/h. */
-const settingsSections={chrono:false,physio:false};
 let speedUnit='kmh';try{if(localStorage.getItem('planif-speed-unit')==='pace')speedUnit='pace';}catch(_){}
 function speedInputValue(id){
   const ids=id==='s1'?['s1lo','s1hi']:[id];
@@ -4795,7 +4797,14 @@ function commitSpeedInput(input){
   if(id==='s1'){const low=Math.min(...values),high=Math.max(...values);$('s1lo').value=String(low);$('s1hi').value=String(high);}else $(id).value=String(values[0]);
   $('f').dispatchEvent(new Event('input'));return true;
 }
-function syncSpeedInputs(){document.querySelectorAll('#scr-set [data-speed]').forEach(input=>{input.value=speedInputValue(input.dataset.speed);input.setCustomValidity('');input.setAttribute('inputmode',speedUnit==='kmh'&&input.dataset.speed!=='s1'?'decimal':'text');input.setAttribute('aria-label',`${input.dataset.speed==='s1'?'S1':input.dataset.speed==='s2'?'S2':'VMA'}, ${speedUnit==='pace'?'min/km':'km/h'}`);});}
+function syncSpeedInputs(){document.querySelectorAll('#scr-ref [data-speed]').forEach(input=>{input.value=speedInputValue(input.dataset.speed);input.setCustomValidity('');input.setAttribute('inputmode',speedUnit==='kmh'&&input.dataset.speed!=='s1'?'decimal':'text');input.setAttribute('aria-label',`${input.dataset.speed==='s1'?'S1':input.dataset.speed==='s2'?'S2':'VMA'}, ${speedUnit==='pace'?'min/km':'km/h'}`);});}
+function chronoFieldsHtml(){
+  let h=`${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
+  if(!ref2Open)h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
+  else h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
+  return h+`<p class="lbl" id="setProfileHint"></p>`;
+}
+function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p>`;}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   let h='';
@@ -4817,16 +4826,6 @@ function appSetHtml(){
     h+=`<div class="card"><div class="settingsTitle"><h2>Bloc</h2></div>${fSel('Qualité développée','block')}<div data-when="spec" class="sf2">${fSel('Distance visée','specDist')}${fText('Objectif (facultatif)','specGoal')}</div><div class="sf2">${fSel('Semaines de charge','weeks')}${fText('Heures par semaine','vol')}</div><div class="sf2">${fSel('Sorties par semaine','runs')}${fSel('Qualités par semaine','qualityCount')}</div><p class="lbl">Assimilation : un Jogg’ avec 10, 15 ou 20’ d’endurance active remplace la qualité.</p></div>`;
   }
 
-  h+=`<details class="card settingsFold" data-settings-section="chrono"${settingsSections.chrono?' open':''}><summary><h2>Chronos de référence</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent">${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
-  if(!ref2Open){
-    h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
-  }else{
-    h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
-  }
-  h+=`<p class="lbl" id="setProfileHint"></p></div></details>`;
-
-  h+=`<details class="card settingsFold" data-settings-section="physio"${settingsSections.physio?' open':''}><summary><h2>Physiologie</h2><span aria-hidden="true">⌄</span></summary><div class="settingsContent"><p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p></div></details>`;
-
   h+=PlanifCoros.settingsHtml();
   h+=globalThis.PlanifStrava?.settingsHtml()||'';
 
@@ -4841,7 +4840,9 @@ function toggleTheme(){
   document.querySelector('meta[name="theme-color"]').setAttribute('content',theme==='dark'?'#0F1720':'#FFFFFF');
   const button=document.querySelector('#scr-set [data-act="theme"]');if(button)button.textContent=themeButtonText();
 }
-function initSet(){document.querySelectorAll('#scr-set select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
+function initBindings(screen){screen.querySelectorAll('select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
+function initSet(){initBindings($('scr-set'));}
+function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;}
 function updateSet(){
   const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
@@ -4849,11 +4850,11 @@ function updateSet(){
   STRUCT_IDS.forEach(id=>{const el=document.querySelector('#scr-set [data-bind="'+id+'"]');if(el)el.disabled=locked;});
   const q3=document.querySelector('#scr-set [data-bind="q3Day"]');if(q3){const lab=q3.closest('label');if(lab)lab.hidden=+$('qualityCount').value<3;}
   const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('qualityCount').value<2;}
-  const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
 }
-$('scr-set').addEventListener('toggle',e=>{const key=e.target.dataset.settingsSection;if(key in settingsSections)settingsSections[key]=e.target.open;},true);
-$('scr-set').addEventListener('input',e=>{
+$('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(key in refEditorOpen)refEditorOpen[key]=e.target.open;},true);
+$('appShell').addEventListener('input',e=>{
+  if(!e.target.closest('#scr-set, #scr-ref'))return;
   const speed=e.target.closest('[data-speed]');if(speed){commitSpeedInput(speed);return;}
   const tp=e.target.closest('[data-timepart]');if(tp){
     const box=tp.closest('[data-time-target]'),target=$(box.dataset.timeTarget),long=box.dataset.timeLong==='1';
@@ -4864,15 +4865,16 @@ $('scr-set').addEventListener('input',e=>{
   const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;if(['hrMin','hrMax'].includes(el.dataset.bind)){save();return;}$('f').dispatchEvent(new Event('input'));
 });
-$('scr-set').addEventListener('change',e=>{
+$('appShell').addEventListener('change',e=>{
+  if(!e.target.closest('#scr-set, #scr-ref'))return;
   const unit=e.target.closest('[data-speed-unit]');if(unit){speedUnit=unit.value==='pace'?'pace':'kmh';try{localStorage.setItem('planif-speed-unit',speedUnit);}catch(_){}syncSpeedInputs();return;}
-  const speed=e.target.closest('[data-speed]');if(speed){if(!commitSpeedInput(speed))speed.reportValidity();return;}
-  const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));return;}
+  const speed=e.target.closest('[data-speed]');if(speed){if(!commitSpeedInput(speed))speed.reportValidity();else if(appTab==='ref')renderApp();return;}
+  const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));if(appTab==='ref')renderApp();return;}
   const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;
-  if(['hrMin','hrMax'].includes(el.dataset.bind)){save();return;}
+  if(['hrMin','hrMax'].includes(el.dataset.bind)){save();if(appTab==='ref')renderApp();return;}
   $('f').dispatchEvent(new Event('input'));
-  if(el.dataset.bind==='refDist'||el.dataset.bind==='ref2Dist'||el.dataset.bind==='qualityCount'){setBuilt=false;renderApp();}
+  if(appTab==='ref'||el.dataset.bind==='refDist'||el.dataset.bind==='ref2Dist'||el.dataset.bind==='qualityCount'){setBuilt=false;renderApp();}
 });
 async function updateApp(btn){
   const status=$('updateStatus');
@@ -4910,7 +4912,8 @@ async function updateApp(btn){
     btn.disabled=false;btn.textContent='MAJ';
   }
 }
-$('scr-set').addEventListener('click',e=>{
+$('appShell').addEventListener('click',e=>{
+  if(!e.target.closest('#scr-set, #scr-ref'))return;
   const m=e.target.closest('[data-mode]');if(m){switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='theme'){toggleTheme();return;}
@@ -5159,6 +5162,7 @@ function renderApp(){
   if(appTab==='set'){if(!setBuilt){$('scr-set').innerHTML=appSetHtml();initSet();setBuilt=true;}updateSet();return;}
   const f={today:appTodayHtml,cal:appCalHtml,ref:appRefHtml,study:appStudyHtml}[appTab];
   $('scr-'+appTab).innerHTML=f();
+  if(appTab==='ref')initRef();
 }
 const setUi=u=>{document.body.dataset.ui=u;setBuilt=false;try{localStorage.setItem('calc-allures-ui',u);}catch(e){}if(u==='app')renderApp();window.scrollTo(0,0);};
 document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;appSession=null;appLib=false;setBuilt=false;appTab=b.dataset.tab;try{localStorage.setItem('calc-allures-tab',appTab);}catch(_){}renderApp();window.scrollTo(0,0);});
@@ -5178,7 +5182,7 @@ $('appShell').addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');if(!g)return;if(g.dataset.goto==='expert')setUi('expert');else{appTab=g.dataset.goto;setBuilt=false;renderApp();}});
 $('appBack').addEventListener('click',()=>{if(appSession){const fromLib=!!appSession.lib;appSession=null;if(!fromLib)appLib=false;}else appLib=false;renderApp();window.scrollTo(0,0);});
 $('toApp').addEventListener('click',()=>setUi('app'));
-$('f').addEventListener('input',()=>{calOpen=null;renderApp();});$('f').addEventListener('change',()=>renderApp());
+$('f').addEventListener('input',()=>{calOpen=null;if(appTab==='ref'&&document.activeElement?.closest('#scr-ref'))return;renderApp();});$('f').addEventListener('change',()=>renderApp());
 document.addEventListener('planif-coros-change',()=>{if(PlanifCoros.callback){appSession=null;appLib=false;appTab='set';setUi('app');}else{setBuilt=false;if(appTab==='set'&&!appSession&&!appLib)renderApp();}document.querySelectorAll('[data-coros]').forEach(b=>b.disabled=PlanifCoros.busy);});
 load();syncQualityPrereqs();render();renderApp();
 PlanifCoros.start();
@@ -5200,7 +5204,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.13.04"></script>
+<script src="./planif-strava.js?v=2026.10.17.01"></script>
 </body>
 </html>
 
