@@ -19,11 +19,22 @@ window.PlanifStrava=(()=>{
   }
   async function api(path,options={}){
     const uid=auth?.uid,seq=generation;
-    const send=async force=>fetch(ORIGIN+'/api/'+path,{...options,headers:{'Content-Type':'application/json','Authorization':'Bearer '+await token(force),...options.headers}});
+    const send=async force=>{
+      const bearer=await token(force);
+      try{return await fetch(ORIGIN+'/api/'+path,{...options,headers:{'Content-Type':'application/json','Authorization':'Bearer '+bearer,...options.headers}});}
+      catch(_){throw Error('Connexion au service Strava impossible. Vérifie Internet puis réessaie.');}
+    };
     let response=await send(false);
     if(response.status===401&&generation===seq&&auth?.uid===uid)response=await send(true);
     if(generation!==seq||auth?.uid!==uid)throw Error('Le compte a changé. Réessaie.');
-    const data=await response.json();if(!response.ok){if(response.status===401){verified=false;redraw();}throw Error(data.error||'Connexion indisponible.');}return data;
+    if(response.status===401){verified=false;redraw();}
+    let data;
+    try{data=await response.json();}catch(_){
+      throw Error(response.status===401?'Session expirée. Reconnecte ton compte athlète.':!response.ok?'Service Strava indisponible (HTTP '+response.status+'). Réessaie plus tard.':'Réponse Strava illisible. Réessaie plus tard.');
+    }
+    if(!response.ok)throw Error(typeof data?.error==='string'?data.error:'Service Strava indisponible (HTTP '+response.status+'). Réessaie plus tard.');
+    if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Réponse Strava invalide. Réessaie plus tard.');
+    return data;
   }
   async function restore(user){
     const seq=++generation;

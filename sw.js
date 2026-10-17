@@ -1,9 +1,9 @@
-const CACHE = 'planif-v16-strava-17';
+const CACHE = 'planif-v16-strava-18';
 const APP_SHELL = [
   './',
   './index.html',
-  './planif-strava.js?v=2026.10.17.08',
-  './planif-calendar-drag.js?v=2026.10.17.08',
+  './planif-strava.js?v=2026.10.17.09',
+  './planif-calendar-drag.js?v=2026.10.17.09',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -22,40 +22,32 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  /* Les échanges COROS restent hors du cache PWA, y compris leurs métadonnées. */
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
-
   const req = event.request;
-  const isNavigation = req.mode === 'navigate' ||
-    req.destination === 'document' ||
-    new URL(req.url).pathname.endsWith('/Planif/') ||
-    new URL(req.url).pathname.endsWith('/Planif/index.html');
-
-  if (isNavigation) {
-    event.respondWith((async () => {
+  const navigation = req.mode === 'navigate' || req.destination === 'document' ||
+    /\/Planif\/(?:index\.html)?$/.test(new URL(req.url).pathname);
+  event.respondWith((async () => {
+    let response;
+    try { response = await fetch(req, navigation ? { cache: 'no-store' } : undefined); } catch (_) {}
+    if (response?.ok) {
       try {
-        const fresh = await fetch(req, { cache: 'no-store' });
-        const copy = fresh.clone();
         const cache = await caches.open(CACHE);
-        await cache.put('./index.html', copy.clone());
-        await cache.put('./', copy);
-        return fresh;
-      } catch (_) {
-        return (await caches.match('./index.html')) || (await caches.match('./'));
-      }
-    })());
-    return;
-  }
-
-  event.respondWith(
-    fetch(req).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE).then(cache => cache.put(req, copy));
+        if (navigation) {
+          await cache.put('./index.html', response.clone());
+          await cache.put('./', response.clone());
+        } else await cache.put(req, response.clone());
+      } catch (_) { /* A full/unavailable cache must not discard a successful network response. */ }
       return response;
-    }).catch(() => caches.match(req))
-  );
+    }
+    const keys = navigation ? ['./index.html', './'] : [req];
+    for (const key of keys) {
+      try { const cached = await caches.match(key); if (cached?.ok) return cached; } catch (_) {}
+    }
+    return response || new Response('Connexion indisponible. Réessaie avec une connexion Internet.', {
+      status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  })());
 });
-
 
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();

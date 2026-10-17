@@ -68,3 +68,12 @@ assert.equal(ctx.getActive().id,'archived-plan','failed writes do not change mem
 for(const [k,v] of Object.entries(storedBefore))assert.equal(data.get(k),v,'failed writes restore prior storage');
 ctx.localStorage.setItem=set;
 console.log('OK: read-only detached plan browser, escaped titles, archive-before-restore, preserved session IDs, and rollback on storage failure.');
+vm.runInContext('this.validation={referenceErrors,inputErrors};this.useInput=s=>{readState=()=>s;};this.previous=()=>({plan:lastPlan,state:lastSt});',ctx);
+assert.equal(ctx.validation.inputErrors(st).length,0);
+for(const change of [{s1lo:13,s1hi:12},{s1hi:15},{s2:18},{vma:NaN},{s2:Infinity},{s1lo:0},{vol:0}])assert(ctx.validation.inputErrors({...st,...change}).length);
+assert.equal(ctx.validation.referenceErrors({...st,s1lo:14,s1hi:14,s2:14}).length,0);
+ctx.useInput({...st,s2:99});ctx.setRecovery(null);
+const protectedPlan=JSON.stringify(ctx.previous()),storageBefore=JSON.stringify([...data]);
+ctx.renderRecovery();assert.equal(JSON.stringify(ctx.previous()),protectedPlan);assert.equal(JSON.stringify([...data]),storageBefore);
+ctx.E.saveActivePlan({...st,s2:99},C);assert.equal(JSON.stringify([...data]),storageBefore);
+console.log('OK: contradictory, empty and non-finite inputs block generation and persistence while retaining last valid plan.');
