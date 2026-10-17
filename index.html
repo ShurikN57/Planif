@@ -1119,7 +1119,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.07"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.08"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -1258,6 +1258,7 @@ const RULES={
   alternating10k:{distanceM:400,reps:[8,10],s1OffsetKmh:0.5,targetMinutes:[30,36],maxMinutes:38,fromProgress:0.67},
   weeklyFormats:{longFractionMinutes:6,complementMaxFractionMinutes:4},
   progression:{
+    fractions:{firstMaxMinutes:{s1:8,s2:3,vo2:2,spec10k:4.5},firstTargetMinutes:{s1:4,s2:1.5,vo2:1,spec10k:2},maxRatio:1.5,maxIncreaseMinutes:2.5,preferredIncreaseMinutes:1,durationWeight:2},
     /* Surcharge progressive : faire progresser d'abord le volume ciblé ; intensité ou densité ensuite, sans cumuler les leviers. */
     priority:['volume','intensity','density'],
     maxSimultaneousLevers:1
@@ -2766,6 +2767,7 @@ const RULE_META=(()=>{
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredStepClamp':m('Q_PERF_PREDICTION','estimation'),
   'prediction.profileSteps':m('Q_PERF_PREDICTION','estimation'),
+  'progression.fractions':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-17',reviewSummary:'Préférence utilisateur : progression graduelle des fractions par secteur, distances converties en minutes. Hausse préférée de 1 min, limite de sélection max(1,5 fois la durée précédente, +2,5 min), repli sur le format sûr le plus court si nécessaire. Ces valeurs sont des choix Planif, pas des seuils scientifiques. Assimilation sans qualité, avec Jogg et endurance active.'}),
   'progression.priority':m('Q_PROGRESSIVE_OVERLOAD','organizational',{findings:["FND_009"],origin:'partial_science',confidence:'moderate',decision:'keep',lastReview:'2026-10-03',reviewSummary:'La progression porte d’abord sur le volume ciblé ; intensité ou densité peuvent ensuite évoluer, sans augmenter fortement plusieurs leviers en même temps. SRC_030 : consensus sur gestion individuelle de charge ; ne valide pas une rampe ni un ratio ACWR universel.'}),
   'progression.maxSimultaneousLevers':m('Q_PROGRESSIVE_OVERLOAD','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'keep',lastReview:'2026-10-02',reviewSummary:'Garde-fou de programmation : un seul levier majeur de surcharge est augmenté à la fois.'}),
   'mixed.allowedContexts':m("Q_MIXED_SESSIONS","organizational",{"origin": "internal_heuristic", "confidence": "low", "decision": "keep", "findings": [], "lastReview": "2026-10-03", "reviewSummary": "Les séances mixtes restent occasionnelles et sont réservées à la transition, au rappel ou à l’assimilation. Aucune preuve externe directement reliée dans la revue actuelle : prescription pratique Planif, sans revendication de consensus scientifique vérifié."}),
@@ -3002,6 +3004,12 @@ function load(){
   loadModeState(CURRENT_MODE);
   activePlan=getJson(STORE.active,null);
   planHistory=getJson(STORE.history,[])||[];
+  const migrationKey='planif-fraction-progression-v1';
+  if(validSavedPlan(activePlan)&&!localStorage.getItem(migrationKey)){
+    const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant progression des fractions'};
+    localStorage.setItem(STORE.history,JSON.stringify([archived,...planHistory]));
+    planHistory=[archived,...planHistory];localStorage.setItem(migrationKey,'saved');
+  }
 }
 function save(){
   if(recoveryState?.status==='pending')return;
@@ -3025,7 +3033,7 @@ function preservePastSessions(C){
   activePlan.plan.weeks.forEach(w=>(w.days||[]).forEach(d=>old.set(planDateKey(d.date),d)));
   const today=new Date(),cut=new Date(today.getFullYear(),today.getMonth(),today.getDate());
   C.weeks.forEach(w=>(w.days||[]).forEach(d=>{
-    if(d.date<cut){
+    if(d.date<=cut){
       const prev=old.get(planDateKey(d.date));
       if(prev&&Array.isArray(prev.items))d.items=JSON.parse(JSON.stringify(prev.items));
     }
@@ -3463,6 +3471,30 @@ const variantRuleRefs=(v,sector)=>{const r=(FAMILY_RULES[v.fam]||[]).slice();
 /* ======== Générateur : candidats → charge → garde-fous → choix de deux options ======== */
 function hash01(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return((h>>>0)%1000)/1000;}
 function candLoad(x,st){const d=densityFactor(x);return x.parts.reduce((a,[m,v])=>a+m*loadFactorForSpeed(v,st)*d,0);}
+/* Planif preference, not a physiological threshold: compare minutes, including metre-based formats. */
+function fractionProgressionPool(candidates,sector,ctx){
+  if(!ctx.fractionHistory||!candidates.length)return candidates;
+  const R=RULES.progression.fractions,previous=ctx.fractionHistory[sector];
+  const limit=previous?Math.max(previous*R.maxRatio,previous+R.maxIncreaseMinutes):R.firstMaxMinutes[sector];
+  if(!limit)return candidates;
+  const near=candidates.filter(c=>maxFractionMinutes(c)<=limit+1e-9);
+  const pool=near.length?near:candidates.filter(c=>maxFractionMinutes(c)===Math.min(...candidates.map(maxFractionMinutes)));
+  const target=previous?Math.min(limit,previous+R.preferredIncreaseMinutes):R.firstTargetMinutes[sector];
+  for(const c of pool){c.score+=Math.abs(maxFractionMinutes(c)-target)*R.durationWeight;c.ruleRefs=[...new Set(c.ruleRefs.concat('progression.fractions'))];}
+  return pool;
+}
+function rememberFractionDurations(sessions,memory){
+  if(!memory)return;
+  const values={};
+  const visit=v=>{
+    if(v.structure?.components){v.structure.components.forEach(c=>visit(c.variant));return;}
+    if(!['s1','s2','vo2','spec10k'].includes(v.sector))return;
+    const d=maxFractionMinutes(v);if(d>0)(values[v.sector]||(values[v.sector]=[])).push(d);
+  };
+  sessions.forEach(s=>(s.variants||[]).forEach(visit));
+  memory.fractions=memory.fractions||{};
+  for(const [sector,ds] of Object.entries(values))memory.fractions[sector]=Math.min(...ds);
+}
 function generateSession(sector,W,st,ctx){
   const PB=RULES.library.phaseBoundaries,SEL=RULES.library.selection;
   const ph=ctx.assim?3:ctx.t<PB[0]?0:ctx.t<PB[1]?1:2;
@@ -3481,6 +3513,7 @@ function generateSession(sector,W,st,ctx){
   if(ctx.maxFractionMinutes)all=all.filter(c=>maxFractionMinutes(c)<=ctx.maxFractionMinutes);
   if(Number.isFinite(ctx.maxWorkMinutes)){all=all.filter(c=>c.work<=ctx.maxWorkMinutes+1e-9&&!c.capFail.length);if(!all.length)return[];}
   const safe=all.filter(c=>!c.capFail.length);if(safe.length)all=safe; /* sinon on garde, et l'alerte garde-fou s'affiche */
+  all=fractionProgressionPool(all,sector,ctx);
   const tol=TOL(W);
   let pool=all.filter(c=>Math.abs(c.work-W)<=tol);if(!pool.length)pool=all;
   pool.sort((x,y)=>x.score-y.score);
@@ -3834,7 +3867,7 @@ function buildWeek(B,st,o){
       if(qa+qb+qc>max+1)warns.push({code:'budget_too_small'});
     }
     aW=roundW(B.A.fam,fromMin(B.A.fam,qa));bW=bW?roundW(bDef.fam,qb):0;cW=qc?roundW(cDef.fam,qc):0;
-    const ctx={v:B.v,dist:B.dist,vol,assim,memory,calendar:!!o.calendar};
+    const ctx={v:B.v,dist:B.dist,vol,assim,memory,fractionHistory:{...(memory?.fractions||{})},calendar:!!o.calendar};
     let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
     /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
     if(assim&&bW>0){
@@ -3938,6 +3971,7 @@ function buildWeek(B,st,o){
     if(Math.abs(volume-vol)>RULES.volume.deviationAlert*vol)warns.push({code:'volume_deviation',params:{volume,target:vol}});
     const reminders=(assim?['strides_optional_week','evaluation']:B.reminders).map(code=>({code,params:{block:B.id,dist:B.dist}}));
   const ruleRefs=[...(tenK?['calendar.longRun10k']:[]),...(longMain?['weeklyFormats']:[]),'organization.longRun','recovery.footing','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
+  rememberFractionDurations(sessions,memory);
   return{k,assim,target:vol,vol:volume,volume,ruleRefs:sessions.some(()=>true)?ruleRefs.concat(aeContext?['organization.activeEndurance']:[]):ruleRefs,sessions,sl,slS1,slEA,slLoad:sumBd(slBd),foot,z,pct,qualityMinutes:qWork,qualityPct:pct,load,loadMin,loadMax,heavy,workLoad,loadBreakdown:bd,warns,reminders,budget:B.budget,costly:costly&&sessionKey(costly)};
 }
 /* Assimilation : aucune qualité, un Jogg actif au jour de qualité habituel.
@@ -4171,7 +4205,7 @@ function buildCalendar(st,pred){
   const plan=planPhases(Nall-(intro?1:0),st.calDist);if(intro)plan.unshift({kind:'intro',block:'intro'});
   const vols=calendarVolumes(plan,st.vol,wins);
   const memory={},weeks=[];
-  plan.forEach((p,i)=>{const win=wins[i],vol=vols[i];let wk;
+  plan.forEach((p,i)=>{const win=wins[i],vol=vols[i],priorFractions={...(memory.fractions||{})};let wk;
     if(p.kind==='charge'||p.kind==='assim'){
       const bst={...st,block:p.block,specDist:st.calDist,specGoal:st.calGoal},B=getBlock(bst,pred);
       const nextCharge=plan.slice(i+1).find(x=>x.kind==='charge'),nextBlock=nextCharge?nextCharge.block:null;
@@ -4186,6 +4220,15 @@ function buildCalendar(st,pred){
     wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement','recovery.calendarContext'],
       p.kind==='taper'?['calendar.taper']:p.kind==='intro'?['calendar.introWeekMinDays','calendar.introFooting']:[]);
     const pl=placeWeek(wk,win,st);wk.days=pl.list;wk.warns=wk.warns.concat(pl.warns);
+    if(activePlan&&sameStructure(calendarStructure(),activePlan.structure)){
+      const now=new Date(),cut=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const savedDays=new Map((activePlan.plan?.weeks||[]).flatMap(w=>w.days||[]).map(d=>[planDateKey(d.date),d]));
+      if(win.start<=cut){
+        memory.fractions=priorFractions;
+        const actual=wk.days.flatMap(d=>(d.date<=cut?savedDays.get(planDateKey(d.date))||d:d).items||[]).filter(it=>it.kind==='q').map(it=>it.s);
+        rememberFractionDurations(actual,memory);
+      }
+    }
     /* le volume réel ne compte que les footings placés */
     const lost=wk.foot.filter(f=>f.unplaced).reduce((a,f)=>a+f.min,0)+wk.sessions.filter(x=>x.unplaced).reduce((a,x)=>a+x.total,0);if(lost){wk.vol-=lost;wk.volume=wk.vol;wk.z.z1=Math.max(0,wk.z.z1-lost);}
     weeks.push(wk);});
@@ -4674,7 +4717,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.07';
+const APP_VERSION='2026.10.17.08';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5374,7 +5417,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.07"></script>
+<script src="./planif-strava.js?v=2026.10.17.08"></script>
 </body>
 </html>
 
