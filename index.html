@@ -1123,7 +1123,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.02"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.03"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4634,7 +4634,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.02';
+const APP_VERSION='2026.10.17.03';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4751,7 +4751,7 @@ function conversionResult(mode,raw){
 }
 let conversionMode='paceToSpeed';
 const conversionInputs={paceToSpeed:'',speedToPace:''};
-function conversionHtml(){return `<div class="card conversionCard"><h2>Calculatrice d’allure</h2><label class="sf"><span>Conversion</span><select data-conversion-mode><option value="paceToSpeed"${conversionMode==='paceToSpeed'?' selected':''}>min/km → km/h</option><option value="speedToPace"${conversionMode==='speedToPace'?' selected':''}>km/h → min/km</option></select></label><div class="conversionGrid"><label class="sf"><span data-conversion-label></span><input data-conversion-input autocomplete="off"></label><div class="conversionResult"><span>Résultat</span><strong data-conversion-output role="status" aria-live="polite">—</strong></div></div></div>`;}
+function conversionHtml(){return `<div class="card conversionCard panelCard chronoPanel">${panelArt('chrono')}<h2>Calculatrice d’allure</h2><label class="sf"><span>Conversion</span><select data-conversion-mode><option value="paceToSpeed"${conversionMode==='paceToSpeed'?' selected':''}>min/km → km/h</option><option value="speedToPace"${conversionMode==='speedToPace'?' selected':''}>km/h → min/km</option></select></label><div class="conversionGrid"><label class="sf"><span data-conversion-label></span><input data-conversion-input autocomplete="off"></label><div class="conversionResult"><span>Résultat</span><strong data-conversion-output role="status" aria-live="polite">—</strong></div></div></div>`;}
 function updateConversionUi(){
   const root=$('scr-ref'),input=root.querySelector('[data-conversion-input]');if(!input)return;
   const pace=conversionMode==='paceToSpeed';
@@ -5242,7 +5242,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.02"></script>
+<script src="./planif-strava.js?v=2026.10.17.03"></script>
 </body>
 </html>
 
