@@ -41,3 +41,30 @@ const card=html.slice(html.indexOf('<div class="card toolsCard">'),html.indexOf(
 const order=['data-act="theme"','data-act="update"','data-act="copy"','data-act="audit"','data-goto="expert"'].map(s=>card.indexOf(s));
 assert(order.every((v,i)=>v>=0&&(!i||v>order[i-1])));
 console.log('OK: immutable backup, no regeneration during recovery, preserved sessions and dates, reload persistence, mode repair and tools order.');
+// Plan browser uses detached snapshots; restoration archives the current plan first.
+vm.runInContext(html.slice(html.indexOf('function savedPlanEntries(){'),html.indexOf('function themeButtonText(){'))+`
+this.library={entries:savedPlanEntries,restore:restoreSavedPlanRecord,summary:savedPlanSummary};
+this.setHistory=h=>planHistory=h;this.getActive=()=>activePlan;this.getHistory=()=>planHistory;
+`,ctx);
+const archive={...JSON.parse(original),id:'archived-plan',title:'Ancien <plan>',archivedAt:'2026-10-01T12:00:00Z'};
+ctx.setHistory([archive]);data.set(ctx.keys.history,JSON.stringify([archive]));
+const beforeRead=JSON.stringify([...data]);
+const entries=ctx.library.entries();assert.deepEqual(Array.from(entries,x=>x.kind),['active','archive','backup']);
+assert(ctx.library.summary(entries[1]).includes('&lt;plan&gt;'));
+entries[0].record.plan.weeks[0].days[0].items=[];
+assert.equal(JSON.stringify(ctx.getActive()),original,'preview must not share mutable objects');
+assert.equal(JSON.stringify([...data]),beforeRead,'opening the list must not write storage');
+const result=ctx.library.restore(archive);
+assert.equal(result.id,'archived-plan');assert(!result.archivedAt);
+assert.equal(JSON.stringify(result.plan),JSON.stringify(archive.plan));
+assert.equal(ctx.getHistory()[0].id,'original-plan');assert.equal(ctx.state().status,'restored');
+assert([...data.keys()].some(k=>k.startsWith('planif-before-restore-')));
+const storedBefore=Object.fromEntries([ctx.keys.active,ctx.keys.history,ctx.keys.mode,'planif-recovery-state-v1'].map(k=>[k,data.get(k)]));
+const set=ctx.localStorage.setItem;let fail=true;
+ctx.localStorage.removeItem=k=>data.delete(k);
+ctx.localStorage.setItem=(k,v)=>{if(k===ctx.keys.active&&fail){fail=false;throw Error('quota');}set(k,v);};
+assert.throws(()=>ctx.library.restore(saved),/Restauration interrompue/);
+assert.equal(ctx.getActive().id,'archived-plan','failed writes do not change memory');
+for(const [k,v] of Object.entries(storedBefore))assert.equal(data.get(k),v,'failed writes restore prior storage');
+ctx.localStorage.setItem=set;
+console.log('OK: read-only detached plan browser, escaped titles, archive-before-restore, preserved session IDs, and rollback on storage failure.');

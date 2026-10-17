@@ -540,6 +540,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 /* Liaison COROS : aperçu et état de connexion, dans les deux thèmes. */
 .corosStatus{margin-top:.65rem;overflow-wrap:anywhere}
 .corosDialog{width:min(92vw,520px);max-height:85dvh;overflow:auto;box-sizing:border-box;border:1px solid var(--line);border-radius:20px;padding:1.15rem;background:var(--surface);color:var(--ink)}
+.savedPlansDialog .card{margin:.8rem 0;padding:.85rem}.savedPlanWeek{border:1px solid var(--line);border-radius:12px;margin:.75rem 0;padding:.7rem}.savedPlanWeek summary{cursor:pointer;font-weight:700}.savedPlanDay{border-top:1px solid var(--line);margin-top:.7rem;padding-top:.7rem}.savedPlanDay p{margin:.35rem 0;overflow-wrap:anywhere}
 .corosDialog::backdrop{background:#10142480}
 .corosDialog h2{margin:0 0 .6rem}.corosDialog h3{margin:.5rem 0}
 .corosPreviewText{white-space:pre-line;line-height:1.5}
@@ -1118,7 +1119,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.06"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.07"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -2959,7 +2960,7 @@ function reviveSavedPlan(plan){
 }
 function recoveryHtml(){
   if(!recoveryState)return '';
-  return '<div class="card"><h2>'+ (recoveryState.status==='pending'?'Plan sauvegardé retrouvé':'Plan récupéré · séances conservées')+'</h2><p>Une copie de sécurité a été conservée sur cet appareil. Les séances enregistrées ne sont pas recalculées.</p><p>Les valeurs de physiologie et les chronos ont pu être réinitialisés. Vérifie-les dans Repères avant de reprendre les calculs. Les allures complémentaires dépendant de ces valeurs restent à vérifier.</p>'+
+  return '<div class="card"><h2>'+ (recoveryState.status==='pending'?'Plan sauvegardé retrouvé':'Plan récupéré · séances conservées')+'</h2><p>Une copie de sécurité a été conservée sur cet appareil. Les séances enregistrées ne sont pas recalculées.</p><p>Les valeurs de physiologie et les chronos actuels peuvent différer de ceux de ce plan. Vérifie-les dans Repères avant de reprendre les calculs. Les allures complémentaires dépendant de ces valeurs restent à vérifier.</p>'+
     (recoveryState.status==='pending'?'<button type="button" class="cta" data-recovery="restore">Récupérer mon plan sauvegardé</button>':'<button type="button" class="cta ghost" data-goto="ref">Vérifier mes repères</button><button type="button" class="cta ghost" data-recovery="resume">Reprendre les calculs avec mes repères</button>')+'</div>';
 }
 function recoverSavedPlan(){
@@ -4673,7 +4674,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.06';
+const APP_VERSION='2026.10.17.07';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4907,8 +4908,84 @@ function appSetHtml(){
   h+=PlanifCoros.settingsHtml();
   h+=globalThis.PlanifStrava?.settingsHtml()||'';
 
-  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
+  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="plans">Mes plans</button><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
+}
+function savedPlanEntries(){
+  const entries=[];
+  if(validSavedPlan(activePlan))entries.push({kind:'active',label:'Plan actif',record:snapshotPlan(activePlan)});
+  for(const p of planHistory)if(validSavedPlan(p))entries.push({kind:'archive',label:'Plan archivé',record:snapshotPlan(p)});
+  const backup=getJson(RECOVERY_BACKUP);
+  try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label:'Copie de sécurité',record:p});}catch(_){}
+  return entries;
+}
+const savedPlanEscape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function savedPlanDate(value){const d=new Date(value);return value&&!Number.isNaN(+d)?d.toLocaleDateString('fr-FR'):'Date inconnue';}
+function savedPlanSummary(entry){
+  const p=entry.record,C=p.plan;
+  return `<span class="lbl">${entry.label}</span><h3>${savedPlanEscape(p.title||'Plan de course')}</h3><p class="lbl">${DIST[C.race.distance]?.lab||'Course'} · ${savedPlanDate(C.start)} → ${savedPlanDate(C.race.date)}<br>${C.weeks.length} semaines${p.archivedAt?' · Archivé le '+savedPlanDate(p.archivedAt):p.updatedAt?' · Enregistré le '+savedPlanDate(p.updatedAt):''}</p>`;
+}
+function savedPlanDetail(entry){
+  const C=reviveSavedPlan(entry.record.plan);
+  let h=savedPlanSummary(entry)+'<p class="lbl">Consultation seule : le plan actif reste inchangé.</p>';
+  for(const [i,w] of C.weeks.entries()){
+    h+=`<details class="savedPlanWeek"><summary>Semaine ${i+1} · ${savedPlanDate(w.startDate)} — ${fmtDur(w.vol)}</summary>`;
+    for(const day of w.days){
+      h+=`<div class="savedPlanDay"><b>${fmtD(day.date)}</b>`;
+      if(!day.items.length)h+='<p class="lbl">Repos</p>';
+      for(const it of day.items){
+        if(it.kind==='q'){
+          h+=`<p><strong>${savedPlanEscape(sessionTitle(it.s))}</strong> · ${fmtDur(it.s.total)}</p>`;
+          for(const [j,v] of it.s.variants.entries())h+=`<p class="lbl">Option ${j+1} : ${savedPlanEscape(vText(v))}<br>${vChips(v).map(savedPlanEscape).join(' · ')}</p>`;
+        }else h+='<p>'+agendaItem(it,w,null)+'</p>';
+      }
+      h+='</div>';
+    }
+    h+='</details>';
+  }
+  return h;
+}
+function restoreSavedPlanRecord(record){
+  if(!validSavedPlan(record))throw Error('Ce plan ne peut pas être restauré.');
+  // A complete backup is written before replacing any key; memory changes only after storage succeeds.
+  const before={};for(const key of [STORE.active,STORE.history,STORE.mode,RECOVERY_STATE])before[key]=localStorage.getItem(key);
+  const backupKey='planif-before-restore-'+Date.now();
+  localStorage.setItem(backupKey,JSON.stringify({savedAt:new Date().toISOString(),values:before}));
+  const restored=snapshotPlan(record);delete restored.archivedAt;delete restored.archiveReason;
+  const history=planHistory.slice();
+  if(validSavedPlan(activePlan))history.unshift({...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'restauration d’un autre plan'});
+  const state={id:restored.id,status:'restored'};
+  try{
+    localStorage.setItem(STORE.history,JSON.stringify(history));
+    localStorage.setItem(RECOVERY_STATE,JSON.stringify(state));
+    localStorage.setItem(STORE.mode,'cal');
+    localStorage.setItem(STORE.active,JSON.stringify(restored));
+  }catch(error){
+    for(const [key,value] of Object.entries(before)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(_){} }
+    throw Error('Restauration interrompue : impossible d’enregistrer le plan. La copie de sécurité est conservée.');
+  }
+  activePlan=restored;planHistory=history;recoveryState=state;structureEditing=false;
+  return restored;
+}
+function openSavedPlans(){
+  let dialog=$('savedPlansDialog');
+  if(!dialog){dialog=document.createElement('dialog');dialog.id='savedPlansDialog';dialog.className='corosDialog savedPlansDialog';dialog.setAttribute('aria-labelledby','savedPlansTitle');document.body.append(dialog);}
+  const entries=savedPlanEntries();
+  const list=()=>{dialog.innerHTML='<div class="settingsTitle"><h2 id="savedPlansTitle">Mes plans</h2><button type="button" class="ghost" data-plans-close>Fermer</button></div>'+(entries.length?entries.map((entry,i)=>`<div class="card">${savedPlanSummary(entry)}<button type="button" class="cta ghost" data-plans-view="${i}">Consulter</button></div>`).join(''):'<p>Aucun plan sauvegardé pour le moment.</p>');dialog.scrollTop=0;};
+  dialog.onclick=e=>{
+    if(e.target.closest('[data-plans-close]')){dialog.close();return;}
+    if(e.target.closest('[data-plans-back]')){list();return;}
+    const view=e.target.closest('[data-plans-view]');
+    if(view){const index=Number(view.dataset.plansView),entry=entries[index];if(!entry)return;
+      dialog.innerHTML='<div class="settingsTitle"><h2 id="savedPlansTitle">Plan sauvegardé</h2><button type="button" class="ghost" data-plans-close>Fermer</button></div><button type="button" class="cta ghost" data-plans-back>Retour à mes plans</button>'+savedPlanDetail(entry)+(entry.kind!=='active'?`<button type="button" class="cta" data-plans-restore="${index}">Restaurer ce plan</button>`:'')+'<p role="status" data-plans-status></p>';dialog.scrollTop=0;return;}
+    const restore=e.target.closest('[data-plans-restore]');
+    if(restore){const entry=entries[Number(restore.dataset.plansRestore)];if(!entry||entry.kind==='active')return;
+      if(!confirm('Restaurer ce plan ? Le plan actif sera d’abord archivé. Les séances sauvegardées seront conservées sans recalcul ; tu pourras vérifier tes repères avant de reprendre les calculs.'))return;
+      try{restoreSavedPlanRecord(entry.record);dialog.close();recoverSavedPlan();document.dispatchEvent(new CustomEvent('planif-plan-change'));}
+      catch(error){dialog.querySelector('[data-plans-status]').textContent=error.message;}
+    }
+  };
+  list();dialog.showModal();
 }
 function themeButtonText(){return document.documentElement.dataset.theme==='dark'?'Passer en mode clair':'Passer en mode sombre';}
 function toggleTheme(){
@@ -5006,6 +5083,7 @@ $('appShell').addEventListener('click',e=>{
   if(!e.target.closest('#scr-set, #scr-ref'))return;
   const m=e.target.closest('[data-mode]');if(m){if(recoveryState){if(m.dataset.mode==='cal')recoverSavedPlan();return;}switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
+  if(a.dataset.act==='plans'){openSavedPlans();return;}
   if(a.dataset.act==='theme'){toggleTheme();return;}
   if(a.dataset.act==='update'){updateApp(a);return;}
   if(a.dataset.act==='add-ref2'){ref2Open=true;setBuilt=false;renderApp();return;}
@@ -5296,7 +5374,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.06"></script>
+<script src="./planif-strava.js?v=2026.10.17.07"></script>
 </body>
 </html>
 
