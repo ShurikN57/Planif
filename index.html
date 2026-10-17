@@ -530,6 +530,14 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-set .activePlanCard .lockTag{background:var(--surface)}
 #scr-ref .chronoPanel{background:linear-gradient(120deg,var(--surface) 45%,color-mix(in srgb,var(--accent) 6%,var(--surface)))}
 .chronoPanel .panelArt{width:55%;opacity:.55}
+.conversionCard h2{margin:0 0 .65rem;font-size:1.4rem}
+.conversionGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.75rem;align-items:end}
+.conversionGrid .sf{margin:0;min-width:0}
+.conversionGrid input{font-size:16px;min-width:0;width:100%;box-sizing:border-box}
+.conversionResult{min-height:44px;padding:.45rem .7rem;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;justify-content:center}
+.conversionResult span{font-size:.8rem;color:var(--muted)}
+.conversionResult strong{font-size:1.35rem;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+@media(max-width:360px){.conversionGrid{grid-template-columns:1fr}.conversionResult strong{font-size:1.25rem}}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .panelCard .panelArt{opacity:.16}}
 :root[data-theme="dark"] .panelCard .panelArt{opacity:.16}
 
@@ -1115,7 +1123,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.01"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.02"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4626,7 +4634,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.01';
+const APP_VERSION='2026.10.17.02';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4724,11 +4732,39 @@ function appBlockWeeks(C,st){
 function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;}
 const refEditorOpen={physio:false,chrono:false};
 function refEditHtml(title,key,body){return `<details class="refHelp refEditor" data-ref-section="${key}"${refEditorOpen[key]?' open':''}><summary><h2>${title}</h2><span class="refInfoIcon refEditIcon" aria-hidden="true">✎</span><span class="srOnly"> — modifier ${key==='physio'?'la physiologie':'les chronos de référence'}</span></summary><div class="refHelpBody settingsContent">${body}</div></details>`;}
+function conversionResult(mode,raw){
+  const value=String(raw).trim();if(!value)return '—';
+  if(mode==='speedToPace'){
+    if(/^\d+[.,]$/.test(value))return '—';
+    if(!/^\d+(?:[.,]\d+)?$/.test(value))return 'Saisie invalide';
+    const speed=Number(value.replace(',','.'));if(!Number.isFinite(speed)||speed<=0)return 'Saisie invalide';
+    const seconds=Math.round(3600/speed);if(!Number.isFinite(seconds))return 'Saisie invalide';
+    return `${Math.floor(seconds/60)}’${String(seconds%60).padStart(2,'0')}/km`;
+  }
+  if(mode==='paceToSpeed'){
+    if(/^\d+(?:[:'’]\d?)?$/.test(value))return '—';
+    const match=/^(\d+)[:'’](\d{2})$/.exec(value);
+    if(!match||+match[2]>=60||(+match[1]===0&&+match[2]===0))return 'Saisie invalide';
+    return (3600/(+match[1]*60+(+match[2]))).toFixed(2).replace('.',',')+' km/h';
+  }
+  return 'Saisie invalide';
+}
+let conversionMode='paceToSpeed';
+const conversionInputs={paceToSpeed:'',speedToPace:''};
+function conversionHtml(){return `<div class="card conversionCard"><h2>Calculatrice d’allure</h2><label class="sf"><span>Conversion</span><select data-conversion-mode><option value="paceToSpeed"${conversionMode==='paceToSpeed'?' selected':''}>min/km → km/h</option><option value="speedToPace"${conversionMode==='speedToPace'?' selected':''}>km/h → min/km</option></select></label><div class="conversionGrid"><label class="sf"><span data-conversion-label></span><input data-conversion-input autocomplete="off"></label><div class="conversionResult"><span>Résultat</span><strong data-conversion-output role="status" aria-live="polite">—</strong></div></div></div>`;}
+function updateConversionUi(){
+  const root=$('scr-ref'),input=root.querySelector('[data-conversion-input]');if(!input)return;
+  const pace=conversionMode==='paceToSpeed';
+  root.querySelector('[data-conversion-label]').textContent=pace?'Allure (min/km)':'Vitesse (km/h)';
+  input.value=conversionInputs[conversionMode];input.placeholder=pace?'4’00':'15,00';input.inputMode=pace?'text':'decimal';
+  root.querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,input.value);
+}
 function appRefHtml(){
   const st=readState(),C=lastPlan,valid=[st.s1lo,st.s1hi,st.s2,st.vma].every(v=>Number.isFinite(v)&&v>0),pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
   h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
+  h+=conversionHtml();
   if(valid&&C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
     h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
@@ -4842,7 +4878,7 @@ function toggleTheme(){
 }
 function initBindings(screen){screen.querySelectorAll('select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
 function initSet(){initBindings($('scr-set'));}
-function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;}
+function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;updateConversionUi();}
 function updateSet(){
   const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
@@ -4853,6 +4889,8 @@ function updateSet(){
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
 }
 $('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(key in refEditorOpen)refEditorOpen[key]=e.target.open;},true);
+$('scr-ref').addEventListener('input',e=>{if(!e.target.matches('[data-conversion-input]'))return;conversionInputs[conversionMode]=e.target.value;$('scr-ref').querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,e.target.value);});
+$('scr-ref').addEventListener('change',e=>{if(!e.target.matches('[data-conversion-mode]'))return;conversionMode=e.target.value;updateConversionUi();});
 $('appShell').addEventListener('input',e=>{
   if(!e.target.closest('#scr-set, #scr-ref'))return;
   const speed=e.target.closest('[data-speed]');if(speed){commitSpeedInput(speed);return;}
@@ -5204,7 +5242,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.01"></script>
+<script src="./planif-strava.js?v=2026.10.17.02"></script>
 </body>
 </html>
 
