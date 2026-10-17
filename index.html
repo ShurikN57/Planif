@@ -1119,7 +1119,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.09"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.10"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -1376,6 +1376,7 @@ const RULES={
   hills:{short:{reps:[0.5,0.75],n:[6,16]},long:{reps:[1.5,2],n:[4,8]},totalFactor:2.2,descentRecoveryFactor:1.2,sprintMinutes:6,
     sprintSpeedOfVma:1.15,longEffortAboveS2:0.4},
   specOther:{
+    durationAndEquivalence:{marathonDistanceStepKm:0.1,taperDistanceStepM:50},
     /* générateurs historiques 5 km / semi / marathon (pas encore migrés dans la bibliothèque) */
     recoveryByDistance:[{max:500,v:1},{max:1200,v:1.5},{max:2000,v:2},{max:3000,v:2.5},{max:999999,v:3}],
     minReps:2,
@@ -2831,6 +2832,7 @@ const RULE_META=(()=>{
   'spec10k.recovery.mixedBetweenSets':m('Q_SPEC10K_RECOVERY','physiological'),
   'spec10k.workCap':m('Q_SPEC10K_VOLUME','physiological'),
   'specOther.marathonLongRun':m('Q_SPEC_OTHER','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "findings": ["FND_002"], "lastReview": "2026-10-03", "reviewSummary": "Contexte descriptif marathon uniquement ; ni segments à allure marathon ni plafond en minutes validés par cette étude."}),
+  'specOther.durationAndEquivalence':m('Q_SESSION_MAX_WORK','organizational',{origin:'internal_heuristic',confidence:'low',decision:'modify',lastReview:'2026-10-17',reviewSummary:'Application des plafonds existants au temps réel de travail spécifique. Réduction des répétitions ou des distances ; options comparées en temps de travail. Marathon : volume spécifique identique entre les options et durée totale limitée à 165 min, exemption S1 historique conservée. Affûtage : option distance alignée sur le travail de l’option en minutes.'}),
   'specOther.minReps':m('Q_SPEC_OTHER','physiological'),
   'specOther.recoveryByDistance':m('Q_SPEC_OTHER','physiological'),
   'vo2.band':m("Q_VO2_INTENSITY","physiological",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_017", "FND_018", "FND_020"], "lastReview": "2026-10-03", "reviewSummary": "SRC_013/014 soutiennent conjointement les principes de programmation, mais sont deux parties de la même revue, pas deux confirmations indépendantes. SRC_016 nuance le gain chronique de VO₂max chez les coureurs entraînés. Les bandes numériques par durée et plafonds exacts restent des heuristiques. Confiance modérée pour la prescription Planif, sans validation directe de ses valeurs."}),
@@ -3004,9 +3006,9 @@ function load(){
   loadModeState(CURRENT_MODE);
   activePlan=getJson(STORE.active,null);
   planHistory=getJson(STORE.history,[])||[];
-  const migrationKey='planif-fraction-progression-v1';
+  const migrationKey='planif-specific-limits-v1';
   if(validSavedPlan(activePlan)&&!localStorage.getItem(migrationKey)){
-    const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant progression des fractions'};
+    const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant ajustement des séances spécifiques'};
     localStorage.setItem(STORE.history,JSON.stringify([archived,...planHistory]));
     planHistory=[archived,...planHistory];localStorage.setItem(migrationKey,'saved');
   }
@@ -3549,6 +3551,48 @@ function specVariant(K,rep,v,lab){
   return{rep,fam:'spec.legacy',structure:{type:'intervals',reps:n,distanceM:rep,repDurationMin:repMin,recoveryMin:rec,recoveryType:'trot'},intensity:{type:'race_pace',race:lab,refKmh:v},work:n*repMin,km:n*rep/1000,total:n*repMin+(n-1)*rec,parts:[[n*repMin,v]],rec:(n-1)*rec,recEach:rec};
 }
 
+function specificWorkLimit(v,st,exempt=[]){
+  const zone=loadZone(v,st),key={z2:'s1',z3:'s2',z4:'vo2'}[zone];
+  let limit=key&&!exempt.includes(key)?RULES.safeguards.caps[key]:Infinity;
+  if(v>=RULES.safeguards.above105OfVma*st.vma)limit=Math.min(limit,RULES.safeguards.caps.above105);
+  return limit;
+}
+function specificOptions(K,cfg,v,lab,st,t){
+  const target=Math.min(K/v*60,specificWorkLimit(v,st));
+  const make=rep=>{
+    const rm=rep/1000/v*60,n=Math.floor((target+1e-9)/rm);
+    if(n<RULES.specOther.minReps)return null;
+    return specVariant(n*rep/1000,rep,v,lab);
+  };
+  const order=[...new Set([...byProgress(cfg.repsA,t),...byProgress(cfg.repsB,t)])];
+  let pool=order.map(make).filter(Boolean);
+  if(!pool.length)pool=[1000,800,500,400,200,100].map(make).filter(Boolean);
+  if(!pool.length)pool=[specVariant(target*v/60,target*v/60*1000/RULES.specOther.minReps,v,lab)];
+  const A=pickBest(pool,target);
+  const matching=pool.filter(c=>c.rep!==A.rep&&Math.abs(c.work-A.work)<=TOL(A.work));
+  let B=matching.length?pickBest(matching,A.work):null;
+  if(!B){
+    // Half-distance fractions keep exactly the same work when the normal alternatives cannot match.
+    B=specVariant(A.km,A.rep/2,v,lab);
+  }
+  for(const option of [A,B])option.ruleRefs=['specOther.durationAndEquivalence','specOther.recoveryByDistance','specOther.minReps'];
+  return[A,B];
+}
+function marathonOptions(K,v,st,vol){
+  const ML=RULES.specOther.marathonLongRun,step=RULES.specOther.durationAndEquivalence.marathonDistanceStepKm,n=K>=ML.threeBlocksFromKm?3:2;
+  const easySpeed=rangeMid(efBand('std',st)),between=(n-1)/easySpeed*60;
+  const overhead=Math.max(ML.minOverWork,ML.minEasy+ML.cooldown+between);
+  const limit=Math.min(specificWorkLimit(v,st,['s1']),ML.cap-overhead);
+  const per=Math.floor((Math.min(K,limit*v/60)/n+1e-9)/step)*step;
+  const distance=n*per,work=distance/v*60;
+  const total=Math.min(ML.cap,Math.max(r5(vol*ML.shareOfWeek),work+overhead));
+  const shared={fam:'spec.marathonLong',intensity:{type:'race_pace',race:'marathon',refKmh:v},work,total,parts:[[work,v]],easy:total-work,rec:0,ruleRefs:['specOther.marathonLongRun','specOther.durationAndEquivalence']};
+  return[
+    {...shared,structure:{type:'long_run',easyMin:total-work-ML.cooldown,distanceKm:distance,cooldownMin:ML.cooldown}},
+    {...shared,structure:{type:'long_run',easyMin:total-work-between-ML.cooldown,reps:n,distanceKm:per,easyBetweenKm:1,easyBetweenMin:between/(n-1),cooldownMin:ML.cooldown}}
+  ];
+}
+
 /* Côtes */
 function hillStruct(rep,W,long,st){
   const H=RULES.hills,n=long?clamp(Math.round(W/rep),H.long.n[0],H.long.n[1]):clamp(Math.round(W/rep),H.short.n[0],H.short.n[1]);
@@ -3598,21 +3642,13 @@ function makeSessionCore(fam,W,k,t,st,ctx){
     case'spec':{
       const d=ctx.dist,lab=DIST[d].lab;zone=zoneForSpeed(ctx.v,st);
       if(d===3){
-        const ML=RULES.specOther.marathonLongRun,work=W/ctx.v*60,sl=clamp(r5(ctx.vol*ML.shareOfWeek),r5(work+ML.minOverWork),ML.cap),ef=Math.max(ML.minEasy,r5(sl-work-ML.cooldown));
-        const n=W>=ML.threeBlocksFromKm?3:2,per=Math.round(W/n*2)/2,w2=n*per/ctx.v*60;
-        variants=[
-          {fam:'spec.marathonLong',structure:{type:'long_run',easyMin:ef,distanceKm:W,cooldownMin:ML.cooldown},intensity:{type:'race_pace',race:'marathon',refKmh:ctx.v},work,total:sl,parts:[[work,ctx.v]],easy:sl-work,rec:0},
-          {fam:'spec.marathonLong',structure:{type:'long_run',easyMin:ef,reps:n,distanceKm:per,easyBetweenKm:1},intensity:{type:'race_pace',race:'marathon',refKmh:ctx.v},work:w2,total:sl+6,parts:[[w2,ctx.v]],easy:sl+6-w2,rec:0}
-        ];
-        return{fam,dist:d,zone,variants,work,total:r5(sl),wu:0,cd:0,isLong:true};
+        const variants=marathonOptions(W,ctx.v,st,ctx.vol),work=variants[0].work;
+        return{fam,dist:d,zone,variants,work,total:variants[0].total,wu:0,cd:0,isLong:true};
       }
       if(d===1){const r=generateSession('spec10k',Math.min(W/ctx.v*60,RULES.spec10k.workCap),st,{...ctx,k,t});
         const core=Math.max(...r.map(x=>x.total));
         const[wu,cd]=RULES.organization.warmup.spec;return{fam,dist:d,zone,variants:r,work:r[0].work,gap:0,total:r5(wu+core+cd),wu,cd,libSector:'spec10k'};}
-      const cfg=SPEC[d],Kmin=W/ctx.v*60;
-      const A=pickBest(byProgress(cfg.repsA,t).map(r=>specVariant(W,r,ctx.v,lab)),Kmin);
-      const B=pickBest(byProgress(cfg.repsB.filter(r=>r!==A.rep),t).concat(cfg.repsA.filter(r=>r!==A.rep&&!cfg.repsB.includes(r))).map(r=>specVariant(A.km,r,ctx.v,lab)),A.work);
-      variants=[A,B];break;}
+      variants=specificOptions(W,SPEC[d],ctx.v,lab,st,t);break;}
   }
   const [wu,cd]=RULES.organization.warmup[fam];
   const core=Math.max(...variants.map(x=>x.total));
@@ -4111,9 +4147,12 @@ function raceSpeed(st,pred){const d=st.calDist;return st.calGoal?DIST[d].km/(st.
 function buildTaperWeek(st,pred,vol){
   const d=st.calDist,v=raceSpeed(st,pred),km=DIST[d].km,raceMin=km/v*60,warns=[];
   const rm=1/v*60;
-  const TP=RULES.calendar.taper,RA=TP.reminderA,RB=TP.reminderB,rmB=RB.meters/1000/v*60;
-  const A=cand({sector:'race',fam:'taper',kind:'time',key:'taper:2min',size:'t2',structure:{type:'intervals',reps:RA.reps,durationMin:RA.minutes,recoveryMin:RA.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[RA.reps*RA.minutes,v]],rec:(RA.reps-1)*RA.recovery,recEach:RA.recovery,work:RA.reps*RA.minutes});
-  const Bv=cand({sector:'race',fam:'taper',kind:'dist',key:'taper:1000',size:'d1000',structure:{type:'intervals',reps:RB.reps,distanceM:RB.meters,repDurationMin:rmB,recoveryMin:RB.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[RB.reps*rmB,v]],rec:(RB.reps-1)*RB.recovery,recEach:RB.recovery,work:RB.reps*rmB});
+  const TP=RULES.calendar.taper,RA=TP.reminderA,RB=TP.reminderB;
+  const reminderMinutes=Math.min(RA.reps*RA.minutes,specificWorkLimit(v,st)),aMinutes=reminderMinutes/RA.reps;
+  const stepM=RULES.specOther.durationAndEquivalence.taperDistanceStepM;
+  const bMeters=Math.max(stepM,Math.floor(reminderMinutes/RB.reps*v/60*1000/stepM)*stepM),rmB=bMeters/1000/v*60;
+  const A=cand({sector:'race',fam:'taper',kind:'time',key:'taper:2min',size:'t2',structure:{type:'intervals',reps:RA.reps,durationMin:aMinutes,recoveryMin:RA.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[reminderMinutes,v]],rec:(RA.reps-1)*RA.recovery,recEach:RA.recovery,work:reminderMinutes});
+  const Bv=cand({sector:'race',fam:'taper',kind:'dist',key:'taper:distance',size:'d'+bMeters,structure:{type:'intervals',reps:RB.reps,distanceM:bMeters,repDurationMin:rmB,recoveryMin:RB.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[RB.reps*rmB,v]],rec:(RB.reps-1)*RB.recovery,recEach:RB.recovery,work:RB.reps*rmB});
   const rappel=withLoad({fam:'taper',dist:d,zone:zoneForSpeed(v,st),variants:[A,Bv],work:A.work,gap:0,wu:TP.warmup,cd:TP.cooldown,total:r5(TP.warmup+Math.max(A.total,Bv.total)+TP.cooldown)},st);
   const rbd=emptyBd();rbd.z1=(TP.raceWarmup+TP.raceCooldown)*RULES.load.intensity.easy;rbd[loadZone(v,st)]+=raceMin*loadFactorForSpeed(v,st)*RULES.load.density[0][1];
   const race={type:'race',fam:'race',dist:d,distance:km,targetPace:v,targetTime:raceMin*60,goal:!!st.calGoal,zone:zoneForSpeed(v,st),
@@ -4268,7 +4307,7 @@ function presentVariantRaw(v){
   const sec=f.split('.')[0];
   if(f==='spec.legacy'){const d=S.distanceM>=1000?`${fmtKm(S.distanceM/1000)} km`:`${S.distanceM} m`;
     return{text:`${S.reps} × ${d}, récup ${fmtMin(S.recoveryMin)} trot`,chips:[`Allure ${I.race}`,kmh(I.refKmh,I.refKmh),`${fmtTime(S.repDurationMin*60)} par fraction`]};}
-  if(f==='spec.marathonLong')return{text:S.reps?`Sortie longue : ${S.easyMin}' EF puis ${S.reps} × ${fmtKm(S.distanceKm)} km à allure marathon, ${S.easyBetweenKm} km EF entre`
+  if(f==='spec.marathonLong')return{text:S.reps?`Sortie longue : ${S.easyMin}' EF puis ${S.reps} × ${fmtKm(S.distanceKm)} km à allure marathon, ${S.easyBetweenKm} km EF entre, ${fmtRec(S.cooldownMin)} au calme`
       :`Sortie longue : ${S.easyMin}' EF puis ${fmtKm(S.distanceKm)} km à allure marathon, ${fmtRec(S.cooldownMin)} au calme`,chips:['Allure marathon',kmh(I.refKmh,I.refKmh)]};
   if(sec==='fartlek'){
     if(S.type==='fartlek_structured')return{text:S.reps+' × '+fmtMin(S.durationMin)+' d’accélération au ressenti, récup '+fmtRec(S.recoveryMin)+' en footing facile',chips:['Sans cible d’allure','Ressenti : '+I.target]};
@@ -4731,7 +4770,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.09';
+const APP_VERSION='2026.10.17.10';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -5443,7 +5482,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.09"></script>
+<script src="./planif-strava.js?v=2026.10.17.10"></script>
 </body>
 </html>
 
