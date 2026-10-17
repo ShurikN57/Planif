@@ -1123,7 +1123,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.03"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.17.04"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -4634,7 +4634,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.03';
+const APP_VERSION='2026.10.17.04';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4650,6 +4650,7 @@ function panelArt(kind){
   const open='<svg class="panelArt" viewBox="0 0 300 190" preserveAspectRatio="xMaxYMin meet" aria-hidden="true" focusable="false">';
   if(kind==='plan')return open+'<path d="M138 0h162v190H100c40-30-10-65 12-99s50-44 26-91" fill="#DDECDD"/><path d="m135 171 29-40 34 12 26-39 55-5" fill="none" stroke="#A6A6D2" stroke-width="5" stroke-dasharray="7 8" stroke-linecap="round"/><g transform="rotate(9 212 68)"><rect x="147" y="19" width="116" height="98" rx="13" fill="#F4F1FA" stroke="#A3A0D0" stroke-width="3"/><path d="M147 47h116" stroke="#A3A0D0" stroke-width="3"/><path d="M173 10v19m62-19v19" stroke="#8885BD" stroke-width="6" stroke-linecap="round"/><g fill="#C7C3E6"><rect x="162" y="59" width="20" height="15" rx="4"/><rect x="191" y="59" width="20" height="15" rx="4"/><rect x="220" y="59" width="20" height="15" rx="4"/><rect x="162" y="84" width="20" height="15" rx="4"/></g><path d="m194 91 6 6 13-16" fill="none" stroke="#7CA88F" stroke-width="5" stroke-linecap="round"/></g></svg>';
   if(kind==='science')return open+'<path d="M120 0h180v190h-98c-39-32-91-31-72-76s-35-48-10-114" fill="#E4EBF4"/><circle cx="244" cy="55" r="48" fill="#D9EBDD"/><g transform="rotate(-9 203 98)"><rect x="138" y="30" width="105" height="135" rx="9" fill="#E3DFF1"/><rect x="154" y="17" width="108" height="133" rx="9" fill="#FAF8FC" stroke="#AAA5CD" stroke-width="3"/><path d="M173 39h64m-64 13h48" stroke="#B4AFD4" stroke-width="4" stroke-linecap="round"/><path d="M175 112V76m0 36h64" fill="none" stroke="#B8B5D2" stroke-width="2"/><path d="m184 99 15-10 14 5 17-23" fill="none" stroke="#8CAF9E" stroke-width="4" stroke-linecap="round"/><path d="M173 130h62" stroke="#D5CDAF" stroke-width="4" stroke-linecap="round"/></g></svg>';
+  if(kind==='calculator')return open+'<path d="M124 0h176v190H206c-47-35-61-73-99-89s34-57 17-101" fill="#E8E4F3"/><path d="M234 0h66v127c-34-7-53-39-80-40s-4-54 14-87" fill="#DFEDDF"/><g stroke="#AAA3CF" stroke-linecap="round" stroke-linejoin="round"><rect x="114" y="14" width="66" height="90" rx="9" fill="#F8F6FC" stroke-width="4"/><rect x="125" y="25" width="44" height="19" rx="3" fill="#DFEDDF" stroke-width="2"/><path d="M150 35h10" fill="none" stroke="#9087BB" stroke-width="3"/><g fill="#C7C3E6" stroke="none"><rect x="125" y="53" width="10" height="10" rx="2"/><rect x="142" y="53" width="10" height="10" rx="2"/><rect x="159" y="53" width="10" height="10" rx="2"/><rect x="125" y="69" width="10" height="10" rx="2"/><rect x="142" y="69" width="10" height="10" rx="2"/><rect x="125" y="85" width="10" height="10" rx="2"/><rect x="142" y="85" width="10" height="10" rx="2"/><rect x="159" y="69" width="10" height="26" rx="2" fill="#BDD6C6"/></g></g><path d="m225 127 38 0m-54 14h62m-35 14h36" stroke="#BDD6C6" stroke-width="4" stroke-linecap="round"/></svg>';
   return open+'<path d="M124 0h176v190H206c-47-35-61-73-99-89s34-57 17-101" fill="#E8E4F3"/><path d="M234 0h66v127c-34-7-53-39-80-40s-4-54 14-87" fill="#DFEDDF"/><g transform="translate(-35 -12)" fill="none" stroke="#AAA3CF" stroke-linecap="round" stroke-linejoin="round"><circle cx="182" cy="70" r="35" fill="#F8F6FC" stroke-width="4"/><path d="M175 21h14m-7 0v14m25 8 8-8m-3-3 6 6" stroke-width="5"/><path d="M182 70V49m0 21 18 11" stroke="#9087BB" stroke-width="4"/></g><path d="m225 127 38 0m-54 14h62m-35 14h36" stroke="#BDD6C6" stroke-width="4" stroke-linecap="round"/></svg>';
 }
 function homeArt(kind){
@@ -4751,7 +4752,7 @@ function conversionResult(mode,raw){
 }
 let conversionMode='paceToSpeed';
 const conversionInputs={paceToSpeed:'',speedToPace:''};
-function conversionHtml(){return `<div class="card conversionCard panelCard chronoPanel">${panelArt('chrono')}<h2>Calculatrice d’allure</h2><label class="sf"><span>Conversion</span><select data-conversion-mode><option value="paceToSpeed"${conversionMode==='paceToSpeed'?' selected':''}>min/km → km/h</option><option value="speedToPace"${conversionMode==='speedToPace'?' selected':''}>km/h → min/km</option></select></label><div class="conversionGrid"><label class="sf"><span data-conversion-label></span><input data-conversion-input autocomplete="off"></label><div class="conversionResult"><span>Résultat</span><strong data-conversion-output role="status" aria-live="polite">—</strong></div></div></div>`;}
+function conversionHtml(){return `<div class="card conversionCard panelCard chronoPanel">${panelArt('calculator')}<h2>Calculatrice d’allure</h2><label class="sf"><span>Conversion</span><select data-conversion-mode><option value="paceToSpeed"${conversionMode==='paceToSpeed'?' selected':''}>min/km → km/h</option><option value="speedToPace"${conversionMode==='speedToPace'?' selected':''}>km/h → min/km</option></select></label><div class="conversionGrid"><label class="sf"><span data-conversion-label></span><input data-conversion-input autocomplete="off"></label><div class="conversionResult"><span>Résultat</span><strong data-conversion-output role="status" aria-live="polite">—</strong></div></div></div>`;}
 function updateConversionUi(){
   const root=$('scr-ref'),input=root.querySelector('[data-conversion-input]');if(!input)return;
   const pace=conversionMode==='paceToSpeed';
@@ -5242,7 +5243,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.03"></script>
+<script src="./planif-strava.js?v=2026.10.17.04"></script>
 </body>
 </html>
 
