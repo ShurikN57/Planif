@@ -1282,7 +1282,8 @@ window.PlanifStravaContext={
   redraw(){setBuilt=false;renderApp();},
   settings(){appSession=null;appLib=false;appTab='set';setBuilt=false;renderApp();}
 };
-const stravaScript=document.createElement('script');stravaScript.src='./planif-strava.js?v='+APP_VERSION;document.body.append(stravaScript);
+const loadStrava=()=>{const stravaScript=document.createElement('script');stravaScript.src='./planif-strava.js?v='+APP_VERSION;document.body.append(stravaScript);};
+if(document.readyState==='complete')loadStrava();else window.addEventListener('load',loadStrava,{once:true});
 })();
 
 if ('serviceWorker' in navigator) {

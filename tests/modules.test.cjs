@@ -14,6 +14,7 @@ const positions=['planif-version.js','planif-rules.js','planif-engine.js','plani
 assert(positions.every((v,i)=>v>=0&&(!i||v>positions[i-1])));
 assert(sw.includes(`./planif-studies.json?v=${version}`));
 assert(sw.includes(`./planif-strava.js?v=${version}`));
+assert.equal([...html.matchAll(/<script defer src="https:\/\/www\.gstatic\.com\/firebasejs\//g)].length,2,'Firebase must not block the planning interface');
 // Missing scientific data must show a usable retry screen without opening plan storage.
 (async()=>{
  const nodes={appShell:{innerHTML:''},planifRetry:{addEventListener:(name,fn)=>{assert.equal(name,'click');nodes.retry=fn;}}};
