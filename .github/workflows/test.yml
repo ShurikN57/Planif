@@ -12,25 +12,9 @@ jobs:
         with:
           node-version: '20'
       - name: Check JavaScript syntax
-        run: |
-          node --check planif-strava.js
-          node --check planif-calendar-drag.js
-          node --check sw.js
-          node -e "const fs=require('fs'),vm=require('vm'); const html=fs.readFileSync('index.html','utf8'); for(const [,body] of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) if(body.trim())new vm.Script(body);"
+        run: node scripts/check-syntax.cjs
       - name: Run tests
         run: TZ=Europe/Paris node --test tests/*.test.cjs
       - name: Verify live files
         if: github.event_name == 'push'
-        run: |
-          for attempt in {1..30}; do
-            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live.html || true
-            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/planif-strava.js?v=2026.10.18.01&verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-strava.js || true
-            curl -fsSL -H 'Cache-Control: no-cache' "https://shurikn57.github.io/Planif/sw.js?verify=${GITHUB_SHA}-${attempt}" -o /tmp/planif-live-sw.js || true
-            if cmp -s index.html /tmp/planif-live.html && cmp -s planif-strava.js /tmp/planif-live-strava.js && cmp -s sw.js /tmp/planif-live-sw.js; then
-              echo "Live index.html, planif-strava.js and sw.js match main."
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "Live files did not match main." >&2
-          exit 1
+        run: node scripts/verify-live.cjs

@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
 const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
-const source=html.match(/<script>\s*(\/\* COROS :[\s\S]*?)<\/script>/)[1];
+const source=fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const issuer='https://mcpeu.coros.com';
 const storage=()=>{const data=new Map();return{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),data};};
 function env({url='https://shurikn57.github.io/Planif/',local=storage(),session=storage(),online=true,responder}={}){

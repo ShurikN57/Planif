@@ -1,0 +1,1529 @@
+{
+  "SOURCES": [
+    {
+      "id": "SRC_001",
+      "title": "The Training Characteristics of World-Class Distance Runners: An Integration of Scientific Literature and Results-Proven Practice",
+      "authors": [
+        "Thomas Haugen",
+        "Øyvind Sandbakk",
+        "Stephen Seiler",
+        "Espen Tønnessen"
+      ],
+      "year": 2022,
+      "journal": "Sports Medicine - Open",
+      "doi": "10.1186/s40798-022-00438-7",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/35362850/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Coureurs de fond élite / niveau mondial",
+        "n": null
+      },
+      "result": "Les coureurs de fond de niveau mondial réalisent la grande majorité de leur volume à basse intensité (≥ 80 % dans cette revue), avec davantage de travail à allure spécifique à l’approche de la compétition.",
+      "limitations": "Synthèse mêlant littérature scientifique et pratiques observées chez des athlètes d’élite ; transposition prudente aux coureurs récréatifs.",
+      "themes": [
+        "Distribution",
+        "Périodisation",
+        "Volume",
+        "Taper"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_002",
+      "title": "The training intensity distribution among well-trained and elite endurance athletes",
+      "authors": [
+        "Thomas L. Stöggl",
+        "Billy Sperlich"
+      ],
+      "year": 2015,
+      "journal": "Frontiers in Physiology",
+      "doi": "10.3389/fphys.2015.00295",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/26578968/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Athlètes d’endurance entraînés à élite",
+        "n": null
+      },
+      "result": "La majorité des observations décrivent une distribution pyramidale, avec beaucoup de basse intensité. Les auteurs discutent aussi l’intérêt d’une distribution polarisée selon les phases et les populations.",
+      "limitations": "Les données disponibles sont largement rétrospectives et hétérogènes entre sports, méthodes de zonage et niveaux.",
+      "themes": [
+        "Distribution",
+        "LT1",
+        "LT2",
+        "Polarisation"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_003",
+      "title": "What is best practice for training intensity and duration distribution in endurance athletes?",
+      "authors": [
+        "Stephen Seiler"
+      ],
+      "year": 2010,
+      "journal": "International Journal of Sports Physiology and Performance",
+      "doi": "10.1123/ijspp.5.3.276",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/20861519/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Athlètes d’endurance entraînés / élite",
+        "n": null
+      },
+      "result": "Les observations convergent vers une forte prédominance du travail à basse intensité, associée à une quantité plus limitée de séances très intenses.",
+      "limitations": "Article de synthèse fondé en grande partie sur des données descriptives chez des athlètes très entraînés.",
+      "themes": [
+        "Distribution",
+        "Basse intensité",
+        "HIIT"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_004",
+      "title": "Training-intensity Distribution on Middle- and Long-distance Runners: A Systematic Review",
+      "authors": [
+        "Yuri Campos",
+        "Arturo Casado",
+        "João Guilherme Vieira",
+        "Miller Guimarães",
+        "Leandro Sant'Ana",
+        "Luis Leitão",
+        "Sandro Fernandes da Silva",
+        "Paulo Henrique Silva Marques de Azevedo",
+        "Jeferson Vianna",
+        "Raúl Domínguez"
+      ],
+      "year": 2022,
+      "journal": "International Journal of Sports Medicine",
+      "doi": "10.1055/a-1559-3623",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34749417/",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs de demi-fond et fond",
+        "n": null
+      },
+      "result": "La revue de 20 articles rapporte de meilleurs résultats avec des modèles comportant un volume élevé à basse intensité ; elle propose ≥ 70 % à basse intensité et ≤ 30 % cumulé au seuil et en haute intensité comme cadre général.",
+      "limitations": "Les méthodes de quantification de l’intensité (FC, vitesse, lactate, RPE, allure de course) peuvent produire des distributions différentes.",
+      "themes": [
+        "Distribution",
+        "Basse intensité",
+        "Seuil",
+        "HIIT"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_005",
+      "title": "Impact of training intensity distribution on performance in endurance athletes",
+      "authors": [
+        "Jonathan Esteve-Lanao",
+        "Carl Foster",
+        "Stephen Seiler",
+        "Alejandro Lucia"
+      ],
+      "year": 2007,
+      "journal": "Journal of Strength and Conditioning Research",
+      "doi": "10.1519/R-19725.1",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/17685689/",
+      "studyType": "Essai randomisé",
+      "population": {
+        "level": "Coureurs d’endurance sub-élite",
+        "n": 12
+      },
+      "result": "Sur 5 mois, le groupe réalisant davantage de volume sous le premier seuil a davantage amélioré une course simulée de 10,4 km que le groupe consacrant davantage de volume entre les seuils, avec une quantité de haute intensité similaire.",
+      "limitations": "Petit effectif (12 coureurs) et population spécifique ; le résultat ne fixe pas à lui seul une distribution optimale universelle.",
+      "themes": [
+        "Distribution",
+        "LT1",
+        "Seuil",
+        "Performance"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_006",
+      "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis",
+      "authors": [
+        "Z. Wang",
+        "Y. Wang",
+        "W. Gao",
+        "Y. Zhong"
+      ],
+      "year": 2023,
+      "journal": "PLOS ONE",
+      "doi": "10.1371/journal.pone.0282838",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/37163550/",
+      "studyType": "Méta-analyse",
+      "population": {
+        "level": "Athlètes d’endurance",
+        "n": null
+      },
+      "result": "Dans 14 études, le taper améliore la performance en contre-la-montre. Les analyses soutiennent notamment une réduction du volume de 41–60 % avec maintien de l’intensité et de la fréquence, sur une durée ≤ 21 jours.",
+      "limitations": "Sports, niveaux et protocoles de taper hétérogènes ; les sous-groupes ne décrivent pas une prescription unique pour chaque distance.",
+      "themes": [
+        "Taper",
+        "Volume",
+        "Intensité",
+        "Compétition"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_007",
+      "title": "The Relationship Between Lactate and Ventilatory Thresholds in Runners: Validity and Reliability of Exercise Test Performance Parameters",
+      "authors": [
+        "Víctor Cerezuela-Espejo",
+        "Javier Courel-Ibáñez",
+        "Ricardo Morán-Navarro",
+        "Alejandro Martínez-Cava",
+        "Jesús G Pallarés"
+      ],
+      "year": 2018,
+      "journal": "Frontiers in Physiology",
+      "doi": "10.3389/fphys.2018.01320",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30319439/",
+      "studyType": "Étude méthodologique",
+      "population": {
+        "level": "Coureurs et triathlètes entraînés",
+        "n": 22
+      },
+      "result": "Cette étude compare seuils ventilatoires, seuils lactate et paramètres de vitesse maximale. Elle montre que les différents repères de seuil sont proches sans être parfaitement interchangeables, et que la vitesse maximale aérobie et la vitesse terminale d’un test ne doivent pas être confondues.",
+      "limitations": "Petit échantillon de 22 athlètes entraînés ; l’étude sert surtout à la validité méthodologique des repères plutôt qu’à établir des valeurs normatives universelles.",
+      "themes": [
+        "LT1",
+        "LT2",
+        "VMA",
+        "Tests",
+        "Méthodologie"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_008",
+      "title": "Towards Accurate Reference Values for Heart Rate and Speed Zones by Aerobic Fitness and Sex in Long-Distance Runners",
+      "authors": [
+        "Jonathan Esteve-Lanao",
+        "Sergio Sellés-Pérez",
+        "Héctor Arévalo-Chico",
+        "Roberto Cejuela"
+      ],
+      "year": 2026,
+      "journal": "Sports",
+      "doi": "10.3390/sports14010029",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41590971/",
+      "studyType": "Étude transversale",
+      "population": {
+        "level": "Coureurs de fond entraînés",
+        "n": 1411
+      },
+      "result": "Chez 1 411 coureurs, VT1 et VT2 surviennent en moyenne à 73,9 ± 5,5 % et 87,6 ± 3,9 % de la vitesse au VO₂peak. Les valeurs varient selon le sexe et le niveau, ce qui en fait surtout des repères de population et non des seuils individuels fixes.",
+      "limitations": "Étude transversale sur tapis ; la vitesse au VO₂peak est proche de la VMA pratique sans être strictement interchangeable avec toutes les méthodes de terrain.",
+      "themes": [
+        "LT1",
+        "LT2",
+        "VMA",
+        "Sexe",
+        "Niveau"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_009",
+      "title": "The accuracy of fixed intensity anchors to estimate lactate thresholds in recreational runners",
+      "authors": [
+        "Olli-Pekka Nuuttila",
+        "Piia Kaikkonen",
+        "Harri Sievänen",
+        "Tommi Vasankari",
+        "Heikki Kyröläinen"
+      ],
+      "year": 2025,
+      "journal": "European Journal of Applied Physiology",
+      "doi": "10.1007/s00421-025-05748-8",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40088270/",
+      "studyType": "Étude transversale",
+      "population": {
+        "level": "Coureurs loisirs",
+        "n": 165
+      },
+      "result": "Les pourcentages fixes de FC, VO₂ ou vitesse estiment imparfaitement LT1 et LT2. Pour la vitesse, l’erreur absolue moyenne est d’environ 0,6–0,8 km/h pour LT1 et 0,4–0,8 km/h pour LT2.",
+      "limitations": "Coureurs loisirs et test incrémental sur tapis ; les résultats portent sur la précision d’ancres fixes et non sur une prescription d’entraînement complète.",
+      "themes": [
+        "LT1",
+        "LT2",
+        "Individualisation",
+        "Tests"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_010",
+      "title": "Differences in the ventilatory thresholds in treadmill according to training status in 971 males and 301 females: a cross-sectional study",
+      "authors": [
+        "José Antonio Benítez-Muñoz",
+        "Pedro J Benito",
+        "Isabel Guisado-Cuadrado",
+        "Rocío Cupeiro",
+        "Ana Belén Peinado"
+      ],
+      "year": 2025,
+      "journal": "European Journal of Applied Physiology",
+      "doi": "10.1007/s00421-024-05622-z",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/39316126/",
+      "studyType": "Étude transversale",
+      "population": {
+        "level": "Adultes classés par niveau d’entraînement",
+        "n": null
+      },
+      "result": "Les pourcentages de VO₂max, FCmax et vitesse maximale auxquels surviennent VT1 et VT2 augmentent avec le niveau d’entraînement. Des pourcentages fixes du maximum risquent donc de mal aligner l’intensité entre individus de niveaux différents.",
+      "limitations": "La fiche PubMed est incohérente sur l’effectif masculin : le titre indique 971 hommes tandis que l’abstract en indique 791. L’effectif exact est donc volontairement laissé non figé dans Planif.",
+      "themes": [
+        "LT1",
+        "LT2",
+        "Niveau",
+        "Individualisation",
+        "Tests"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_011",
+      "title": "Training Periodization, Methods, Intensity Distribution, and Volume in Highly Trained and Elite Distance Runners: A Systematic Review",
+      "authors": [
+        "Arturo Casado",
+        "Fernando González-Mohíno",
+        "José María González-Ravé",
+        "Carl Foster"
+      ],
+      "year": 2022,
+      "journal": "International Journal of Sports Physiology and Performance",
+      "doi": "10.1123/ijspp.2021-0435",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/35418513/",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs de demi-fond et fond très entraînés / élite",
+        "n": null
+      },
+      "result": "Les 10 études incluses décrivent généralement une distribution pyramidale, avec alternance jours durs / jours faciles et davantage de polarisation en période compétitive. Les séances à vLT2 et au-dessus de LT2 sont toutes deux utilisées dans la programmation.",
+      "limitations": "Population très entraînée / élite et données principalement descriptives ; la revue décrit des pratiques efficaces sans fixer une recette universelle.",
+      "themes": [
+        "Périodisation",
+        "Distribution",
+        "Volume",
+        "LT2",
+        "Organisation"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_012",
+      "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners",
+      "authors": [
+        "Thomas Haugen",
+        "Øyvind Sandbakk",
+        "Eystein Enoksen",
+        "Stephen Seiler",
+        "Espen Tønnessen"
+      ],
+      "year": 2021,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-021-01481-2",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34021488/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Coureurs 800–1500 m de niveau mondial",
+        "n": null
+      },
+      "result": "La revue décrit la périodisation, les séances aérobies, le fartlek, les intervalles et le travail neuromusculaire de coureurs de 800–1500 m de niveau mondial. Elle sert dans Planif comme référence complémentaire pour certaines méthodes, pas comme base normative pour le 5 km–marathon.",
+      "limitations": "Population et distances plus courtes que le cœur de cible de Planif ; application indirecte pour les coureurs de fond plus longs.",
+      "themes": [
+        "Fartlek",
+        "Périodisation",
+        "VO₂max",
+        "Côtes",
+        "Demi-fond"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_013",
+      "title": "High-Intensity Interval Training, Solutions to the Programming Puzzle: Part I: Cardiopulmonary Emphasis",
+      "authors": [
+        "Martin Buchheit",
+        "Paul B Laursen"
+      ],
+      "year": 2013,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-013-0029-x",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23539308/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Athlètes d’endurance et sports intermittents",
+        "n": null
+      },
+      "result": "Revue de référence sur la construction du HIIT à visée cardiorespiratoire. Elle relie durée et intensité des fractions, récupération et temps accumulé à haute consommation d’oxygène, avec l’objectif de passer plusieurs minutes à forte sollicitation aérobie.",
+      "limitations": "Revue multi-sports et centrée sur les réponses physiologiques aiguës ; elle ne valide pas à elle seule chaque pourcentage ou récupération exact utilisé par Planif.",
+      "themes": [
+        "VO₂max",
+        "HIIT",
+        "Intervalles",
+        "Récupération"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_014",
+      "title": "High-Intensity Interval Training, Solutions to the Programming Puzzle: Part II: Anaerobic Energy, Neuromuscular Load and Practical Applications",
+      "authors": [
+        "Martin Buchheit",
+        "Paul B Laursen"
+      ],
+      "year": 2013,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-013-0066-5",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23832851/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Athlètes d’endurance et sports intermittents",
+        "n": null
+      },
+      "result": "Complète la partie I en détaillant la contribution anaérobie, la charge neuromusculaire, les manipulations travail-récupération et la programmation pratique des séances HIIT, notamment des répétitions courtes et des intervalles de 2–4 min.",
+      "limitations": "Nombreux exemples hors course de fond et part importante d’application pratique ; utile pour les principes de programmation, moins pour fixer des valeurs universelles.",
+      "themes": [
+        "VO₂max",
+        "HIIT",
+        "Intervalles",
+        "Récupération",
+        "Neuromusculaire"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_015",
+      "title": "The Moderating Role of Recovery Durations in High-Intensity Interval-Training Protocols",
+      "authors": [
+        "Patrick P J M Schoenmakers",
+        "Florentina J Hettinga",
+        "Kate E Reed"
+      ],
+      "year": 2019,
+      "journal": "International Journal of Sports Physiology and Performance",
+      "doi": "10.1123/ijspp.2018-0876",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31146621/",
+      "studyType": "Revue",
+      "population": {
+        "level": "HIIT : course, cyclisme et sports intermittents",
+        "n": null
+      },
+      "result": "La durée de récupération module la charge externe et parfois le stimulus interne. Des récupérations plus longues permettent généralement de soutenir davantage la puissance ou la vitesse ; en intervalles aérobies, une récupération trop courte peut dégrader la séance, mais les données longitudinales restent limitées.",
+      "limitations": "Peu d’études isolent uniquement la durée de récupération, surtout sur le long terme ; ne fournit pas un ratio unique optimal pour toutes les séances.",
+      "themes": [
+        "Récupération",
+        "HIIT",
+        "VO₂max",
+        "Intervalles"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_016",
+      "title": "The dose-response relationship between interval-training and VO₂max in well-trained endurance runners: A systematic review",
+      "authors": [
+        "Arran Parmar",
+        "Thomas W Jones",
+        "Philip R Hayes"
+      ],
+      "year": 2021,
+      "journal": "Journal of Sports Sciences",
+      "doi": "10.1080/02640414.2021.1876313",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33605843/",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs d’endurance bien entraînés",
+        "n": null
+      },
+      "result": "Sept études ont été retenues. L’amélioration de VO₂max après entraînement intermittent est hétérogène, mais la charge de séance d’intervalles est associée à l’évolution de VO₂max, ce qui soutient une logique de dosage et de périodisation plutôt qu’un format unique.",
+      "limitations": "Seulement sept études et résultats hétérogènes ; six études ne rapportent pas d’amélioration significative de VO₂max. Ne permet pas de déduire une dose optimale universelle.",
+      "themes": [
+        "VO₂max",
+        "Intervalles",
+        "Dose-réponse",
+        "Volume",
+        "Périodisation"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_017",
+      "title": "Effects of different uphill interval-training programs on running economy and performance",
+      "authors": [
+        "Kyle R Barnes",
+        "Will G Hopkins",
+        "Michael R McGuigan",
+        "Andrew E Kilding"
+      ],
+      "year": 2013,
+      "journal": "International Journal of Sports Physiology and Performance",
+      "doi": "10.1123/ijspp.8.6.639",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23538293/",
+      "studyType": "Essai randomisé",
+      "population": {
+        "level": "Coureurs de fond bien entraînés",
+        "n": 20
+      },
+      "result": "Après 6 semaines de différents entraînements en côte, la performance sur 5 km s’est améliorée en moyenne d’environ 2 % sans protocole clairement optimal. Les intensités les plus élevées favorisaient davantage l’économie de course et plusieurs paramètres neuromusculaires.",
+      "limitations": "Petit effectif réparti sur cinq protocoles et absence d’un format clairement supérieur ; l’étude soutient l’intérêt des côtes mais pas précisément le format Planif de 10–15 s.",
+      "themes": [
+        "Côtes",
+        "Économie de course",
+        "Neuromusculaire",
+        "5 km"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_018",
+      "title": "Does Lactate-Guided Threshold Interval Training within a High-Volume Low-Intensity Approach Represent the \"Next Step\" in the Evolution of Distance Running Training?",
+      "authors": [
+        "Arturo Casado",
+        "Carl Foster",
+        "Marius Bakken",
+        "Leif Inge Tjelta"
+      ],
+      "year": 2023,
+      "journal": "International Journal of Environmental Research and Public Health",
+      "doi": "10.3390/ijerph20053782",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/36900796/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Coureurs de demi-fond et fond, avec exemples de niveau mondial",
+        "n": null
+      },
+      "result": "Décrit un modèle de séances de seuil par intervalles guidées par le lactate au sein d’un volume élevé de basse intensité. L’intensité interne est généralement contrôlée autour de 2 à 4,5 mmol/L afin d’accumuler du travail à vitesse élevée tout en limitant la fatigue.",
+      "limitations": "Revue descriptive et conceptuelle, avec des exemples issus de pratiques d’élite ; ne démontre pas qu’un taux de lactate, une allure ou une récupération précise soit optimal pour tous les coureurs.",
+      "themes": [
+        "LT2",
+        "Seuil",
+        "Intervalles",
+        "Lactate",
+        "Distribution"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_019",
+      "title": "Interval training for performance: a scientific and empirical practice. Special recommendations for middle- and long-distance running. Part I: aerobic interval training",
+      "authors": [
+        "Véronique L Billat"
+      ],
+      "year": 2001,
+      "journal": "Sports Medicine",
+      "doi": "10.2165/00007256-200131010-00002",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/11219499/",
+      "studyType": "Revue",
+      "population": {
+        "level": "Coureurs de demi-fond et fond",
+        "n": null
+      },
+      "result": "Revue historique et physiologique de l’entraînement intermittent aérobie. Elle traite explicitement du choix de l’intensité, de la durée de travail et des périodes de récupération, depuis les vitesses proches du maximal lactate steady state jusqu’aux vitesses maximales.",
+      "limitations": "Publication ancienne et essentiellement de synthèse ; elle fournit des principes de programmation mais ne valide pas les marges chiffrées exactes de Planif.",
+      "themes": [
+        "LT2",
+        "Intervalles",
+        "Récupération",
+        "VO₂max",
+        "Allure"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_020",
+      "title": "Effect of training on lactate/ventilatory thresholds: a meta-analysis",
+      "authors": [
+        "B R Londeree"
+      ],
+      "year": 1997,
+      "journal": "Medicine & Science in Sports & Exercise",
+      "doi": "10.1097/00005768-199706000-00016",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/9219214/",
+      "studyType": "Méta-analyse",
+      "population": {
+        "level": "Sujets sédentaires et entraînés",
+        "n": null
+      },
+      "result": "Méta-analyse de 85 groupes issus de 34 études. L’entraînement améliore les seuils lactate/ventilatoires, avec des gains nets chez les sujets sédentaires ; chez les sujets déjà entraînés, les réponses sont plus faibles et tendent à nécessiter une intensité plus élevée.",
+      "limitations": "Population hétérogène et littérature ancienne ; ne permet pas de fixer une marge précise au-dessus de LT1 ou LT2 chez un coureur donné.",
+      "themes": [
+        "LT1",
+        "LT2",
+        "Seuil",
+        "Intensité",
+        "Adaptation"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_021",
+      "title": "Training variability and threshold density: a conceptual comparison of East African and Norwegian endurance training systems",
+      "authors": [
+        "Gerasimos V Grivas",
+        "Walaa Jumah Alkasasbeh",
+        "Ioannis Trigonis",
+        "Konstantinos Karakatsanis",
+        "Adam Tawfiq Amawi"
+      ],
+      "year": 2026,
+      "journal": "Frontiers in Physiology",
+      "doi": "10.3389/fphys.2026.1878492",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42389749/",
+      "studyType": "Revue narrative",
+      "population": {
+        "level": "Systèmes d’entraînement de coureurs de fond de niveau mondial",
+        "n": null
+      },
+      "result": "Compare un modèle est-africain plus variable, collectif et souvent piloté au ressenti avec un modèle norvégien plus structuré et guidé par le lactate. Le fartlek y est décrit comme une pratique à allure variable, adaptable au terrain et à régulation interne.",
+      "limitations": "Revue narrative et comparaison conceptuelle, non essai contrôlé ; elle soutient le principe d’un fartlek flexible mais ne démontre pas qu’un volume précis, comme 8–24 min, soit optimal.",
+      "themes": [
+        "Fartlek",
+        "LT2",
+        "Périodisation",
+        "Distribution",
+        "RPE"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_022",
+      "title": "Polarized vs pyramidal training intensity distribution in recreational marathoners: A randomized controlled study",
+      "authors": [
+        "Jonathan Esteve-Lanao",
+        "Arturo Casado",
+        "Héctor Arévalo-Chico",
+        "Sergio Sellés-Pérez",
+        "Roberto Cejuela"
+      ],
+      "year": 2026,
+      "journal": "International Journal of Sports Science & Coaching",
+      "doi": "10.1177/17479541261468168",
+      "url": "https://journals.sagepub.com/doi/10.1177/17479541261468168",
+      "studyType": "Essai randomisé",
+      "population": {
+        "level": "Coureurs récréatifs ; 16 semaines, charge hebdomadaire appariée",
+        "n": 20
+      },
+      "result": "POL (82/8/10 % en trois zones) et PYR (75/22/3 %) : marathon comparable, 3 h 45 contre 3 h 46 (p = 0,23), après un semi à mi-parcours. PYR améliore davantage l’économie de course ; POL limite davantage le ralentissement en seconde moitié du marathon.",
+      "limitations": "Petit échantillon et niveau proche de 3 h 45. Résumé éditeur vérifié ; texte intégral non accessible. Auteurs en partie communs avec SRC_008. Absence de différence significative ne prouve pas une équivalence.",
+      "themes": [
+        "Marathon",
+        "Distribution",
+        "Économie de course",
+        "Spécifique"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_023",
+      "title": "Quantitative Analysis of 92 12-Week Sub-elite Marathon Training Plans",
+      "authors": [
+        "Melanie Knopp",
+        "Daniel Appelhans",
+        "Martin Schönfelder",
+        "Stephen Seiler",
+        "Henning Wackerhage"
+      ],
+      "year": 2024,
+      "journal": "Sports Medicine - Open",
+      "doi": "10.1186/s40798-024-00717-5",
+      "url": "https://link.springer.com/article/10.1186/s40798-024-00717-5",
+      "studyType": "Analyse descriptive de plans",
+      "population": {
+        "level": "92 plans marathon publics ; pics <65, 65–90 ou >90 km/semaine ; aucune cohorte de coureurs suivie",
+        "n": 92
+      },
+      "result": "Analyse des 12 dernières semaines : distribution pyramidale en cinq zones, 13,2/65,6/15,1/3,0/3,0 % du kilométrage. Sortie longue moyenne au pic autour de 30–32 km ; pic 3,6–4,4 semaines avant la course. Réduction moyenne hebdomadaire d’affûtage de 22–31 %, puis 46–54 % la dernière semaine par rapport à la précédente.",
+      "limitations": "Pratiques prescrites, sans mesure de leur efficacité. Cinq zones et proportions en distance : ne pas les assimiler aux trois zones physiologiques ni au temps de qualité Planif. 30–32 km est une moyenne descriptive, pas un plafond validé.",
+      "themes": [
+        "Marathon",
+        "Périodisation",
+        "Taper",
+        "Structure de bloc",
+        "Sortie longue"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_024",
+      "title": "Does polarized training improve performance in recreational runners?",
+      "authors": [
+        "Iker Muñoz",
+        "Stephen Seiler",
+        "Javier Bautista",
+        "Javier España",
+        "Eneko Larumbe",
+        "Jonathan Esteve-Lanao"
+      ],
+      "year": 2014,
+      "journal": "International Journal of Sports Physiology and Performance",
+      "doi": "10.1123/ijspp.2012-0350",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23752040/",
+      "studyType": "Essai randomisé",
+      "population": {
+        "level": "Coureurs récréatifs ; intervention de 10 semaines",
+        "n": 30
+      },
+      "result": "Le temps sur 10 km progresse de 5,0 % avec PET et de 3,6 % avec BThET ; différence entre groupes non significative. Une sous-analyse selon la distribution réalisée favorise PET : effet standardisé 1,29 (IC90 % 0,31–2,27 ; p = 0,038).",
+      "limitations": "Supériorité significative uniquement en sous-analyse. Résumé PubMed incohérent sur son effectif (12 annoncés, puis n=6 et n=16) : effectif non retenu sans clarification du texte intégral. Ne valide ni formats AS10 ni récupération précise.",
+      "themes": [
+        "10 km",
+        "Distribution",
+        "Polarisation",
+        "Spécifique"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_025",
+      "title": "Effects of a 4-week high-intensity interval training on pacing during 5-km running trial",
+      "authors": [
+        "R. Silva",
+        "M. Damasceno",
+        "R. Cruz",
+        "M.D. Silva-Cavalcante",
+        "A.E. Lima-Silva",
+        "D.J. Bishop",
+        "R. Bertuzzi"
+      ],
+      "year": 2017,
+      "journal": "Brazilian Journal of Medical and Biological Research",
+      "doi": "10.1590/1414-431X20176335",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5649866/",
+      "studyType": "Essai randomisé",
+      "population": {
+        "level": "Hommes coureurs récréatifs ; HIIT n=8 et témoin n=8",
+        "n": 16
+      },
+      "result": "Quatre semaines, deux HIIT/semaine : amélioration significative de l’économie de course et de la vitesse maximale sur tapis (PTS), sans changement significatif du chrono 5 km, du pacing ou du ressenti. Pas de différence significative pour VO₂max ni la vitesse OBLA (p = 0,101).",
+      "limitations": "Cycle court, petit échantillon masculin, un seul protocole. OBLA fixé à 3,5 mmol/L, distinct d’un LT1/LT2 individuel. Noms reproduits avec les initiales publiées. Absence de significativité ne démontre pas l’inefficacité du HIIT.",
+      "themes": [
+        "5 km",
+        "HIIT",
+        "Pacing",
+        "Cycle court",
+        "Économie de course"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_026",
+      "title": "Factors affecting running economy in trained distance runners",
+      "authors": [
+        "Philo U. Saunders",
+        "David B. Pyne",
+        "Richard D. Telford",
+        "John A. Hawley"
+      ],
+      "year": 2004,
+      "journal": "Sports Medicine",
+      "doi": "10.2165/00007256-200434070-00005",
+      "url": "https://doi.org/10.2165/00007256-200434070-00005",
+      "studyType": "Revue",
+      "population": {
+        "level": "Coureurs de fond entraînés",
+        "n": null
+      },
+      "result": "L’économie de course dépend de facteurs physiologiques, biomécaniques et anthropométriques ; elle constitue un déterminant de performance distinct de VO₂max.",
+      "limitations": "Revue ancienne et facteurs multiples ; aucun format précis de côte, de renforcement ou de séance Planif n’est validé par cette synthèse.",
+      "themes": [
+        "Économie de course",
+        "Renforcement",
+        "Biomécanique"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_027",
+      "title": "Effects of Strength Training on the Physiological Determinants of Middle- and Long-Distance Running Performance: A Systematic Review",
+      "authors": [
+        "Richard C. Blagrove",
+        "Glyn Howatson",
+        "Philip R. Hayes"
+      ],
+      "year": 2018,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-017-0835-7",
+      "url": "https://doi.org/10.1007/s40279-017-0835-7",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs de demi-fond et fond ; 24 études incluses",
+        "n": null
+      },
+      "result": "L’ajout de force lourde, explosive ou de pliométrie améliore souvent l’économie de course (environ 2–8 %) ; VO₂max et composition corporelle sont généralement peu modifiées.",
+      "limitations": "Protocoles et populations hétérogènes ; bénéfice non garanti. Ne démontre ni absence universelle d’hypertrophie ni efficacité équivalente des côtes courtes Planif.",
+      "themes": [
+        "Économie de course",
+        "Renforcement",
+        "Pliométrie"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_028",
+      "title": "Biomechanical Risk Factors Associated with Running-Related Injuries: A Systematic Review",
+      "authors": [
+        "Linde Ceyssens",
+        "Romy Vanelderen",
+        "Christian Barton",
+        "Peter Malliaras",
+        "Bart Dingenen"
+      ],
+      "year": 2019,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-019-01110-z",
+      "url": "https://doi.org/10.1007/s40279-019-01110-z",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs initialement non blessés ; études prospectives",
+        "n": null
+      },
+      "result": "Les associations prospectives entre biomécanique et blessures sont limitées et souvent incohérentes ; certaines associations dépendent de la blessure et de la population.",
+      "limitations": "Ne démontre pas qu’une correction universelle de cadence, d’impact ou de technique prévient les blessures ; aucune règle biomécanique ajoutée au moteur.",
+      "themes": [
+        "Blessures",
+        "Biomécanique"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_029",
+      "title": "Influence of Stride Frequency and Length on Running Mechanics: A Systematic Review",
+      "authors": [
+        "Amy G. Schubert",
+        "Jenny Kempf",
+        "Bryan C. Heiderscheit"
+      ],
+      "year": 2014,
+      "journal": "Sports Health",
+      "doi": "10.1177/1941738113508544",
+      "url": "https://doi.org/10.1177/1941738113508544",
+      "studyType": "Revue systématique",
+      "population": {
+        "level": "Coureurs ; modification de fréquence ou longueur de pas à vitesse constante",
+        "n": null
+      },
+      "result": "Une fréquence de pas accrue réduit plusieurs paramètres mécaniques, dont l’excursion verticale et l’énergie absorbée à certaines articulations.",
+      "limitations": "Mesures surtout biomécaniques ; réduction d’une charge mécanique ne prouve pas une diminution des blessures. Pas de cadence optimale universelle ni de correction automatique de 5–10 %.",
+      "themes": [
+        "Biomécanique",
+        "Cadence",
+        "Blessures"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_030",
+      "title": "How much is too much? (Part 1) International Olympic Committee consensus statement on load in sport and risk of injury",
+      "authors": [
+        "Torbjørn Soligard",
+        "Martin Schwellnus",
+        "Juan-Manuel Alonso",
+        "Roald Bahr",
+        "Ben Clarsen",
+        "H. Paul Dijkstra",
+        "Tim Gabbett",
+        "Michael Gleeson",
+        "Martin Hägglund",
+        "Mark R. Hutchinson",
+        "Christa Janse van Rensburg",
+        "Karim M. Khan",
+        "Romain Meeusen",
+        "John W. Orchard",
+        "Babette M. Pluim",
+        "Martin Raftery",
+        "Richard Budgett",
+        "Lars Engebretsen"
+      ],
+      "year": 2016,
+      "journal": "British Journal of Sports Medicine",
+      "doi": "10.1136/bjsports-2016-096581",
+      "url": "https://doi.org/10.1136/bjsports-2016-096581",
+      "studyType": "Consensus",
+      "population": {
+        "level": "Athlètes de différents sports",
+        "n": null
+      },
+      "result": "Le suivi individuel de la charge, de ses variations et de la récupération doit tenir compte du contexte et des autres contraintes de l’athlète.",
+      "limitations": "Consensus multisports ; ne valide pas les coefficients, rampes ou alertes Planif. Les plages ACWR proposées ne constituent pas une garantie causale de prévention des blessures ; aucun ACWR ajouté.",
+      "themes": [
+        "Charge",
+        "Progression",
+        "Blessures",
+        "Récupération"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_031",
+      "title": "A comparison of running economy across seven highly cushioned racing shoes with carbon-fibre plates",
+      "authors": [
+        "Dustin P. Joubert",
+        "Garrett P. Jones"
+      ],
+      "year": 2022,
+      "journal": "Footwear Science",
+      "doi": "10.1080/19424280.2022.2038691",
+      "url": "https://www.tandfonline.com/doi/full/10.1080/19424280.2022.2038691",
+      "studyType": "Étude expérimentale aiguë croisée",
+      "population": {
+        "level": "Hommes entraînés ; essais sur tapis à 16 km/h",
+        "n": 12
+      },
+      "result": "L’économie de course diffère selon les modèles testés ; certaines chaussures réduisent le coût en oxygène par rapport à une chaussure traditionnelle, d’autres non.",
+      "limitations": "Petit échantillon masculin, une vitesse et anciens modèles ; effet individuel variable. Gain métabolique non convertible automatiquement en gain de vitesse ou de chrono.",
+      "themes": [
+        "Chaussures",
+        "Économie de course"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_032",
+      "title": "American College of Sports Medicine Joint Position Statement. Nutrition and Athletic Performance",
+      "authors": [
+        "D. Travis Thomas",
+        "Kelly Anne Erdman",
+        "Louise M. Burke"
+      ],
+      "year": 2016,
+      "journal": "Medicine & Science in Sports & Exercise",
+      "doi": "10.1249/MSS.0000000000000852",
+      "url": "https://doi.org/10.1249/MSS.0000000000000852",
+      "studyType": "Position conjointe / consensus",
+      "population": {
+        "level": "Athlètes de différents sports",
+        "n": null
+      },
+      "result": "Les apports énergétiques, glucidiques, protéiques et hydriques sont à adapter aux besoins, au type d’effort et au calendrier d’entraînement pour soutenir performance et récupération.",
+      "limitations": "Recommandations générales, pas un essai unique ; besoins individuels et situations diverses. Aucune prescription nutritionnelle automatique introduite dans Planif.",
+      "themes": [
+        "Nutrition",
+        "Hydratation",
+        "Récupération"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_033",
+      "title": "Low carbohydrate, high fat diet impairs exercise economy and negates the performance benefit from intensified training in elite race walkers",
+      "authors": [
+        "Louise M. Burke",
+        "Megan L. Ross",
+        "Laura A. Garvican-Lewis",
+        "Marijke Welvaert",
+        "Ida A. Heikura",
+        "Shona G. Forbes",
+        "Joanne G. Mirtschin",
+        "Louise E. Cato",
+        "Nikki Strobel",
+        "Avish P. Sharma",
+        "John A. Hawley"
+      ],
+      "year": 2017,
+      "journal": "The Journal of Physiology",
+      "doi": "10.1113/JP273230",
+      "url": "https://doi.org/10.1113/JP273230",
+      "studyType": "Intervention contrôlée non randomisée",
+      "population": {
+        "level": "Marcheurs athlétiques élite ; trois semaines",
+        "n": null
+      },
+      "result": "Le régime très pauvre en glucides et riche en lipides augmente l’oxydation des graisses mais dégrade l’économie à des vitesses de compétition et ne produit pas les gains de performance observés avec les régimes riches en glucides.",
+      "limitations": "Marche athlétique, pas course à pied ; cycle court et groupes non randomisés. Ne généraliser ni à tout régime réduit en glucides ni à toutes les intensités.",
+      "themes": [
+        "Nutrition",
+        "Économie de course",
+        "Performance"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_034",
+      "title": "Sleep Hygiene for Optimizing Recovery in Athletes: Review and Recommendations",
+      "authors": [
+        "Kenneth C. Vitale",
+        "Roberts Owens",
+        "Susan R. Hopkins",
+        "Atul Malhotra"
+      ],
+      "year": 2019,
+      "journal": "International Journal of Sports Medicine",
+      "doi": "10.1055/a-0905-3103",
+      "url": "https://doi.org/10.1055/a-0905-3103",
+      "studyType": "Revue et recommandations",
+      "population": {
+        "level": "Athlètes de différents sports",
+        "n": null
+      },
+      "result": "La revue décrit les enjeux du sommeil pour la récupération et la performance et propose des mesures d’hygiène du sommeil adaptées aux contraintes sportives.",
+      "limitations": "Ne démontre pas qu’une intervention prévient le surentraînement ; ne valide pas un nombre exact d’heures ni un espacement précis des séances Planif.",
+      "themes": [
+        "Sommeil",
+        "Récupération"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_035",
+      "title": "Physiological and performance effects of low- versus mixed-intensity rowing training",
+      "authors": [
+        "Stephen A. Ingham",
+        "Helen Carter",
+        "Gregory P. Whyte",
+        "Jonathan H. Doust"
+      ],
+      "year": 2008,
+      "journal": "Medicine & Science in Sports & Exercise",
+      "doi": "10.1249/MSS.0b013e31815ecc6a",
+      "url": "https://doi.org/10.1249/MSS.0b013e31815ecc6a",
+      "studyType": "Essai contrôlé",
+      "population": {
+        "level": "Rameurs expérimentés ; 12 semaines",
+        "n": 18
+      },
+      "result": "LOW (100 % au seuil lactate ou dessous) améliore davantage la puissance au LT que MIX (70 % au LT ou dessous, 30 % au-dessus) : +23,5 contre +5,1 W, p=0,013. Les gains sur 2 000 m et VO₂peak ne diffèrent pas significativement entre groupes.",
+      "limitations": "Aviron : transposition indirecte au coureur. Ne pas assimiler automatiquement le LT mesuré à SV1 sans vérifier sa méthode ; pas de supériorité propre de LOW sur l’économie rapportée dans le résumé. Ne valide pas les formats S1 ni la nocivité du HIIT.",
+      "themes": [
+        "Basse intensité",
+        "Distribution",
+        "LT1",
+        "Volume"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_036",
+      "title": "Training-Induced Changes in Mitochondrial Content and Respiratory Function in Human Skeletal Muscle",
+      "authors": [
+        "Cesare Granata",
+        "Nicholas A. Jamnick",
+        "David J. Bishop"
+      ],
+      "year": 2018,
+      "journal": "Sports Medicine",
+      "doi": "10.1007/s40279-018-0936-y",
+      "url": "https://doi.org/10.1007/s40279-018-0936-y",
+      "studyType": "Revue",
+      "population": {
+        "level": "Études humaines sur le muscle squelettique",
+        "n": null
+      },
+      "result": "Le volume peut jouer un rôle important dans l’augmentation du contenu mitochondrial ; l’intensité relative compte aussi pour les adaptations de la fonction respiratoire mitochondriale. Ces deux réponses peuvent être dissociées.",
+      "limitations": "Soutien mécanistique indirect pour LT1 ; ne démontre pas une dépendance exclusive au volume sous SV1, ni la supériorité de 2 × 20 min ou 3 × 15 min, ni une inhibition des adaptations par tout dépassement de SV2.",
+      "themes": [
+        "Mitochondries",
+        "Volume",
+        "Basse intensité",
+        "HIIT",
+        "LT1"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_037",
+      "title": "Polarized vs. Threshold Training Intensity Distribution on Endurance Sport Performance: A Systematic Review and Meta-Analysis of Randomized Controlled Trials",
+      "authors": [
+        "Michael A. Rosenblat",
+        "Andrew S. Perrotta",
+        "Bill Vicenzino"
+      ],
+      "year": 2019,
+      "journal": "Journal of Strength and Conditioning Research",
+      "doi": "10.1519/JSC.0000000000002618",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29863593/",
+      "studyType": "Revue systématique et méta-analyse",
+      "population": {
+        "level": "Athlètes d’endurance entraînés ; quatre études en revue, trois en méta-analyse",
+        "n": null
+      },
+      "result": "La méta-analyse du contre-la-montre favorise la distribution polarisée par rapport à celle centrée sur le seuil : effet standardisé −0,66 (IC95 % −1,17 à −0,15).",
+      "limitations": "Seulement quatre études retenues, dont trois agrégées ; qualité méthodologique limitée (PEDro 4–5/10). Comparaison POL/THR, pas intervalles/continu ni POL/pyramidal. Ne valide pas une répartition exacte, une table VO₂ ou les formats S1/S2 Planif.",
+      "themes": [
+        "Distribution",
+        "Polarisation",
+        "Performance"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_038",
+      "title": "Effects of Strength Training on Running Economy in Highly Trained Runners: A Systematic Review With Meta-Analysis of Controlled Trials",
+      "authors": [
+        "Carlos Balsalobre-Fernández",
+        "Jordan Santos-Concejero",
+        "Gerasimos V. Grivas"
+      ],
+      "year": 2016,
+      "journal": "Journal of Strength and Conditioning Research",
+      "doi": "10.1519/JSC.0000000000001316",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/26694507/",
+      "studyType": "Revue systématique et méta-analyse",
+      "population": {
+        "level": "93 coureurs compétitifs très entraînés répartis dans cinq études ; VO₂max >60 ml/kg/min",
+        "n": 93
+      },
+      "result": "Sur cinq essais contrôlés, le renforcement améliore l’économie de course : différence moyenne standardisée −1,42 (IC95 % −2,23 à −0,60). Les interventions incluses durent 8–12 semaines, à raison de 2–3 séances hebdomadaires.",
+      "limitations": "Économie de course comme critère principal, petit nombre d’études et population très entraînée. Ne garantit pas un gain de chrono, une masse corporelle inchangée ou l’absence d’effet sur VO₂max. Chevauchement possible avec Blagrove : ne pas compter ces synthèses comme des confirmations indépendantes. Les côtes Planif sont une transposition indirecte.",
+      "themes": [
+        "Économie de course",
+        "Renforcement",
+        "Pliométrie"
+      ],
+      "status": "verified"
+    },
+    {
+      "id": "SRC_039",
+      "title": "Effects of tapering on performance: a meta-analysis",
+      "authors": [
+        "Laurent Bosquet",
+        "Jonathan Montpetit",
+        "Denis Arvisais",
+        "Iñigo Mujika"
+      ],
+      "year": 2007,
+      "journal": "Medicine & Science in Sports & Exercise",
+      "doi": "10.1249/mss.0b013e31806010e0",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/17762369/",
+      "studyType": "Méta-analyse",
+      "population": {
+        "level": "Athlètes compétitifs de différents sports ; 27 études incluses",
+        "n": null
+      },
+      "result": "Les analyses favorisent un affûtage de deux semaines avec réduction exponentielle du volume de 41–60 %, en conservant intensité et fréquence. La performance est mesurée en compétition ou par des tests de terrain.",
+      "limitations": "Cadre issu de sous-groupes et de données pré/post : pas une règle mathématique universelle ni une comparaison randomisée de toutes les combinaisons. Adapter au sport, à la charge et à l’athlète ; ne valide pas le découpage J−2/J−1 Planif. Chevauchement possible avec Wang, sans indépendance présumée.",
+      "themes": [
+        "Taper",
+        "Volume",
+        "Performance"
+      ],
+      "status": "verified"
+    }
+  ],
+  "FINDINGS": [
+    {
+      "id": "FND_001",
+      "sourceId": "SRC_022",
+      "questionId": "Q_INTENSITY_DISTRIBUTION",
+      "statement": "Sur 16 semaines, POL et PYR ne diffèrent pas significativement sur le marathon ; adaptations différentes. Lien indirect aux budgets Planif, sans validation de leurs pourcentages exacts.",
+      "parameters": {
+        "weeks": 16,
+        "n": 20,
+        "zones": 3,
+        "polPct": [
+          82,
+          8,
+          10
+        ],
+        "pyrPct": [
+          75,
+          22,
+          3
+        ],
+        "marathonP": 0.23
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs récréatifs marathon : directement étudiés.",
+        "outcome": "Performance marathon directement mesurée ; budget de qualité Planif indirect."
+      }
+    },
+    {
+      "id": "FND_002",
+      "sourceId": "SRC_023",
+      "questionId": "Q_LONG_RUN",
+      "statement": "Les plans prescrivent une sortie longue moyenne autour de 30–32 km au pic ; description, sans test causal ni validation d’un plafond en minutes ou du format marathon Planif.",
+      "parameters": {
+        "plans": 92,
+        "weeksAnalyzed": 12,
+        "peakLongRunKm": [
+          30,
+          32
+        ],
+        "peakWeeksBeforeRace": [
+          3.6,
+          4.4
+        ],
+        "taperWeeklyReductionPct": [
+          22,
+          31
+        ],
+        "finalWeekReductionPct": [
+          46,
+          54
+        ],
+        "tidDistancePct": [
+          13.2,
+          65.6,
+          15.1,
+          3,
+          3
+        ],
+        "zones": 5
+      },
+      "direction": "neutral",
+      "directness": {
+        "population": "Plans publics : aucune adaptation individuelle observée.",
+        "outcome": "Prescription directement décrite ; efficacité non mesurée."
+      }
+    },
+    {
+      "id": "FND_003",
+      "sourceId": "SRC_024",
+      "questionId": "Q_INTENSITY_DISTRIBUTION",
+      "statement": "Sur 10 km, gains dans les deux groupes, sans différence globale significative ; avantage PET en sous-analyse seulement. Soutien indirect à l’organisation spécifique, pas aux formats AS10.",
+      "parameters": {
+        "weeks": 10,
+        "n": 30,
+        "improvementPct": {
+          "PET": 5,
+          "BThET": 3.6
+        },
+        "subsetEffectSize": 1.29,
+        "subsetCI90": [
+          0.31,
+          2.27
+        ],
+        "subsetP": 0.038,
+        "subsetN": null
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs récréatifs : directement étudiés.",
+        "outcome": "Chrono 10 km direct ; valeurs du budget Planif indirectes."
+      }
+    },
+    {
+      "id": "FND_004",
+      "sourceId": "SRC_025",
+      "questionId": "Q_SPEC_OTHER",
+      "statement": "Des gains physiologiques après quatre semaines de HIIT ne garantissent pas un gain significatif au 5 km ; ne valide pas le volume ni le choix du complément du bloc 5 km Planif.",
+      "parameters": {
+        "weeks": 4,
+        "n": 16,
+        "hiitSessionsPerWeek": 2,
+        "vo2maxP": 0.495,
+        "oblaP": 0.101
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Hommes récréatifs : directement étudiés, généralisation limitée.",
+        "outcome": "Pacing et chrono 5 km directs ; architecture du bloc indirecte."
+      }
+    },
+    {
+      "id": "FND_005",
+      "sourceId": "SRC_026",
+      "questionId": "Q_RUNNING_ECONOMY",
+      "statement": "L’économie de course dépend de facteurs physiologiques, biomécaniques et anthropométriques ; elle constitue un déterminant de performance distinct de VO₂max.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs de fond entraînés",
+        "outcome": "Revue ancienne et facteurs multiples ; aucun format précis de côte, de renforcement ou de séance Planif n’est validé par cette synthèse."
+      }
+    },
+    {
+      "id": "FND_006",
+      "sourceId": "SRC_027",
+      "questionId": "Q_RUNNING_ECONOMY",
+      "statement": "L’ajout de force lourde, explosive ou de pliométrie améliore souvent l’économie de course (environ 2–8 %) ; VO₂max et composition corporelle sont généralement peu modifiées.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs de demi-fond et fond ; 24 études incluses",
+        "outcome": "Protocoles et populations hétérogènes ; bénéfice non garanti. Ne démontre ni absence universelle d’hypertrophie ni efficacité équivalente des côtes courtes Planif."
+      }
+    },
+    {
+      "id": "FND_007",
+      "sourceId": "SRC_028",
+      "questionId": "Q_BIOMECHANICS_INJURY",
+      "statement": "Les associations prospectives entre biomécanique et blessures sont limitées et souvent incohérentes ; certaines associations dépendent de la blessure et de la population.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs initialement non blessés ; études prospectives",
+        "outcome": "Ne démontre pas qu’une correction universelle de cadence, d’impact ou de technique prévient les blessures ; aucune règle biomécanique ajoutée au moteur."
+      }
+    },
+    {
+      "id": "FND_008",
+      "sourceId": "SRC_029",
+      "questionId": "Q_BIOMECHANICS_INJURY",
+      "statement": "Une fréquence de pas accrue réduit plusieurs paramètres mécaniques, dont l’excursion verticale et l’énergie absorbée à certaines articulations.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs ; modification de fréquence ou longueur de pas à vitesse constante",
+        "outcome": "Mesures surtout biomécaniques ; réduction d’une charge mécanique ne prouve pas une diminution des blessures. Pas de cadence optimale universelle ni de correction automatique de 5–10 %."
+      }
+    },
+    {
+      "id": "FND_009",
+      "sourceId": "SRC_030",
+      "questionId": "Q_LOAD_PROGRESSION",
+      "statement": "Le suivi individuel de la charge, de ses variations et de la récupération doit tenir compte du contexte et des autres contraintes de l’athlète.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes de différents sports",
+        "outcome": "Consensus multisports ; ne valide pas les coefficients, rampes ou alertes Planif. Les plages ACWR proposées ne constituent pas une garantie causale de prévention des blessures ; aucun ACWR ajouté."
+      }
+    },
+    {
+      "id": "FND_010",
+      "sourceId": "SRC_031",
+      "questionId": "Q_FOOTWEAR",
+      "statement": "L’économie de course diffère selon les modèles testés ; certaines chaussures réduisent le coût en oxygène par rapport à une chaussure traditionnelle, d’autres non.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Hommes entraînés ; essais sur tapis à 16 km/h",
+        "outcome": "Petit échantillon masculin, une vitesse et anciens modèles ; effet individuel variable. Gain métabolique non convertible automatiquement en gain de vitesse ou de chrono."
+      }
+    },
+    {
+      "id": "FND_011",
+      "sourceId": "SRC_032",
+      "questionId": "Q_NUTRITION",
+      "statement": "Les apports énergétiques, glucidiques, protéiques et hydriques sont à adapter aux besoins, au type d’effort et au calendrier d’entraînement pour soutenir performance et récupération.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes de différents sports",
+        "outcome": "Recommandations générales, pas un essai unique ; besoins individuels et situations diverses. Aucune prescription nutritionnelle automatique introduite dans Planif."
+      }
+    },
+    {
+      "id": "FND_012",
+      "sourceId": "SRC_033",
+      "questionId": "Q_NUTRITION",
+      "statement": "Le régime très pauvre en glucides et riche en lipides augmente l’oxydation des graisses mais dégrade l’économie à des vitesses de compétition et ne produit pas les gains de performance observés avec les régimes riches en glucides.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Indirecte pour la course à pied : marcheurs athlétiques élite, trois semaines.",
+        "outcome": "Marche athlétique, pas course à pied ; cycle court et groupes non randomisés. Ne généraliser ni à tout régime réduit en glucides ni à toutes les intensités."
+      }
+    },
+    {
+      "id": "FND_013",
+      "sourceId": "SRC_034",
+      "questionId": "Q_SLEEP",
+      "statement": "La revue décrit les enjeux du sommeil pour la récupération et la performance et propose des mesures d’hygiène du sommeil adaptées aux contraintes sportives.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes de différents sports",
+        "outcome": "Ne démontre pas qu’une intervention prévient le surentraînement ; ne valide pas un nombre exact d’heures ni un espacement précis des séances Planif."
+      }
+    },
+    {
+      "id": "FND_014",
+      "sourceId": "SRC_035",
+      "questionId": "Q_INTENSITY_DISTRIBUTION",
+      "statement": "LOW (100 % au seuil lactate ou dessous) améliore davantage la puissance au LT que MIX (70 % au LT ou dessous, 30 % au-dessus) : +23,5 contre +5,1 W, p=0,013. Les gains sur 2 000 m et VO₂peak ne diffèrent pas significativement entre groupes.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Rameurs expérimentés ; 12 semaines",
+        "outcome": "Aviron : transposition indirecte au coureur. Ne pas assimiler automatiquement le LT mesuré à SV1 sans vérifier sa méthode ; pas de supériorité propre de LOW sur l’économie rapportée dans le résumé. Ne valide pas les formats S1 ni la nocivité du HIIT."
+      }
+    },
+    {
+      "id": "FND_015",
+      "sourceId": "SRC_036",
+      "questionId": "Q_VOLUME_MODULATION",
+      "statement": "Le volume peut jouer un rôle important dans l’augmentation du contenu mitochondrial ; l’intensité relative compte aussi pour les adaptations de la fonction respiratoire mitochondriale. Ces deux réponses peuvent être dissociées.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Études humaines sur le muscle squelettique",
+        "outcome": "Soutien mécanistique indirect pour LT1 ; ne démontre pas une dépendance exclusive au volume sous SV1, ni la supériorité de 2 × 20 min ou 3 × 15 min, ni une inhibition des adaptations par tout dépassement de SV2."
+      }
+    },
+    {
+      "id": "FND_016",
+      "sourceId": "SRC_018",
+      "questionId": "Q_S2_INTENSITY_BY_REP_DURATION",
+      "statement": "Le modèle décrit des intervalles de seuil guidés par des lactatémies généralement comprises entre 2 et 4,5 mmol/L, dans une approche à fort volume facile. Il éclaire le travail autour du second seuil, sans identifier LT2 par une valeur fixe ni valider les marges d’allure Planif.",
+      "parameters": {
+        "lactateMmolRange": [
+          2,
+          4.5
+        ]
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Pratiques décrites chez des coureurs de haut niveau ; transposition prudente.",
+        "outcome": "Modèle descriptif et mécanismes proposés, pas un essai contrôlé comparant les formats S2 ; ne valide pas les marges S1."
+      }
+    },
+    {
+      "id": "FND_017",
+      "sourceId": "SRC_013",
+      "questionId": "Q_VO2_INTENSITY",
+      "statement": "La revue analyse conjointement intensité et durée du travail, intensité et durée des récupérations et organisation des séries pour modifier le temps à forte consommation d’oxygène.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Revue multisports : soutien partiellement indirect pour le coureur de fond.",
+        "outcome": "Soutien aux interactions de programmation et aux réponses aiguës ; ne valide pas la table exacte de %VMA ni une dose chronique optimale universelle."
+      }
+    },
+    {
+      "id": "FND_018",
+      "sourceId": "SRC_014",
+      "questionId": "Q_VO2_STRUCTURE",
+      "statement": "La sollicitation cardiorespiratoire ne suffit pas à décrire le HIIT : contribution anaérobie et contraintes neuromusculaires/musculosquelettiques doivent aussi être prises en compte.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Revue multisports, comprenant des applications en course.",
+        "outcome": "Soutien aux principes et aux compromis ; les plafonds de volume, pourcentages et ratios exacts Planif restent heuristiques."
+      }
+    },
+    {
+      "id": "FND_019",
+      "sourceId": "SRC_015",
+      "questionId": "Q_VO2_RECOVERY",
+      "statement": "Des récupérations plus longues facilitent la charge externe dans les sprints répétés et le sprint interval training, avec un stimulus aérobie parfois moindre ; peu d’études isolent leur effet chronique.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "RST, SIT et intervalles aérobies ; transposition selon le type d’effort.",
+        "outcome": "Ne pas transposer un résultat de sprint à tous les intervalles VO₂. Aucun ratio optimal universel ni équivalence générale actif/passif démontrés."
+      }
+    },
+    {
+      "id": "FND_020",
+      "sourceId": "SRC_016",
+      "questionId": "Q_VO2_STRUCTURE",
+      "statement": "Sur sept études de coureurs bien entraînés, six ne rapportent pas de gain significatif de VO₂max ; une relation avec la charge de séance d’intervalles est observée.",
+      "parameters": {
+        "includedStudies": 7,
+        "studiesWithoutSignificantVo2Gain": 6
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Directe : coureurs de fond bien entraînés.",
+        "outcome": "Adaptations chroniques examinées ; association de dose, pas preuve d’une table d’allures ou de récupération optimale. Justifie une confiance prudente."
+      }
+    },
+    {
+      "id": "FND_021",
+      "sourceId": "SRC_006",
+      "questionId": "Q_TAPER",
+      "statement": "La méta-analyse rapporte une amélioration de la performance en contre-la-montre après affûtage ; la réduction du volume avec maintien de l’intensité et de la fréquence est une stratégie soutenue.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes d’endurance de différents sports.",
+        "outcome": "Soutien direct au principe d’affûtage, indirect au calendrier Planif ; aucun découpage précis J−2/J−1 validé."
+      }
+    },
+    {
+      "id": "FND_022",
+      "sourceId": "SRC_007",
+      "questionId": "Q_S1_INTENSITY",
+      "statement": "Dans le protocole étudié, les repères lactates et ventilatoires présentent des correspondances, mais MLSS constitue un événement distinct situé entre VT1 et VT2.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Directe : coureurs entraînés dans un protocole de test spécifique.",
+        "outcome": "Soutien à la distinction des repères mesurés ; ne valide ni une marge fixe au-dessus de LT1 ni une structure de séance S1."
+      }
+    },
+    {
+      "id": "FND_023",
+      "sourceId": "SRC_019",
+      "questionId": "Q_S2_STRUCTURE",
+      "statement": "La revue analyse la programmation des intervalles aérobies en combinant intensité, durée de travail et récupération, des vitesses proches du MLSS aux vitesses maximales.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Coureurs de demi-fond et fond ; synthèse scientifique et empirique.",
+        "outcome": "Contexte de programmation pour S2 ; pas de validation des dixièmes de km/h ni des ratios précis de récupération Planif."
+      }
+    },
+    {
+      "id": "FND_024",
+      "sourceId": "SRC_017",
+      "questionId": "Q_HILLS",
+      "statement": "Différents programmes de côtes sont comparés chez des coureurs ; les effets sur économie et performance dépendent du protocole, sans format universel supérieur établi.",
+      "parameters": {},
+      "direction": "nuances",
+      "directness": {
+        "population": "Directe : coureurs étudiés en entraînement en côte.",
+        "outcome": "Plus pertinent que le renforcement général pour les côtes, mais ne valide pas exactement 6–10 × 10–15 s à 6–10 % ni leur statut hors qualité."
+      }
+    },
+    {
+      "id": "FND_025",
+      "sourceId": "SRC_037",
+      "questionId": "Q_INTENSITY_DISTRIBUTION",
+      "statement": "La méta-analyse du contre-la-montre favorise la distribution polarisée par rapport à celle centrée sur le seuil : effet standardisé −0,66 (IC95 % −1,17 à −0,15).",
+      "parameters": {
+        "reviewStudies": 4,
+        "metaAnalysisStudies": 3,
+        "effectSize": -0.66,
+        "ci95": [
+          -1.17,
+          -0.15
+        ]
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes d’endurance entraînés, multisports ; transposition selon la population Planif.",
+        "outcome": "Performance en contre-la-montre directement étudiée ; lien indirect aux budgets exacts de qualité. POL/THR ne permet pas de conclure sur POL/pyramidal."
+      }
+    },
+    {
+      "id": "FND_026",
+      "sourceId": "SRC_038",
+      "questionId": "Q_RUNNING_ECONOMY",
+      "statement": "Sur cinq essais contrôlés, le renforcement améliore l’économie de course : différence moyenne standardisée −1,42 (IC95 % −2,23 à −0,60). Les interventions incluses durent 8–12 semaines, à raison de 2–3 séances hebdomadaires.",
+      "parameters": {
+        "includedStudies": 5,
+        "totalParticipants": 93,
+        "standardizedMeanDifference": -1.42,
+        "ci95": [
+          -2.23,
+          -0.6
+        ]
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Directe pour les coureurs très entraînés ; généralisation prudente aux récréatifs.",
+        "outcome": "Économie de course directement mesurée ; contexte renforcement, transposition indirecte aux côtes courtes, sans validation du format Planif ni indépendance supposée vis-à-vis de Blagrove."
+      }
+    },
+    {
+      "id": "FND_027",
+      "sourceId": "SRC_039",
+      "questionId": "Q_TAPER",
+      "statement": "Les analyses favorisent un affûtage de deux semaines avec réduction exponentielle du volume de 41–60 %, en conservant intensité et fréquence. La performance est mesurée en compétition ou par des tests de terrain.",
+      "parameters": {
+        "includedStudies": 27,
+        "taperWeeks": 2,
+        "volumeReductionPct": [
+          41,
+          60
+        ]
+      },
+      "direction": "nuances",
+      "directness": {
+        "population": "Athlètes compétitifs multisports ; transposition au calendrier de course à pied.",
+        "outcome": "Performance directement analysée, prescription précise individualisée ; durée et pourcentages décrivent le cadre favorable de la synthèse, sans valider chaque journée Planif."
+      }
+    }
+  ]
+}

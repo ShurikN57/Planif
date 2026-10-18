@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8');
 const begin=html.indexOf('function conversionResult(');
 const end=html.indexOf('let conversionMode=',begin);
 assert(begin>=0&&end>begin,'the converter must remain available in Repères');

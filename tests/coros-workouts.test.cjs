@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-const source=html.match(/<script>\s*(\/\* COROS :[\s\S]*?)<\/script>/)[1];
+const source=fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));
 const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('/* Transcription')),ctx);const adapter=ctx.window.PlanifCorosAdapter;
 const base={title:'Planif · Premier seuil',description:'Séance de test',kind:'quality',warmupMin:20,cooldownMin:10,easyBand:[9.8,10.7]};
@@ -87,8 +87,9 @@ assert(expand(manualActive).every(s=>!('intensityType'in s)));
 assert.equal(expand(manualActive).filter(s=>s.targetValue===105).length,1);
 assert.equal(JSON.stringify(preparedSnapshot),original);
 // Family selection uses the real app function; S2-only, semi and marathon do not get the activation.
-vm.runInContext(html.slice(html.indexOf('function preparationActivation('),html.indexOf('function prepareSession(')),ctx);
-const selector=html.slice(html.indexOf('function corosActivation('),html.indexOf('function corosSessionSnapshot('));vm.runInContext(selector,ctx);
+ctx.preparationActivation=require('../planif-engine.js').preparationActivation;
+const uiSource=fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8');
+const selector=uiSource.slice(uiSource.indexOf('function corosActivation('),uiSource.indexOf('function corosSessionSnapshot('));vm.runInContext(selector,ctx);
 assert(ctx.corosActivation({sector:'vo2'}));assert(ctx.corosActivation({sector:'spec10k'}));
 assert(ctx.corosActivation({structure:{type:'fartlek_structured'}}));
 assert(ctx.corosActivation({}, {fam:'spec',dist:0}));assert(ctx.corosActivation({}, {fam:'spec',dist:1}));

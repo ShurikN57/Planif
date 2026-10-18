@@ -1,0 +1,39 @@
+# Planif development
+
+The application remains a static PWA hosted by GitHub Pages. It has no build step or runtime package dependency.
+
+| File | Responsibility |
+| --- | --- |
+| `index.html` | Markup, styles, theme bootstrap and script order |
+| `planif-version.js` | Application version |
+| `planif-rules.js` | Planning parameters |
+| `planif-engine.js` | Prediction, workout generation, calendars, placement and pure presentation helpers |
+| `planif-studies.json` | Scientific sources and extracted findings |
+| `planif-evidence.js` | Questions, rule metadata and integrity audit |
+| `planif-ui.js` | User interface, local persistence, recovery and archived plans |
+| `planif-coros.js` | COROS connection, workout preview and export adapter |
+| `planif-strava.js` | Athlete connection and activity association |
+| `planif-calendar-drag.js` | Calendar pointer interaction |
+| `sw.js` | Versioned offline application cache |
+
+## Engine entry point
+
+`require('./planif-engine.js').createEngine()` creates an independent engine instance in Node. The browser uses the same file through `globalThis.PlanifEngine`. The engine does not access the DOM or local storage.
+
+The optional `getActivePlan` and `hasSameStructure` callbacks supply the active calendar when regenerating a saved plan. The UI owns this state. Tests can supply a saved plan without simulating the application form.
+
+Scientific data are loaded before UI initialization. Strava initializes after its UI context is available. All required scripts and the scientific JSON are included in the service-worker shell.
+
+## Verification
+
+```sh
+node scripts/check-syntax.cjs
+TZ=Europe/Paris node --test tests/*.test.cjs
+node scripts/verify-live.cjs
+```
+
+`module-equivalence.test.cjs` compares 252 generated plans and their predictions with fingerprints captured from version 2026.10.18.01, before extraction. These fixtures should change only for an intentional planning-rule change, with its expected differences reviewed.
+
+Engine tests import the actual module. UI persistence integration is isolated in `tests/helpers/runtime.cjs`.
+
+For a release, update `planif-version.js`, versioned script URLs in `index.html`, the scientific JSON URL in `planif-ui.js`, and the service-worker shell/version. Verify that all public files match the commit after deployment. Changes affecting future sessions must preserve the existing plan and archive it before recalculation. Organizational thresholds remain identified as Planif heuristics in rule metadata.

@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
-vm.runInContext('const $=id=>document.getElementById(id);\n'+html.slice(html.indexOf('const RULES='),html.indexOf('const CAPLAB='))+`\nthis.E={buildCalendar,predict,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,parseDate,planDateKey};this.setActive=p=>activePlan=p;this.preserve=preservePastSessions;`,context);
+injectEngine(context);context.E=context.__engine;vm.runInContext('var activePlan=null;this.setActive=p=>activePlan=p;this.preserve=preservePastSessions;',context);
 const E=context.E;
 const st={mode:'cal',calStart:'2026-10-05',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
 const build=()=>{const C=E.buildCalendar(st,E.predict(st));E.ensurePlanifSessionIds(C);return C;};

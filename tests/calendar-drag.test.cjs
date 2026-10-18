@@ -22,6 +22,6 @@ for(const kind of ['other-week','outside','blocked','cancel','escape','same-day'
  if(kind==='cancel')f.events.pointercancel({pointerId:1});else if(kind==='escape')f.events.keydown({key:'Escape'});else f.events.pointerup(f.event(130,190));
  assert.equal(f.state().moves,0,kind);assert.equal(f.state().removed,1,kind);
 }
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8'),version=html.match(/const APP_VERSION='([^']+)'/)[1];
-assert(html.includes(`src="./planif-calendar-drag.js?v=${version}"`));assert(sw.includes(`'./planif-calendar-drag.js?v=${version}'`));assert(html.includes('touch-action:none'));assert(html.includes('data-move-week='));
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8'),version=require('../planif-version.js');
+assert(html.includes(`src="./planif-calendar-drag.js?v=${version}"`));assert(sw.includes(`'./planif-calendar-drag.js?v=${version}'`));assert(html.includes('touch-action:none'));assert(fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8').includes('data-move-week='));
 console.log('OK: tap threshold, pointer capture/cleanup, same-week drop, blocked/outside drops, cancellation, click suppression and versioned PWA asset.');

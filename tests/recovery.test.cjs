@@ -1,10 +1,11 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),data=new Map();
 const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:id.startsWith('mode')?'radio':'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};
 vm.createContext(ctx);
-vm.runInContext('const $=id=>document.getElementById(id);\n'+html.slice(html.indexOf('const RULES='),html.indexOf('const CAPLAB='))+`
+loadRuntime(ctx);
+vm.runInContext(`
 this.E={buildCalendar,predict,ensurePlanifSessionIds,protectPlanRecovery,reviveSavedPlan,load,saveActivePlan,switchModeState};
 this.defaults=()=>({...DEFAULTS});this.keys=STORE;
 this.state=()=>recoveryState;this.setRecovery=r=>recoveryState=r;

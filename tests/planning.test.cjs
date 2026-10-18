@@ -1,9 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
-const start=html.indexOf('const RULES='),end=html.indexOf('const CAPLAB=');
-vm.runInContext("const $=id=>document.getElementById(id);\n"+html.slice(start,end)+`\nthis.engine={RULES,planPhases,buildCalendar,buildWeek,buildPlan,getBlock,predict,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,presentVariantRaw,sessionTitle,prepareSession,makeMixedSession,placeWeek,efBand,efBandText,joggTitle,s2Group,s2Range,recS2Range,generateSession,rememberFractionDurations,fractionProgressionPool};`,context);
+injectEngine(context);context.engine=context.__engine;
 const E=context.engine;
 const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
 assert.deepEqual(Array.from(E.s2Range(E.s2Group(3),9,state)),[13.86,14.42]);

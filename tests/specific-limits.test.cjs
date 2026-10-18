@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(ctx);
-vm.runInContext('const $=id=>document.getElementById(id);\n'+html.slice(html.indexOf('const RULES='),html.indexOf('const CAPLAB='))+'\nthis.E={makeSession,buildTaperWeek,predict,TOL,RULES,checkCaps};',ctx);
+injectEngine(ctx);ctx.E=ctx.__engine;
 const E=ctx.E;let checked=0;
 for(const vma of [10,12,14,17,20,24])for(const profile of [0,2,4])for(const vol of [180,300,420,540]){
  const st={vma,s1lo:vma*.68,s1hi:vma*.72,s2:vma*.82,vol,runs:5,qualityCount:2,refDist:0,refTime:18000/(vma*.9),ref2Dist:1,ref2Time:null,profile,penalty:false};
