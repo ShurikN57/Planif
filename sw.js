@@ -1,4 +1,4 @@
-const CACHE = 'planif-v16-strava-20';
+const CACHE = 'planif-v16-strava-21';
 const APP_SHELL = [
   './',
   './index.html',

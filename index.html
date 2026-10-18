@@ -1031,7 +1031,7 @@ window.PlanifCorosAdapter=(()=>{
         const block=choice('Bloc actif',x.foot.activeRange,(x.foot.activeRange[0]+x.foot.activeRange[1])/2,'min');
         draft.sections.push(time(1,x.foot.wu),plain(2,2,{minutes:block},x.activeBand),time(4,x.foot.cd));draft.notes.push('Le bloc actif est envoyé en continu. '+x.hrCue);
       }else{
-        const center=Math.round(x.foot.min),value=choice('Durée du footing',[Math.max(1,center-5),center+5],center,'min');draft.sections.push(plain(2,2,{minutes:value},x.footBand));
+        const center=Math.round(x.foot.min),value=choice('Durée du footing',[Math.max(1,center-5),Math.min(x.foot.maxMinutes??Infinity,center+5)],center,'min');draft.sections.push(plain(2,2,{minutes:value},x.footBand));
       }
     }else if(x.kind==='long'){
       if(x.long.active)fail('Cette sortie longue comprend un bloc actif de durée libre. L’envoi de ce format complet n’est pas encore disponible.');
@@ -2913,7 +2913,7 @@ function parseHM(str){
 function fmtPace(v){if(!v||v<=0)return '–';let s=Math.round(3600/v);const m=Math.floor(s/60);s%=60;return `${m}'${String(s).padStart(2,'0')}`;}
 const paceRange=(vlo,vhi)=>vlo===vhi?`${fmtPace(vhi)}/km`:`${fmtPace(Math.max(vlo,vhi))} à ${fmtPace(Math.min(vlo,vhi))}/km`;
 const fmtSpd=v=>v.toFixed(1).replace('.',',');
-function fmtFootDur(min){const center=Math.round(min);return `${Math.max(0,center-5)}–${center+5}′`;}
+function fmtFootDur(min){const center=Math.round(min);return `${Math.max(0,center-5)}–${Math.min(RULES.recovery.adaptiveFootings.absoluteMax,center+5)}′`;}
 function fmtDur(min){min=Math.round(min);const h=Math.floor(min/60),m=min%60;return h?`${h}h${String(m).padStart(2,'0')}`:`${m}'`;}
 function fmtTime(sec){sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h}h${String(m).padStart(2,'0')}'${String(s).padStart(2,'0')}`:`${m}'${String(s).padStart(2,'0')}`;}
 function fmtMin(x){const m=Math.floor(x),s=Math.round((x-m)*60);return s?`${m}'${String(s).padStart(2,'0')}`:`${m}'`;}
@@ -5413,7 +5413,7 @@ function corosSessionSnapshot(){
   if(!it)throw new Error('Cette séance n’est plus disponible.');
   if(day?.date){const d=day.date;base.date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];return{...base,title:base.title+' · Option '+String.fromCharCode(65+appOpt),kind:'quality',variant:copy(v),warmupMin:s.wu,cooldownMin:s.cd,description:s.isLong?description:qualityDescription,preparation:!s.isLong,activation:corosActivation(v,s)};}
-  if(it.kind==='foot')return{...base,kind:'foot',foot:JSON.parse(JSON.stringify(it.f)),footBand:efBand(it.f.type,st)};
+  if(it.kind==='foot')return{...base,kind:'foot',foot:{...JSON.parse(JSON.stringify(it.f)),maxMinutes:RULES.recovery.adaptiveFootings.absoluteMax},footBand:efBand(it.f.type,st)};
   if(it.kind==='sl')return{...base,kind:'long',long:{totalMin:w.sl,s1Min:w.slS1,active:w.slEA}};
   if(it.kind==='race')return{...base,kind:'race',race:JSON.parse(JSON.stringify(it.s))};
   throw new Error('Ce format libre n’est pas encore exportable sans modifier ses consignes.');

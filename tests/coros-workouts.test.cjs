@@ -5,6 +5,8 @@ const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-wor
 const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('/* Transcription')),ctx);const adapter=ctx.window.PlanifCorosAdapter;
 const base={title:'Planif · Premier seuil',description:'Séance de test',kind:'quality',warmupMin:20,cooldownMin:10,easyBand:[9.8,10.7]};
 const quality=(S,I={type:'speed_range',minKmh:14,maxKmh:14.5},extras={})=>({...base,variant:{structure:S,intensity:I,...extras}});
+const extendedJog=adapter.plan({title:'Jogg',description:'Footing prolongé',kind:'foot',foot:{min:90,maxMinutes:90},footBand:[9,10]});
+assert.equal(extendedJog.choices[0].max,90,'extended jog choices must respect the absolute cap');
 function make(snapshot){const before=JSON.stringify(snapshot),d=adapter.plan(snapshot);const c=adapter.course(d,Object.fromEntries(d.choices.map(x=>[x.id,x.value])),{noIntensity:true,free:true});assert.equal(JSON.stringify(snapshot),before);validate(c);return{d,c};}
 const expand=c=>c.sections.flatMap(s=>s.intervalGroup?Array.from({length:s.repeats},()=>s.sets).flat():[s]);
 function validate(c){assert.equal(c.sportType,1);assert(c.courseName&&c.courseName.length<=100);assert(c.courseDescription);assert.deepEqual(Object.keys(c).sort(),fixture.inputSchema.properties.course.required.slice().sort());
