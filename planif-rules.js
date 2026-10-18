@@ -186,7 +186,8 @@ const RULES={
     secondRecoveryFootingWhenHeavy:2
   },
   organization:{
-    weeklyFeasibility:{minimumWorkScale:0.4,scaleStep:0.15,maxAttempts:5},
+    weeklyFeasibility:{minimumWorkScale:0.4,scaleStep:0.15,maxAttempts:5,singleQualityShare:0.35,combinedQualityShare:0.5},
+    vo2MinimumWarmup:20,
     preparationByVolume:[{below:180,warmup:15,cooldown:5},{below:240,warmup:20,cooldown:8},{below:Infinity,warmup:24,cooldown:10}],
     qualityFrequency:{
       minRuns:{1:3,2:4,3:6},

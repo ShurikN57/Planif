@@ -32,7 +32,11 @@ TZ=Europe/Paris node --test tests/*.test.cjs
 node scripts/verify-live.cjs
 ```
 
-`module-equivalence.test.cjs` compares 252 generated plans and their predictions with fingerprints captured from version 2026.10.18.01, before extraction. These fixtures should change only for an intentional planning-rule change, with its expected differences reviewed.
+`module-equivalence.test.cjs` retains the original prediction fingerprints from version 2026.10.18.01. Planning fingerprints in `plans-after-balance.json` reflect the intentional 2026.10.18.03 corrections: contextual jog durations, whole-quality duration limits, minimum VO₂ preparation, equivalent mixed options and explicit placement context. The pre-extraction fixture remains available. Fixtures should change only for an intentional planning-rule change, with its expected differences reviewed.
+
+Whole quality sessions (including preparation, recovery and cooldown) are limited to 35% individually and 50% combined, against both the target and actual charge-week volume. Marathon long runs and race/taper weeks retain their own rules. An isolated normal jog may absorb missing volume after calendar placement, up to 90 minutes, with at most two prolonged jogs. The settings screen displays a live capacity estimate for the current sessions and days, not a universal maximum by outing count.
+
+The CSP permits a SHA-256 hash for the inline theme bootstrap; any change to that script requires updating its hash in the HTML policy. Firebase SDK tags pin version 10.14.1 with SHA-384 integrity hashes (verified against the published SDK bytes). Preserve COROS regional endpoints and Firebase Auth endpoints when adjusting the policy. Storage preference failures are logged; failed plan writes also show a visible warning.
 
 Engine tests import the actual module. UI persistence integration is isolated in `tests/helpers/runtime.cjs`.
 

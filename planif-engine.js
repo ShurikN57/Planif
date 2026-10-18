@@ -676,7 +676,8 @@ function prepareSession(s,weeklyMinutes=s.weeklyMinutes??Infinity){
   if(s.isLong||!s.variants?.length)return s;
   s.activation=s.variants.some(v=>preparationActivation(v,s));
   const prep=RULES.organization.preparationByVolume.find(p=>weeklyMinutes<p.below)||RULES.organization.preparationByVolume.at(-1);
-  s.weeklyMinutes=Number.isFinite(weeklyMinutes)?weeklyMinutes:undefined;s.wu=prep.warmup+(s.activation?3:0);s.cd=prep.cooldown;
+  const vo2=s.variants.some(v=>v.sector==='vo2'||(v.structure?.components||[]).some(c=>c.fam==='vo2'))||['vma','vmaShort','fartlek'].includes(s.fam);
+  s.weeklyMinutes=Number.isFinite(weeklyMinutes)?weeklyMinutes:undefined;s.wu=Math.max(prep.warmup+(s.activation?3:0),vo2?RULES.organization.vo2MinimumWarmup:0);s.cd=prep.cooldown;
   s.total=s.wu+Math.max(...s.variants.map(v=>v.total))+s.cd;
   return s;
 }
@@ -694,7 +695,7 @@ function checkCaps(x,st,exempt){
 function withLoad(s,st){
   prepareSession(s,st.vol);
   s.variants.forEach(x=>{if(!x.ruleRefs)x.ruleRefs=variantRuleRefs(x,null);});
-  s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup','organization.preparationByVolume']))];
+  s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup','organization.preparationByVolume'],s.wu===RULES.organization.vo2MinimumWarmup?['organization.vo2MinimumWarmup']:[]))];
   s.variants.forEach(x=>{Object.assign(x,variantLoad(x,s,st));x.capFail=s.libSector?capsFor(s.libSector,x,st):checkCaps(x,st,s.isLong?['s1']:[]);});
   const L=s.variants.map(x=>x.load);s.loadMin=Math.min(...L);s.loadMax=Math.max(...L);
   s.load=(s.loadMin+s.loadMax)/2; /* valeur centrale, utilisée seulement pour la répartition */
@@ -734,8 +735,9 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
   }).filter(Boolean);
   if(!pairs.length)return null;
   const br=RULES.mixed.betweenBlocks,bm=rangeMid(br);
-  const variants=[0,1].map(i=>{
-    const {a,b}=pairs[Math.min(i,pairs.length-1)];
+  const first=pairs[0],reference=first.a.work+first.b.work;
+  const equivalent=pairs.find((pair,i)=>i>0&&Math.abs(pair.a.work+pair.b.work-reference)<=TOL(reference)+1e-9)||first;
+  const variants=[first,equivalent].map(({a,b})=>{
     const refs=[...(a.ruleRefs||[]),...(b.ruleRefs||[]),'mixed.allowedContexts','mixed.maxQualities','mixed.betweenBlocks','mixed.combinations','mixed.componentTimes','mixed.fasterFractionsShorter'];
     return cand({
       sector:'mixed',fam:`mixed.${mixedKey(primaryFam,secondaryFam)}`,kind:'mixed',key:`mixed:${role}:${a.key}>${b.key}`,size:'mixed',
@@ -766,7 +768,7 @@ const joggTitle=f=>f.type==='active'?`Jogg’ + ${activeBlockLabel(f)} endurance
 function planFootings(o){
   const warns=[];let sl=o.sl,converted=false;
   /* 1 footing récupération après la séance la plus coûteuse ; un 2e si la semaine est chargée ; tous en assimilation */
-  const recN=o.assim?o.f:Math.min(o.f,o.nQ?(o.heavy?Math.min(RULES.recovery.secondRecoveryFootingWhenHeavy,o.nQ):1):0);
+  const recN=o.contextFreeFooting?0:o.assim?o.f:Math.min(o.f,o.nQ?(o.heavy?Math.min(RULES.recovery.secondRecoveryFootingWhenHeavy,o.nQ):1):0);
   const foot=[];for(let i=0;i<o.f;i++)foot.push(i<recN?{type:'rec',min:FOOT.rec.d}:{type:'std',min:FOOT.std.d});
   const PA=RULES.recovery.prolongedAllowed,ST=RULES.volume.footingStep,A=RULES.recovery.adaptiveFootings;
   const normalCount=foot.filter(f=>f.type==='std').length;
@@ -853,6 +855,11 @@ function volumes(avg,N,ramp){
   return w;
 }
 function roundW(fam,W){if(fam==='s1')return Math.max(5,r5(W));if(fam==='spec')return W>=5?Math.round(W*2)/2:Math.round(W*5)/5;return Math.round(W);}
+// Organizational limits count the whole quality session. A marathon long run remains a long run.
+function qualityDurationExceeded(sessions,minutes){
+  const F=RULES.organization.weeklyFeasibility,q=sessions.filter(s=>!s.isLong);
+  return q.some(s=>s.total>minutes*F.singleQualityShare+1e-7)||q.reduce((sum,s)=>sum+s.total,0)>minutes*F.combinedQualityShare+1e-7;
+}
 
 /* Construction d'UNE semaine d'un bloc : partagée par le mode Bloc et par le calendrier.
    o = {k, N, t, assim, vol, memory, block, specDist} ; k et N sont locaux au bloc. */
@@ -861,12 +868,12 @@ function buildWeek(B,st,o){
   const{k,N,t,assim,vol,memory}=o,warns=[];
   const initialMemory=memory?JSON.parse(JSON.stringify(memory)):null;
   const allowedQualities=Math.min(st.qualityCount,maxQualityForRuns(st.runs),o.qualityLimit??Infinity);
-  const isMara=o.block==='spec'&&o.specDist===3;
+  const isMara=o.block==='spec'&&o.specDist===3&&allowedQualities>0;
   const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1,
     slCap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?1:allowedQualities;
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?Math.min(1,allowedQualities):allowedQualities;
     let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
     const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
@@ -939,7 +946,8 @@ function buildWeek(B,st,o){
     const addRefs=(x,refs)=>{x.ruleRefs=[...new Set(x.ruleRefs.concat(refs.filter(Boolean)))];};
     const bp=B.id==='spec'?`blocks.spec.${B.dist}`:`blocks.${B.id}`;
     const blockRefs=[`${bp}.budget`,'volume.weeklyFactor',assim?'blocks.assimilation':null];
-    addRefs(sessions[0],[B.id==='spec'?`${bp}.K`:`${bp}.A`,mixedRole?'mixed.allowedContexts':null,mixedRole?'mixed.combinations':null,...blockRefs]);
+    if(qN===0)sessions=[];
+    if(sessions[0])addRefs(sessions[0],[B.id==='spec'?`${bp}.K`:`${bp}.A`,mixedRole?'mixed.allowedContexts':null,mixedRole?'mixed.combinations':null,...blockRefs]);
     if(sessions[1])addRefs(sessions[1],[B.seq?`${bp}.sequence`:`${bp}.B`,sessions[1].fam==='mixed'?'mixed.allowedContexts':null,sessions[1].fam==='mixed'?'mixed.combinations':null,...blockRefs]);
     if(sessions[2])addRefs(sessions[2],[`${bp}.B`,'organization.qualityFrequency',...blockRefs]);
     // sortie longue
@@ -947,21 +955,28 @@ function buildWeek(B,st,o){
     const qTot=sessions.reduce((s,x)=>s+x.total,0);
     const f=Math.max(0,st.runs-sessions.length-(isMara?0:1));
     const minLong=isMara?0:Math.min(slCap,LR.minMinutes),reservedEasy=f*FOOT.std.r[0]+minLong;
-    if(qTot+reservedEasy>vol+RULES.volume.weekTolerance*vol){
+    const retryFit=(durationBudget,allowZero=false)=>{
       const F=RULES.organization.weeklyFeasibility,attempt=o.fitAttempt||0;
       let retry=null;
-      if(attempt<F.maxAttempts&&workScale>F.minimumWorkScale+1e-9)retry={...o,fitAttempt:attempt+1,workScale:Math.max(F.minimumWorkScale,workScale-F.scaleStep)};
-      else if(qN>1)retry={...o,qualityLimit:qN-1,fitAttempt:0,workScale:1};
+      if(attempt<F.maxAttempts&&workScale>F.minimumWorkScale+1e-9)retry={...o,durationBudget,fitAttempt:attempt+1,workScale:Math.max(F.minimumWorkScale,workScale-F.scaleStep)};
+      else if(qN>1||qN>0&&allowZero)retry={...o,durationBudget,qualityLimit:qN-1,fitAttempt:0,workScale:1};
       if(retry){if(memory){for(const key of Object.keys(memory))delete memory[key];Object.assign(memory,initialMemory);}return buildWeek(B,st,retry);}
+      return null;
+    };
+    if(qTot+reservedEasy>vol+RULES.volume.weekTolerance*vol||qualityDurationExceeded(sessions,Math.min(vol,o.durationBudget??Infinity))){
+      const fitted=retryFit(Math.min(vol,o.durationBudget??Infinity),qualityDurationExceeded(sessions,Math.min(vol,o.durationBudget??Infinity)));if(fitted)return fitted;
       warns.push({code:'weekly_volume_incompatible',params:{minimum:Math.ceil(qTot+reservedEasy),target:Math.round(vol)}});
     }
-    if(allowedQualities<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:allowedQualities}});
+    if(sessions.length<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:sessions.length}});
     else if(workScale<1)warns.push({code:'quality_work_reduced'});
     const workLoad=sessions.reduce((a,x)=>a+x.loadBreakdown.z2+x.loadBreakdown.z3+x.loadBreakdown.z4,0);
     const heavy=!assim&&workLoad/vol>=RULES.load.heavyWeek;
     const costly=sessions.slice().sort((a,b)=>b.loadMax-a.loadMax)[0];
-    const fp=planFootings({R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.min(slCap,Math.max(LR.minMinutes,r5(vol*LR.minShare))),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
+    const fp=planFootings({contextFreeFooting:!o.calendar&&f===1,R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.min(slCap,Math.max(LR.minMinutes,r5(vol*LR.minShare))),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
     sl=fp.sl;const foot=fp.foot;warns.push(...fp.warns);
+    // Calendar placement can extend a conservatively sized recovery run; check its final volume there.
+    const actual=qTot+sl+foot.reduce((sum,x)=>sum+x.min,0);
+    if(!o.calendar&&qualityDurationExceeded(sessions,Math.min(vol,actual))){const fitted=retryFit(Math.min(vol,actual),true);if(fitted)return fitted;}
     const aeContext=assim?'assimilation':B.id==='aero'?'aero':null;
     const ae=aeContext?applyActiveEndurance(st,foot,sl,sessions.length,aeContext):{slEA:null};
     const slEA=ae.slEA;
@@ -1224,6 +1239,7 @@ function placeWeek(wk,win,st){
     const protectedDay=d=>!!(qualityAt(addDays(d,1))||(slD&&+addDays(d,1)===+slD)||qualityAt(addDays(d,-1))&&slot.has(+addDays(d,1)));
     let spare=0;
     for(const {d,f} of placed){
+      f.contextProtected=protectedDay(d);
       if(f.type==='active')continue;
       if(!protectedDay(d)&&f.type==='rec'&&!qualityAt(addDays(d,-1)))f.type='std';
       if(protectedDay(d)&&f.min>AF.protectedMax){spare+=f.min-AF.protectedMax;f.min=AF.protectedMax;f.type='rec';}
@@ -1233,14 +1249,29 @@ function placeWeek(wk,win,st){
       const max=f.min>AF.normalMax||extended<AF.maxProlonged?AF.absoluteMax:AF.normalMax;
       const transfer=Math.min(spare,Math.max(0,max-f.min));f.min+=transfer;spare-=transfer;if(f.min>AF.normalMax)f.type='pro';
     }
+    const missing=Number.isFinite(wk.vol)?Math.max(0,(wk.target??wk.targetVolume??wk.vol)-wk.vol):0;
+    let added=0;
+    // An isolated normal run may absorb previously unallocated minutes, after its date is known.
+    for(const {d,f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
+      const extended=placed.filter(x=>x.f.min>AF.normalMax).length;
+      const max=f.min>AF.normalMax||extended<AF.maxProlonged?AF.absoluteMax:AF.normalMax;
+      const transfer=Math.min(missing-added,Math.max(0,max-f.min));f.min+=transfer;added+=transfer;if(f.min>AF.normalMax)f.type='pro';
+    }
+    const delta=added-spare;
+    if(delta&&wk.z&&wk.loadBreakdown){
+      wk.vol+=delta;wk.volume=wk.vol;wk.z.z1+=delta;
+      const load=delta*RULES.load.intensity.easy;
+      wk.load+=load;wk.loadMin+=load;wk.loadMax+=load;wk.loadBreakdown.z1+=load;
+      wk.pct=wk.qualityPct=wk.qualityMinutes/wk.vol*100;
+    }
+    if(added){
+      wk.warns=wk.warns.filter(w=>!['volume_short','volume_deviation'].includes(w.code));
+      const deficit=(wk.target??wk.targetVolume)-wk.vol;
+      if(deficit>RULES.volume.weekTolerance*(wk.target??wk.targetVolume))wk.warns.push({code:'volume_short',params:{minutes:Math.round(deficit)}});
+      if(Math.abs(deficit)>RULES.volume.deviationAlert*(wk.target??wk.targetVolume))wk.warns.push({code:'volume_deviation',params:{volume:wk.vol,target:wk.target??wk.targetVolume}});
+    }
     if(spare>0){
       warns.push({code:'protected_footing_shortfall',params:{minutes:Math.round(spare)}});
-      if(wk.z&&wk.loadBreakdown){
-        wk.vol-=spare;wk.volume-=spare;wk.z.z1=Math.max(0,wk.z.z1-spare);
-        const load=spare*RULES.load.intensity.easy;
-        wk.load-=load;wk.loadMin-=load;wk.loadMax-=load;wk.loadBreakdown.z1-=load;
-        wk.pct=wk.qualityPct=wk.qualityMinutes/wk.vol*100;
-      }
     }
     placed.forEach(({f})=>{f.load=f.min*RULES.load.intensity.easy;});
 
@@ -1262,13 +1293,14 @@ function buildCalendar(st,pred){
   const plan=planPhases(Nall-(intro?1:0),st.calDist);if(intro)plan.unshift({kind:'intro',block:'intro'});
   const vols=calendarVolumes(plan,st.vol,wins);
   const memory={},weeks=[];
-  plan.forEach((p,i)=>{const win=wins[i],vol=vols[i],priorFractions={...(memory.fractions||{})};let wk;
+  plan.forEach((p,i)=>{const win=wins[i],vol=vols[i],priorFractions={...(memory.fractions||{})},priorMemory=JSON.parse(JSON.stringify(memory));let wk,rebuild;
     if(p.kind==='charge'||p.kind==='assim'){
       const bst={...st,block:p.block,specDist:st.calDist,specGoal:st.calGoal},B=getBlock(bst,pred);
       const nextCharge=plan.slice(i+1).find(x=>x.kind==='charge'),nextBlock=nextCharge?nextCharge.block:null;
       const lrDate=(st.slDay!==''?Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).find(d=>wd(d)===+st.slDay&&st.avail[wd(d)]):null)||Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).filter(d=>st.avail[wd(d)]).pop();
       const longRunCap=st.calDist===1&&lrDate&&dayDiff(lrDate,race)<=RULES.calendar.longRun10k.preRaceDays?RULES.calendar.longRun10k.preRaceCapMinutes:undefined;
-      wk=buildWeek(B,bst,{longRunCap,k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock});
+      const options={longRunCap,k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock};
+      rebuild=extra=>buildWeek(B,bst,{...options,...extra});wk=rebuild({});
       if(p.kind==='assim')wk.reminders=[{code:'strides_optional_week'}];
     }else if(p.kind==='taper')wk=buildTaperWeek(st,pred,vol);
     else wk=buildIntroWeek(st,vol,win);
@@ -1276,7 +1308,15 @@ function buildCalendar(st,pred){
       taper:p.kind==='taper',raceWeek:i===plan.length-1,targetVolume:vol,segK:p.k,segLen:p.segLen});
     wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement','recovery.calendarContext'],
       p.kind==='taper'?['calendar.taper']:p.kind==='intro'?['calendar.introWeekMinDays','calendar.introFooting']:[]);
-    const pl=placeWeek(wk,win,st);wk.days=pl.list;wk.warns=wk.warns.concat(pl.warns);
+    const calendarRefs=wk.ruleRefs.slice();
+    const placedVolume=w=>w.vol-w.foot.filter(f=>f.unplaced).reduce((sum,f)=>sum+f.min,0)-w.sessions.filter(s=>s.unplaced).reduce((sum,s)=>sum+s.total,0);
+    let pl=placeWeek(wk,win,st);
+    if(p.kind==='charge')for(let attempt=0;attempt<8&&qualityDurationExceeded(wk.sessions,Math.min(vol,placedVolume(wk)));attempt++){
+      const metadata={index:i,k:i,startDate:win.start,endDate:win.end,phase:p.block,block:p.block,assimilation:false,taper:false,raceWeek:false,targetVolume:vol,segK:p.k,segLen:p.segLen};
+      for(const key of Object.keys(memory))delete memory[key];Object.assign(memory,JSON.parse(JSON.stringify(priorMemory)));
+      wk=rebuild({durationBudget:Math.min(vol,placedVolume(wk)),...(attempt===7?{qualityLimit:0}:{})});Object.assign(wk,metadata);wk.ruleRefs=[...new Set(wk.ruleRefs.concat(calendarRefs))];pl=placeWeek(wk,win,st);
+    }
+    wk.days=pl.list;wk.warns=wk.warns.concat(pl.warns);
     if(activePlan&&context.hasSameStructure?.(activePlan.structure)){
       const now=new Date(),cut=new Date(now.getFullYear(),now.getMonth(),now.getDate());
       const savedDays=new Map((activePlan.plan?.weeks||[]).flatMap(w=>w.days||[]).map(d=>[planDateKey(d.date),d]));

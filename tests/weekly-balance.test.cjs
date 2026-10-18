@@ -28,7 +28,7 @@ assert(smallPlan.weeks.every(w=>w.foot.length+w.sessions.length+1===4));
 for(const [vol,warmup,cooldown] of [[150,15,5],[179,15,5],[180,20,8],[239,20,8],[240,24,10],[420,24,10]]){
  for(const activation of [false,true]){
   const session={fam:activation?'vma':'s1',variants:[{total:20,sector:activation?'vo2':'s1'}]};
-  const s=E.prepareSession(session,vol);assert.equal(s.wu,warmup+(activation?3:0));assert.equal(s.cd,cooldown);
+  const s=E.prepareSession(session,vol);assert.equal(s.wu,Math.max(warmup+(activation?3:0),activation?20:0));assert.equal(s.cd,cooldown);
   const total=s.total;E.prepareSession(s);assert.equal(s.total,total);
  }
 }
