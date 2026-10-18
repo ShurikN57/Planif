@@ -36,7 +36,7 @@ for(let k=0;k<5;k++){
 }
 // Calendar date, not a fixed Sunday, governs J-7 cap; all other distances retain their existing limit.
 const weekday=E.buildCalendar({...state,calRace:'2026-12-18',slDay:'4'},pred);assert.equal(weekday.weeks.at(-2).sl,60);
-const five=E.buildCalendar({...state,calDist:0},pred);assert(five.weeks.some(w=>w.sl>90));
+const five=E.buildCalendar({...state,calDist:0,vol:420},pred);assert(five.weeks.some(w=>w.sl>90));assert(five.weeks.filter(w=>w.phase==='spec').every(w=>w.sl<=E.RULES.organization.longRun.cap.spec[0]));
 
 
 for(const w of c.weeks)for(const session of w.sessions){if(session.isLong)continue;assert.equal(session.wu,session.activation?27:24);assert.equal(session.cd,10);assert(Math.abs(session.total-(session.wu+Math.max(...session.variants.map(v=>v.total))+10))<1e-9);const before=session.total;E.prepareSession(session);assert.equal(session.total,before,'preparation must not be added twice');}

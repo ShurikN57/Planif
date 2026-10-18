@@ -37,7 +37,7 @@ assert.throws(()=>adapter.course(adapter.plan(quality({type:'intervals',reps:2,d
 assert.throws(()=>adapter.pace([0,14]),/plage/);
 assert.throws(()=>adapter.pace([31,32]),/limites/);
 const preparedSnapshot=quality({type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]},undefined,{sector:'s1'});
-preparedSnapshot.preparation=true;preparedSnapshot.s2Kmh=14;
+preparedSnapshot.preparation=true;preparedSnapshot.s2Kmh=14;preparedSnapshot.warmupMin=24;
 const original=JSON.stringify(preparedSnapshot),prepared=adapter.plan(preparedSnapshot),values=Object.fromEntries(prepared.choices.map(x=>[x.id,x.value]));
 const consent={noIntensity:true,free:true};
 const prepCourse=adapter.course(prepared,values,consent,{profile:'guided'});validate(prepCourse);
@@ -60,13 +60,21 @@ assert.equal(expand(manualCourse).filter(s=>s.sectionType===2&&s.targetValue===3
 assert.equal(adapter.labels(prepared,{profile:'manual'}).length,manualCourse.sections.length);
 assert(!manualCourse.courseDescription.includes('Récupération : undefined'));
 assert.throws(()=>adapter.course(prepared,values,{noIntensity:true}),/Tour/);
-const active=adapter.plan({...preparedSnapshot,activation:true});
+const active=adapter.plan({...preparedSnapshot,activation:true,warmupMin:27});
 const activeCourse=adapter.course(active,values,consent,{profile:'guided'});validate(activeCourse);rows=expand(activeCourse);
 assert.equal(rows[8].targetValue,105);assert.equal(rows[8].intensityValueStart,257);assert.equal(rows[8].intensityValueEnd,257);
 assert.equal(rows[7].targetValue,45);assert.equal(rows[9].targetValue,90);
 assert.equal(rows.slice(0,10).reduce((a,s)=>a+s.targetValue,0),27*60);
 assert.equal(rows.filter(s=>s.targetType===4).length,0);
 assert.equal(adapter.labels(active,{profile:'guided'}).length,activeCourse.sections.length);
+for(const [warmupMin,cooldownMin,activation] of [[15,5,false],[18,5,true],[20,8,false],[23,8,true],[24,10,false],[27,10,true]]){
+ const draft=adapter.plan({...preparedSnapshot,warmupMin,cooldownMin,activation});
+ const course=adapter.course(draft,values,consent,{profile:'guided'});validate(course);
+ const steps=expand(course);
+ assert.equal(steps.slice(0,activation?10:8).reduce((sum,s)=>sum+s.targetValue,0),warmupMin*60);
+ assert.equal(steps.at(-1).targetValue,cooldownMin*60);
+ assert.equal(steps.filter(s=>s.sectionType===2&&s.targetValue===300).length,7,'quality core unchanged by preparation size');
+}
 const slower=adapter.course(active,values,consent,{profile:'guided',activationKmh:13.8});assert.equal(expand(slower)[8].intensityValueStart,261);
 assert.throws(()=>adapter.course(active,values,consent,{activationKmh:14.1}),/second seuil/);
 assert.throws(()=>adapter.course(active,values,consent,{activationKmh:NaN}),/second seuil/);

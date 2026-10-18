@@ -951,7 +951,7 @@ window.PlanifCorosAdapter=(()=>{
   function plan(snapshot){
     const x=clone(snapshot),draft={name:shortTitle(x),description:x.description,choices:[],sections:[],notes:[],noIntensity:false,free:false};
     if(!x.title||!x.description)fail('La séance affichée est incomplète.');
-    if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh,easyBand:x.easyBand};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push('Préparation personnelle COROS : 20 min faciles, 3 lignes droites de 12 s, puis le cœur de séance et un retour au calme comptabilisé à 10 min dans Planif. Les lignes droites restent au ressenti.');if(x.activation)draft.notes.push('Après les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2. En mode guidé : 45 s avant et 1 min 30 après.');}
+    if(x.kind==='quality'&&x.preparation){draft.preparation={activation:!!x.activation,s2Kmh:x.s2Kmh,easyBand:x.easyBand,easyMinutes:(x.warmupMin??(x.activation?27:24))-(x.activation?7:4),cooldownMinutes:x.cooldownMin??10};if(x.activation&&(!Number.isFinite(x.s2Kmh)||x.s2Kmh<=0))fail('Renseigne le second seuil avant d’envoyer cette préparation.');draft.free=true;draft.noIntensity=true;draft.notes.push(`Préparation personnelle COROS : ${draft.preparation.easyMinutes} min faciles, 3 lignes droites de 12 s, puis le cœur de séance et un retour au calme comptabilisé à ${draft.preparation.cooldownMinutes} min dans Planif. Les lignes droites restent au ressenti.`);if(x.activation)draft.notes.push('Après les lignes droites : 1 min 45 au second seuil ou légèrement plus lent, sans dépasser S2. En mode guidé : 45 s avant et 1 min 30 après.');}
     const choice=(label,range,value,unit='s')=>{
       const r=range.map(Math.round);if(r.length!==2||r.some(v=>!Number.isFinite(v)||v<=0)||r[0]>r[1])fail('Une durée proposée est invalide.');
       if(r[0]===r[1])return r[0];
@@ -1061,11 +1061,11 @@ window.PlanifCorosAdapter=(()=>{
       const recovery=seconds=>manualProfile?{sectionType:3,targetType:4}:{sectionType:3,targetType:2,targetValue:seconds};
       const stride=()=>({sectionType:2,targetType:2,targetValue:12});
       const easy=options.profile==='guided'&&draft.preparation.easyBand?pace(draft.preparation.easyBand):{};
-      sections=[{sectionType:1,targetType:2,targetValue:1200,...easy},recovery(48),{intervalGroup:true,repeats:2,sets:[stride(),options.strideRecovery==='manual'?{sectionType:3,targetType:4}:recovery(48)]},stride(),recovery(draft.preparation.activation?45:60)];
+      sections=[{sectionType:1,targetType:2,targetValue:Math.round((draft.preparation.easyMinutes??20)*60),...easy},recovery(48),{intervalGroup:true,repeats:2,sets:[stride(),options.strideRecovery==='manual'?{sectionType:3,targetType:4}:recovery(48)]},stride(),recovery(draft.preparation.activation?45:60)];
       if(draft.preparation.activation){const speed=options.activationKmh??draft.preparation.s2Kmh;if(!Number.isFinite(speed)||speed<=0||speed>draft.preparation.s2Kmh)fail('La cible d’activation doit être au second seuil ou plus lente.');sections.push({sectionType:2,targetType:2,targetValue:105,...pace([speed,speed])},recovery(90));}
       sections.push(...core);
       if(manualProfile)sections.push(recovery(0));
-      sections.push(manualProfile?{sectionType:4,targetType:4}:{sectionType:4,targetType:2,targetValue:600,...easy});
+      sections.push(manualProfile?{sectionType:4,targetType:4}:{sectionType:4,targetType:2,targetValue:Math.round((draft.preparation.cooldownMinutes??10)*60),...easy});
     }
     const applyProfile=s=>{if(s.intervalGroup){s.sets.forEach(applyProfile);return;}if((s.sectionType===3&&manualCore)||(s.sectionType===4&&manualProfile)){s.targetType=4;delete s.targetValue;}if(manualProfile){delete s.intensityType;delete s.intensityValueStart;delete s.intensityValueEnd;}};
     sections.forEach(applyProfile);
@@ -1092,7 +1092,8 @@ window.PlanifCorosAdapter=(()=>{
       if(![1,2,3,4].includes(s.sectionType)||![1,2,4].includes(s.targetType))fail('Section invalide.');
     };sections.forEach(walk);
     const choices=draft.choices.filter(c=>!(manualCore&&c.label.startsWith('Récupération'))).map(c=>`${c.label} : ${values[c.id]} ${c.unit==='min'?'min':'s'}.`).join(' ');
-    const description=[draft.description,manualProfile?'Profil au ressenti : aucune cible d’allure. Toutes les récupérations et le retour au calme sont manuels, bouton Tour. Le retour au calme reste estimé à 10 min dans Planif.':'Profil guidé : allures prévues, récupérations chronométrées et retour au calme de 10 min. Les lignes droites restent au ressenti.',choices,...draft.notes].filter(Boolean).join(' ');
+    const cooldownMinutes=draft.preparation?.cooldownMinutes??10;
+    const description=[draft.description,manualProfile?`Profil au ressenti : aucune cible d’allure. Toutes les récupérations et le retour au calme sont manuels, bouton Tour. Le retour au calme reste estimé à ${cooldownMinutes} min dans Planif.`:`Profil guidé : allures prévues, récupérations chronométrées et retour au calme de ${cooldownMinutes} min. Les lignes droites restent au ressenti.`,choices,...draft.notes].filter(Boolean).join(' ');
     return{sportType:1,courseName:draft.name.slice(0,100),courseDescription:description,sections};
   }
   function labels(draft,options={},sentSections){
@@ -1119,7 +1120,7 @@ window.PlanifCorosAdapter=(()=>{
 
 </script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.17.10"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.18.01"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -1303,6 +1304,7 @@ const RULES={
     footingStep:5
   },
   recovery:{
+    adaptiveFootings:{normalFrom:50,normalMax:70,prolongedFrom:65,prolongedMax:80,absoluteMax:90,maxProlonged:2,protectedMax:45},
     footing:{
       rec:{range:[35,45],default:40,intensityPctLT1:[0.75,0.83]},
       std:{range:[40,60],default:50,intensityPctLT1:[0.84,0.91]},
@@ -1313,6 +1315,8 @@ const RULES={
     secondRecoveryFootingWhenHeavy:2
   },
   organization:{
+    weeklyFeasibility:{minimumWorkScale:0.4,scaleStep:0.15,maxAttempts:5},
+    preparationByVolume:[{below:180,warmup:15,cooldown:5},{below:240,warmup:20,cooldown:8},{below:Infinity,warmup:24,cooldown:10}],
     qualityFrequency:{
       minRuns:{1:3,2:4,3:6},
       recommendedRuns:{1:3,2:5,3:6},
@@ -2764,6 +2768,8 @@ const RULE_META=(()=>{
   'organization.activeEndurance':m('Q_INTENSITY_DISTRIBUTION','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-10',reviewSummary:'En développement aérobie : au plus une fois par semaine, 15 à 45 min à 92–98 % de la vitesse LT1, avec LT1 comme plafond. En assimilation, la règle dédiée limite le bloc à 10, 15 ou 20 min.'}),
   'organization.assimilationActive':m('Q_ASSIMILATION','organizational',{origin:'internal_heuristic',confidence:'low',decision:'modify',lastReview:'2026-10-10',reviewSummary:'Choix utilisateur : un Jogg avec un bloc de 10, 15 ou 20 min d’endurance active remplace la qualité. Durée adaptée au Jogg disponible, début et fin faciles, sans dépasser LT1. Pas de qualité comptabilisée.'}),
   'organization.warmup':m('Q_WARMUP','organizational'),
+  'organization.preparationByVolume':m('Q_WARMUP','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-18',reviewSummary:'Choix Planif : préparation totale de 15 min et retour au calme de 5 min sous 3 h hebdomadaires ; 20/8 min de 3 à moins de 4 h ; 24/10 min à partir de 4 h. Activation : +3 min. Les lignes droites sont incluses, et les durées sont reprises dans COROS.'}),
+  'organization.weeklyFeasibility':m('Q_LOAD_PROGRESSION','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-18',reviewSummary:'Réserver le temps des footings et de la sortie longue avant de retenir les séances complètes. Réduire le travail ciblé puis le nombre de qualités si nécessaire ; conserver les sorties et signaler les demandes incompatibles.'}),
   'prediction.marathonPenalty':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredFallbackStep':m('Q_PERF_PREDICTION','estimation'),
   'prediction.measuredStepClamp':m('Q_PERF_PREDICTION','estimation'),
@@ -2781,6 +2787,7 @@ const RULE_META=(()=>{
   'mixed.combinations':m('Q_MIXED_SESSIONS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-06',reviewSummary:'Budgets stricts communs aux deux composants et aux deux options : S1→S2 35 min (S1 ≤25, S2 ≤12), S1→VO₂ 30 min, S2→VO₂ 25 min. Le budget demandé par composant et le budget hebdomadaire réel restent prioritaires. Heuristiques internes, sans revendication de plafond scientifique universel.'}),
   'recovery.footing':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'moderate',decision:'modify',lastReview:'2026-10-10',reviewSummary:'Une seule catégorie visible : Jogg, plage commune réunissant EF récupération et EF normale (75–91 % de la vitesse LT1), à adapter au ressenti sous LT1. Les anciens types internes servent uniquement à adapter la durée et le placement, pas à imposer un footing normal ou récupération.'}),
   'recovery.prolongedAllowed':m('Q_EASY_RUNS','organizational'),
+  'recovery.adaptiveFootings':m('Q_EASY_RUNS','organizational',{origin:'internal_heuristic',confidence:'low',decision:'monitor',lastReview:'2026-10-18',reviewSummary:'Fourchettes adaptées au temps restant par footing normal : jusqu’à 70 min, puis au plus deux footings prolongés de 80 à 90 min. Les footings proches des séances exigeantes restent courts selon leur placement réel. Limites de programmation internes, pas des seuils physiologiques.'}),
   'recovery.secondRecoveryFootingWhenHeavy':m('Q_WEEKLY_LOAD','organizational'),
   's1.band':m("Q_S1_INTENSITY","physiological",{"origin": "partial_science", "confidence": "moderate", "decision": "modify", "findings": ["FND_022"], "lastReview": "2026-10-03", "reviewSummary": "SRC_007 distingue les repères physiologiques dans son protocole. Le soutien porte sur le repère LT1, pas sur les marges d’allure S1 : celles-ci restent heuristiques. SRC_018 est désormais rattachée à S2."}),
   's1.formats.continuous':m('Q_S1_STRUCTURE','physiological',{"origin": "internal_heuristic", "confidence": "low", "decision": "monitor", "lastReview": "2026-10-03", "reviewSummary": "Question ouverte : aucun essai contrôlé dédié identifié dans la revue actuelle pour valider les durées, volumes ou récupérations S1 précis ; ces choix restent consensus/heuristiques."}),
@@ -3006,9 +3013,9 @@ function load(){
   loadModeState(CURRENT_MODE);
   activePlan=getJson(STORE.active,null);
   planHistory=getJson(STORE.history,[])||[];
-  const migrationKey='planif-specific-limits-v1';
+  const migrationKey='planif-weekly-balance-v1';
   if(validSavedPlan(activePlan)&&!localStorage.getItem(migrationKey)){
-    const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant ajustement des séances spécifiques'};
+    const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant ajustement du volume hebdomadaire'};
     localStorage.setItem(STORE.history,JSON.stringify([archived,...planHistory]));
     planHistory=[archived,...planHistory];localStorage.setItem(migrationKey,'saved');
   }
@@ -3711,10 +3718,11 @@ function preparationActivation(v,s={}){
   if(['5 km','10 km'].includes(I.race))return true;
   return (S.components||[]).some(c=>preparationActivation(c.variant));
 }
-function prepareSession(s){
+function prepareSession(s,weeklyMinutes=s.weeklyMinutes??Infinity){
   if(s.isLong||!s.variants?.length)return s;
   s.activation=s.variants.some(v=>preparationActivation(v,s));
-  s.wu=s.activation?27:24;s.cd=10;
+  const prep=RULES.organization.preparationByVolume.find(p=>weeklyMinutes<p.below)||RULES.organization.preparationByVolume.at(-1);
+  s.weeklyMinutes=Number.isFinite(weeklyMinutes)?weeklyMinutes:undefined;s.wu=prep.warmup+(s.activation?3:0);s.cd=prep.cooldown;
   s.total=s.wu+Math.max(...s.variants.map(v=>v.total))+s.cd;
   return s;
 }
@@ -3730,9 +3738,9 @@ function checkCaps(x,st,exempt){
   return Object.keys(RULES.safeguards.caps).filter(k=>!exempt.includes(k)&&m[k]>RULES.safeguards.caps[k]+RULES.safeguards.capTolerance);
 }
 function withLoad(s,st){
-  prepareSession(s);
+  prepareSession(s,st.vol);
   s.variants.forEach(x=>{if(!x.ruleRefs)x.ruleRefs=variantRuleRefs(x,null);});
-  s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup']))];
+  s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup','organization.preparationByVolume']))];
   s.variants.forEach(x=>{Object.assign(x,variantLoad(x,s,st));x.capFail=s.libSector?capsFor(s.libSector,x,st):checkCaps(x,st,s.isLong?['s1']:[]);});
   const L=s.variants.map(x=>x.load);s.loadMin=Math.min(...L);s.loadMax=Math.max(...L);
   s.load=(s.loadMin+s.loadMax)/2; /* valeur centrale, utilisée seulement pour la répartition */
@@ -3802,24 +3810,28 @@ function activeBlockLabel(f){
 }
 const joggTitle=f=>f.type==='active'?`Jogg’ + ${activeBlockLabel(f)} endurance active${f.ld?' + LD':''}`:f.ld?'Jogg + LD':'Jogg’';
 function planFootings(o){
-  const warns=[];let sl=o.sl,removed=0,converted=false;
+  const warns=[];let sl=o.sl,converted=false;
   /* 1 footing récupération après la séance la plus coûteuse ; un 2e si la semaine est chargée ; tous en assimilation */
   const recN=o.assim?o.f:Math.min(o.f,o.nQ?(o.heavy?Math.min(RULES.recovery.secondRecoveryFootingWhenHeavy,o.nQ):1):0);
   const foot=[];for(let i=0;i<o.f;i++)foot.push(i<recN?{type:'rec',min:FOOT.rec.d}:{type:'std',min:FOOT.std.d});
-  const PA=RULES.recovery.prolongedAllowed,ST=RULES.volume.footingStep;
-  const allowPro=o.vol>=PA.weeklyMinutesFrom||o.runs<=PA.runsUpTo,tol=RULES.volume.weekTolerance*o.vol,target=o.R+o.sl;
+  const PA=RULES.recovery.prolongedAllowed,ST=RULES.volume.footingStep,A=RULES.recovery.adaptiveFootings;
+  const normalCount=foot.filter(f=>f.type==='std').length;
+  const required=normalCount?Math.max(0,(o.R-foot.filter(f=>f.type==='rec').reduce((s,f)=>s+f.min,0))/normalCount):0;
+  const normalMax=required>A.normalFrom?A.normalMax:FOOT.std.r[1];
+  const prolongedMax=required>A.prolongedMax?A.absoluteMax:required>A.prolongedFrom?A.prolongedMax:FOOT.pro.r[1];
+  const allowPro=required>A.prolongedFrom||o.vol>=PA.weeklyMinutesFrom||o.runs<=PA.runsUpTo,tol=RULES.volume.weekTolerance*o.vol,target=o.R+o.sl;
   const sum=()=>foot.reduce((a,x)=>a+x.min,0)+sl;
   for(let g=0;g<300&&Math.abs(target-sum())>tol;g++){
     const diff=target-sum();
     if(diff>0){
-      const std=foot.filter(x=>x.type==='std'&&x.min<FOOT.std.r[1]).sort((a,b)=>a.min-b.min)[0];if(std){std.min+=ST;continue;}
+      const std=foot.filter(x=>x.type==='std'&&x.min<normalMax).sort((a,b)=>a.min-b.min)[0];if(std){std.min+=ST;continue;}
       const rec=foot.filter(x=>x.type==='rec'&&x.min<FOOT.rec.r[1]).sort((a,b)=>a.min-b.min)[0];if(rec){rec.min+=ST;continue;}
       if(!o.isMara&&sl<o.slSoft){sl+=ST;continue;}
       /* un footing récupération peut devenir standard s'il en manque (lendemain de journée facile) */
       /* le footing récupération garanti après la séance la plus coûteuse n'est jamais converti */
       if(!converted&&!o.heavy&&!o.assim){const recs=foot.filter(x=>x.type==='rec');if(recs.length>(o.nQ?1:0)){recs.pop().type='std';converted=true;continue;}}
       if(!o.isMara&&sl<o.slMax){sl+=ST;continue;}
-      if(allowPro){const pro=foot.filter(x=>(x.type==='std'||x.type==='pro')&&x.min<FOOT.pro.r[1]).sort((a,b)=>a.min-b.min)[0];if(pro){pro.min+=ST;pro.type='pro';continue;}}
+      if(allowPro){const extended=foot.filter(x=>x.type==='pro').length;const pro=foot.filter(x=>(x.type==='pro'||x.type==='std'&&extended<A.maxProlonged)&&x.min<prolongedMax).sort((a,b)=>a.min-b.min)[0];if(pro){pro.min+=ST;pro.type='pro';continue;}}
       warns.push({code:'volume_short',params:{minutes:Math.round(diff)}});break;
     }else{
       const std=foot.filter(x=>(x.type==='std'||x.type==='pro')&&x.min>FOOT.std.r[0]).sort((a,b)=>b.min-a.min)[0];
@@ -3827,11 +3839,11 @@ function planFootings(o){
       const rec=foot.filter(x=>x.type==='rec'&&x.min>FOOT.rec.r[0]).sort((a,b)=>b.min-a.min)[0];if(rec){rec.min-=ST;continue;}
       if(!o.isMara&&sl>Math.max(o.slMin,Math.min(o.sl,o.slSoft))){sl-=ST;continue;}
       if(!o.isMara&&sl>o.slMin){sl-=ST;continue;}
-      if(foot.length){const i=foot.findIndex(x=>x.type!=='rec');foot.splice(i>=0?i:foot.length-1,1);removed++;continue;}
+      // Preserve the requested outings; feasibility is resolved by reducing quality work upstream.
+      if(foot.length){warns.push({code:'weekly_volume_incompatible',params:{minimum:Math.round(sum()-target+o.vol),target:Math.round(o.vol)}});break;}
       warns.push({code:'quality_exceeds_volume'});break;
     }
   }
-  if(removed)warns.push({code:'footings_removed',params:{runs:o.runs,removed}});
   foot.forEach(x=>{x.load=x.min*RULES.load.intensity.easy;});
   /* les footings de récupération viennent en premier : ils se placent le lendemain des qualités */
   foot.sort((a,b)=>(a.type==='rec'?0:1)-(b.type==='rec'?0:1));
@@ -3893,12 +3905,14 @@ function roundW(fam,W){if(fam==='s1')return Math.max(5,r5(W));if(fam==='spec')re
 function buildWeek(B,st,o){
   if(o.assim)return buildAssimilationWeek(B,st,o);
   const{k,N,t,assim,vol,memory}=o,warns=[];
+  const initialMemory=memory?JSON.parse(JSON.stringify(memory)):null;
+  const allowedQualities=Math.min(st.qualityCount,maxQualityForRuns(st.runs),o.qualityLimit??Infinity);
   const isMara=o.block==='spec'&&o.specDist===3;
   const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1,
     slCap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?1:(assim?(st.assimQ2?2:1):st.qualityCount);
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?1:allowedQualities;
     let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
     const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
@@ -3917,6 +3931,8 @@ function buildWeek(B,st,o){
       if(qa+qb+qc>max+1)warns.push({code:'budget_too_small'});
     }
     aW=roundW(B.A.fam,fromMin(B.A.fam,qa));bW=bW?roundW(bDef.fam,qb):0;cW=qc?roundW(cDef.fam,qc):0;
+    const workScale=o.workScale??1;
+    aW*=workScale;bW*=workScale;cW*=workScale;
     const ctx={v:B.v,dist:B.dist,vol,assim,memory,fractionHistory:{...(memory?.fractions||{})},calendar:!!o.calendar};
     let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
     /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
@@ -3976,6 +3992,17 @@ function buildWeek(B,st,o){
     let sl=isMara?0:clamp(r5(vol*LR.share),LR.minMinutes,slCap);
     const qTot=sessions.reduce((s,x)=>s+x.total,0);
     const f=Math.max(0,st.runs-sessions.length-(isMara?0:1));
+    const minLong=isMara?0:Math.min(slCap,LR.minMinutes),reservedEasy=f*FOOT.std.r[0]+minLong;
+    if(qTot+reservedEasy>vol+RULES.volume.weekTolerance*vol){
+      const F=RULES.organization.weeklyFeasibility,attempt=o.fitAttempt||0;
+      let retry=null;
+      if(attempt<F.maxAttempts&&workScale>F.minimumWorkScale+1e-9)retry={...o,fitAttempt:attempt+1,workScale:Math.max(F.minimumWorkScale,workScale-F.scaleStep)};
+      else if(qN>1)retry={...o,qualityLimit:qN-1,fitAttempt:0,workScale:1};
+      if(retry){if(memory){for(const key of Object.keys(memory))delete memory[key];Object.assign(memory,initialMemory);}return buildWeek(B,st,retry);}
+      warns.push({code:'weekly_volume_incompatible',params:{minimum:Math.ceil(qTot+reservedEasy),target:Math.round(vol)}});
+    }
+    if(allowedQualities<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:allowedQualities}});
+    else if(workScale<1)warns.push({code:'quality_work_reduced'});
     const workLoad=sessions.reduce((a,x)=>a+x.loadBreakdown.z2+x.loadBreakdown.z3+x.loadBreakdown.z4,0);
     const heavy=!assim&&workLoad/vol>=RULES.load.heavyWeek;
     const costly=sessions.slice().sort((a,b)=>b.loadMax-a.loadMax)[0];
@@ -4020,7 +4047,7 @@ function buildWeek(B,st,o){
     const loadMin=load-spread,loadMax=load+spread;
     if(Math.abs(volume-vol)>RULES.volume.deviationAlert*vol)warns.push({code:'volume_deviation',params:{volume,target:vol}});
     const reminders=(assim?['strides_optional_week','evaluation']:B.reminders).map(code=>({code,params:{block:B.id,dist:B.dist}}));
-  const ruleRefs=[...(tenK?['calendar.longRun10k']:[]),...(longMain?['weeklyFormats']:[]),'organization.longRun','recovery.footing','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
+  const ruleRefs=[...(tenK?['calendar.longRun10k']:[]),...(longMain?['weeklyFormats']:[]),'organization.longRun','organization.weeklyFeasibility','recovery.footing','recovery.adaptiveFootings','recovery.prolongedAllowed','recovery.secondRecoveryFootingWhenHeavy','volume.weekTolerance','volume.deviationAlert','load.heavyWeek'];
   rememberFractionDurations(sessions,memory);
   return{k,assim,target:vol,vol:volume,volume,ruleRefs:sessions.some(()=>true)?ruleRefs.concat(aeContext?['organization.activeEndurance']:[]):ruleRefs,sessions,sl,slS1,slEA,slLoad:sumBd(slBd),foot,z,pct,qualityMinutes:qWork,qualityPct:pct,load,loadMin,loadMax,heavy,workLoad,loadBreakdown:bd,warns,reminders,budget:B.budget,costly:costly&&sessionKey(costly)};
 }
@@ -4239,6 +4266,28 @@ function placeWeek(wk,win,st){
         const transfer=Math.min(need,Math.max(0,donor.f.min-C.normalTarget));donor.f.min-=transfer;entry.f.min+=transfer;need-=transfer;
       }
     }
+    const AF=RULES.recovery.adaptiveFootings;
+    const protectedDay=d=>!!(qualityAt(addDays(d,1))||(slD&&+addDays(d,1)===+slD)||qualityAt(addDays(d,-1))&&slot.has(+addDays(d,1)));
+    let spare=0;
+    for(const {d,f} of placed){
+      if(f.type==='active')continue;
+      if(!protectedDay(d)&&f.type==='rec'&&!qualityAt(addDays(d,-1)))f.type='std';
+      if(protectedDay(d)&&f.min>AF.protectedMax){spare+=f.min-AF.protectedMax;f.min=AF.protectedMax;f.type='rec';}
+    }
+    for(const {d,f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
+      const extended=placed.filter(x=>x.f.min>AF.normalMax).length;
+      const max=f.min>AF.normalMax||extended<AF.maxProlonged?AF.absoluteMax:AF.normalMax;
+      const transfer=Math.min(spare,Math.max(0,max-f.min));f.min+=transfer;spare-=transfer;if(f.min>AF.normalMax)f.type='pro';
+    }
+    if(spare>0){
+      warns.push({code:'protected_footing_shortfall',params:{minutes:Math.round(spare)}});
+      if(wk.z&&wk.loadBreakdown){
+        wk.vol-=spare;wk.volume-=spare;wk.z.z1=Math.max(0,wk.z.z1-spare);
+        const load=spare*RULES.load.intensity.easy;
+        wk.load-=load;wk.loadMin-=load;wk.loadMax-=load;wk.loadBreakdown.z1-=load;
+        wk.pct=wk.qualityPct=wk.qualityMinutes/wk.vol*100;
+      }
+    }
     placed.forEach(({f})=>{f.load=f.min*RULES.load.intensity.easy;});
 
   }
@@ -4388,6 +4437,10 @@ const sessionPurpose=x=>PURPOSE[x.fam];
 const CAPLAB={s1:`${RULES.safeguards.caps.s1}' au S1`,s2:`${RULES.safeguards.caps.s2}' au S2`,vo2:`${RULES.safeguards.caps.vo2}' en VO₂max`,above105:`${RULES.safeguards.caps.above105}' au-dessus de ${Math.round(RULES.safeguards.above105OfVma*100)} % VMA`,spec10k:`${RULES.spec10k.workCap}' de travail à allure 10 km`};
 const WARN_TEXT={
   volume_short:p=>`Il manque environ ${p.minutes}' pour atteindre le volume visé sans footing trop long : ajoute une sortie, ou accepte une semaine un peu plus courte.`,
+  weekly_volume_incompatible:p=>`Volume incompatible avec ces contraintes : environ ${fmtDur(p.minimum)} sont nécessaires pour conserver les sorties, contre ${fmtDur(p.target)} demandées. Réduis le nombre de qualités ou augmente le temps disponible.`,
+  qualities_reduced:p=>`${p.actual} qualité au lieu de ${p.requested} pour conserver les autres sorties dans le temps disponible.`,
+  quality_work_reduced:()=>`Travail des qualités réduit pour conserver les autres sorties dans le volume demandé.`,
+  protected_footing_shortfall:p=>`Environ ${p.minutes}' n’ont pas pu être réparties : les footings proches des séances exigeantes restent courts. Ajoute une sortie ou réduis la cible.`,
   quality_exceeds_volume:()=>'Les séances de qualité et la sortie longue dépassent déjà le volume visé : augmente le volume moyen ou réduis la durée du bloc.',
   footings_removed:p=>`Volume trop faible pour ${p.runs} sorties : ${p.removed} footing${p.removed>1?'s':''} retiré${p.removed>1?'s':''}. Une semaine à ${p.runs-p.removed} sorties est plus logique.`,
   budget_too_small:()=>'Le volume hebdomadaire est trop faible pour loger la qualité minimale de ce bloc sans dépasser le budget. Augmente le volume ou choisis un autre bloc.',
@@ -4770,7 +4823,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
   try{await navigator.clipboard.writeText(t);b.textContent='Audit copié';}catch(_){b.textContent='Copie impossible';}setTimeout(()=>{b.textContent='Copier l\'audit';},1800);});
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
-const APP_VERSION='2026.10.17.10';
+const APP_VERSION='2026.10.18.01';
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -4982,7 +5035,7 @@ function chronoFieldsHtml(){
 function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p>`;}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
-  let h=recoveryHtml();
+  let h=recoveryHtml()+'<div data-weekly-balance></div>';
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
@@ -5095,6 +5148,7 @@ function initBindings(screen){screen.querySelectorAll('select[data-bind]').forEa
 function initSet(){initBindings($('scr-set'));}
 function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;updateConversionUi();}
 function updateSet(){
+  const balance=document.querySelector('[data-weekly-balance]');if(balance)balance.innerHTML=weeklyBalanceHtml();
   const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
@@ -5102,6 +5156,17 @@ function updateSet(){
   const q3=document.querySelector('#scr-set [data-bind="q3Day"]');if(q3){const lab=q3.closest('label');if(lab)lab.hidden=+$('qualityCount').value<3;}
   const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('qualityCount').value<2;}
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
+}
+function weeklyBalanceHtml(){
+  if(recoveryState||inputErrors(readState()).length||!lastPlan?.weeks)return '';
+  const rows=lastPlan.weeks.flatMap((w,i)=>{
+    if(w.raceWeek||w.phase==='intro')return [];
+    const messages=(w.warns||[]).filter(x=>['weekly_volume_incompatible','qualities_reduced','quality_work_reduced','volume_short','protected_footing_shortfall','no_day_footing_reduce'].includes(x.code)).map(warnText);
+    if(!messages.length)return [];
+    return [`S${i+1} : ${fmtDur(w.vol)} construites pour ${fmtDur(w.targetVolume??w.target)} visées. ${[...new Set(messages)].join(' ')}`];
+  });
+  if(!rows.length)return '';
+  return '<div class="card" role="status"><h2>Compatibilité du volume</h2>'+rows.slice(0,3).map(row=>'<p class="lbl">'+row+'</p>').join('')+(rows.length>3?'<p class="lbl">Les autres ajustements sont indiqués dans les semaines concernées.</p>':'')+'</div>';
 }
 $('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(key in refEditorOpen)refEditorOpen[key]=e.target.open;},true);
 $('scr-ref').addEventListener('input',e=>{if(!e.target.matches('[data-conversion-input]'))return;conversionInputs[conversionMode]=e.target.value;$('scr-ref').querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,e.target.value);});
@@ -5282,7 +5347,7 @@ function libCandidates(sec,W,phase=libVol){
 }
 const libFormatCount=sec=>{const Ws=libWork(sec);return Ws?new Set(Ws.flatMap((W,i)=>libCandidates(sec,W,i).map(o=>o.c.key))).size:0;};
 function libCandidateLoad(sec,c,st){
-  const prep=prepareSession({fam:LIB_WARM[sec],variants:[c],wu:24,cd:10});
+  const prep=prepareSession({fam:LIB_WARM[sec],variants:[c],wu:24,cd:10},st.vol);
   return variantLoad(c,prep,st).load;
 }
 const planKeys=()=>{const m={};if(lastPlan&&lastPlan.weeks)lastPlan.weeks.forEach((w,i)=>(w.sessions||[]).forEach(s=>s.variants.forEach(v=>{if(v.key&&!(v.key in m))m[v.key]=i+1;})));return m;};
@@ -5316,7 +5381,7 @@ function sessionInfoHeaderHtml(label,body){
 function libSessionHtml(r){
   const st=lastSt,sec=r.sector,Ws=libWork(sec);if(!Ws)return'';
   const o=libCandidates(sec,Ws[libVol]).find(x=>x.c.key===r.key);if(!o)return'<div class="card"><p class="lbl">Ce format n\'existe plus avec les réglages actuels.</p></div>';
-  const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10}),{wu,cd}=prep,ld=variantLoad(c,prep,st),[main,rec]=splitRec(vText(c));
+  const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10},st.vol),{wu,cd}=prep,ld=variantLoad(c,prep,st),[main,rec]=splitRec(vText(c));
   const pw=RULES.library.phaseWeights[o.fam],secLab=LIB_SECTORS.find(x=>x.id===sec).lab;
   const rpe=SECTOR_INFO[sec]?SECTOR_INFO[sec].rpe:null;
   let h=`<div class="sHead" style="--c:${libColor(sec)}"><div class="sHeadTitle"><h2>${secLab}</h2>${sessionInfoHeaderHtml('Pourquoi ce format',`<p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p>`)}</div><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
@@ -5341,7 +5406,7 @@ function corosSessionSnapshot(){
   const qualityDescription=(root.querySelector('.card')?.innerText||'').replace(/\s+/g,' ').trim();
   const description=Array.from(root.querySelectorAll('.card')).slice(0,2).map(c=>c.innerText).join(' ').replace(/\s+/g,' ').trim();
   const base={title:'Planif · '+title,description,s2Kmh:st.s2,easyBand:efBand('std',st),s1Band:[st.s1lo,st.s1hi],activeBand:efBand('active',st),hrCue:st.lt1Hr?`Ne pas dépasser ${Math.round(st.lt1Hr)} bpm.`:'Ne pas dépasser le premier seuil.'};
-  if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const[wu,cd]=RULES.organization.warmup[LIB_WARM[r.lib.sector]];return{...base,kind:'quality',variant:copy(o.c),warmupMin:wu,cooldownMin:cd,description:o.c.structure.type==='long_run'?description:qualityDescription,preparation:o.c.structure.type!=='long_run',activation:corosActivation(o.c)};}
+  if(r.lib){const o=libCandidates(r.lib.sector,libWork(r.lib.sector)[libVol]).find(o=>o.c.key===r.lib.key);if(!o)throw new Error('Ce format n’est plus disponible.');const prep=prepareSession({variants:[o.c],fam:LIB_WARM[r.lib.sector]},st.vol);return{...base,kind:'quality',variant:copy(o.c),warmupMin:prep.wu,cooldownMin:prep.cd,description:o.c.structure.type==='long_run'?description:qualityDescription,preparation:o.c.structure.type!=='long_run',activation:corosActivation(o.c)};}
   const w=lastPlan?.weeks?.[r.w],day=w?.days?.[r.d];let it=day?.items?.[r.i];if(r.q!==undefined&&w?.sessions?.[r.q])it={kind:'q',s:w.sessions[r.q]};
   if(r.f!==undefined&&w?.foot?.[r.f])it={kind:'foot',f:w.foot[r.f]};
   if(r.sl&&w)it={kind:'sl'};
@@ -5482,7 +5547,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./planif-strava.js?v=2026.10.17.10"></script>
+<script src="./planif-strava.js?v=2026.10.18.01"></script>
 </body>
 </html>
 

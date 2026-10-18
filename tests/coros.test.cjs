@@ -49,7 +49,7 @@ async function sendCase(outcome,changedSchema=false,destination='library',invali
  }});
  await e.api.start();const ui=fakeDialog(e.context);
  const snapshot={title:'Test S1',description:'7 × 5 minutes',kind:'quality',warmupMin:20,cooldownMin:10,variant:{structure:{type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]},intensity:{minKmh:12,maxKmh:12.5}}};
- if(prepared){snapshot.preparation=true;snapshot.activation=true;snapshot.s2Kmh=14;}
+ if(prepared){snapshot.preparation=true;snapshot.activation=true;snapshot.s2Kmh=14;snapshot.warmupMin=27;}
  e.api.preview(snapshot);ui.fields.destination.value=destination;if(prepared){assert.equal(ui.fields.destination.value,destination);assert.equal(ui.fields.profile.value,'manual');assert(ui.fields.noIntensity.checked);assert(ui.nodes.steps.innerHTML.includes('bouton Tour'));assert(!ui.nodes.steps.innerHTML.includes('0 min 48 s'),'default recoveries must all be manual');ui.fields.profile.value=manual?'manual':'guided';ui.dialog.querySelector('form').oninput();assert.equal(ui.fields.c0.disabled,manual);}if(invalidDate)ui.fields.scheduledDate.value='2026-02-30';ui.submit();ui.submit();await finishSend(e);
  const writes=()=>e.calls.filter(c=>JSON.parse(c.opts.body).method==='tools/call').length;
  assert.equal(writes(),changedSchema||invalidDate?0:1);assert(!ui.nodes.status.textContent.includes('PRIVATE'));assert(!ui.nodes.status.textContent.includes('123'));
