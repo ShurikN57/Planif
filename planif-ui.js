@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.18.03').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.01').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -639,6 +639,7 @@ function appCalendarWeeks(C,st){
     h+='<div class="phaseList" style="margin-top:.7rem">';
     phaseGroups(C).forEach(g=>{h+=`<b>S${g.from+1}${g.to>g.from?`–S${g.to+1}`:''}</b><span><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase,d)}</span>`;});
     h+='</div>';
+    h+=volumeChargeHtml(st,C);
   }
   h+='</div>';
   h+=`<p class="lbl">Glisse la poignée ⠿ vers un autre jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
@@ -702,16 +703,35 @@ function updateConversionUi(){
   input.value=conversionInputs[conversionMode];input.placeholder=pace?'4’00':'15,00';input.inputMode=pace?'text':'decimal';
   root.querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,input.value);
 }
+function volumeChargeHtml(st,C){let h='';const valid=referenceErrors(st).length===0;
+  if(valid&&Number.isFinite(st.vol)&&st.vol>0&&C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
+    h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
+      C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
+      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
+  return h;
+}
+
+const CHRONO_DISTANCES={fractions:[['100','100 m'],['200','200 m'],['300','300 m'],['400','400 m'],['500','500 m'],['600','600 m'],['800','800 m'],['1200','1200 m'],['1600','1600 m'],['2000','2000 m']],official:[['1500','1500 m'],['1609.344','Mile'],['3000','3000 m'],['5000','5000 m'],['10000','10 km'],['21097.5','Semi-marathon'],['42195','Marathon']]};
+const chronoState={category:'fractions',distance:'400',free:'7,5',pace:'4:00'};
+const enduranceState={distance:'10000',time:'41:00',vma:''};
+function chronoSeconds(raw){const m=/^(\d+)[:'’](\d{2})$/.exec(String(raw).trim());return m&&+m[2]<60&&(+m[1]*60+(+m[2]))>0?+m[1]*60+(+m[2]):NaN;}
+function chronoTime(seconds){if(!Number.isFinite(seconds)||seconds<=0)return '—';const n=Math.round(seconds),h=Math.floor(n/3600),m=Math.floor(n%3600/60),sec=n%60;return(h?h+'h ':'')+(h?String(m).padStart(2,'0'):m)+'’'+String(sec).padStart(2,'0');}
+function chronoMeters(){return chronoState.category==='free'?Number(chronoState.free.replace(',','.'))*1000:Number(chronoState.distance);}
+function toolAttr(value){return String(value).replace(/[&"<>]/g,ch=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[ch]));}
+function chronoToolHtml(){const c=chronoState;const options=CHRONO_DISTANCES[c.category]||[];return `<div class="card chronoPanel" data-chrono-tool><h2>Chrono</h2><label class="sf"><span>Distance</span><select data-chrono-category><option value="fractions"${c.category==='fractions'?' selected':''}>Fractions</option><option value="official"${c.category==='official'?' selected':''}>Officielles</option><option value="free"${c.category==='free'?' selected':''}>Libre</option></select></label><div class="sf2"><label class="sf"><span>${c.category==='free'?'Distance (km)':'Distance'}</span>${c.category==='free'?`<input data-chrono-free inputmode="decimal" value="${toolAttr(c.free)}">`:`<select data-chrono-distance>${options.map(([v,l])=>`<option value="${v}"${v===c.distance?' selected':''}>${l}</option>`).join('')}</select>`}</label><label class="sf"><span>Allure (min/km)</span><input data-chrono-pace inputmode="text" placeholder="4:00" value="${toolAttr(c.pace)}"></label></div><div class="conversionResult"><span>Temps estimé</span><strong data-chrono-output role="status">—</strong></div><button type="button" class="cta ghost" data-chrono-to-endurance>Utiliser ce chrono pour l’indice d’endurance</button><p class="lbl" data-chrono-note></p></div>`;}
+function enduranceToolHtml(){const e=enduranceState;return `<div class="card chronoPanel" data-endurance-tool><h2>Indice d’endurance</h2><p class="lbl">Modèle de Péronnet–Thibault, référence 6 min à 100 % de VMA.</p><div class="sf2"><label class="sf"><span>VMA (km/h)</span><input data-ie-vma inputmode="decimal" value="${toolAttr(e.vma)}" placeholder="VMA des repères"></label><label class="sf"><span>Performance</span><select data-ie-distance>${[['5000','5 km'],['10000','10 km'],['21097.5','Semi-marathon'],['42195','Marathon']].map(([v,l])=>`<option value="${v}"${e.distance===v?' selected':''}>${l}</option>`).join('')}</select></label></div><label class="sf"><span>Chrono réalisé (mm:ss ou hh:mm:ss)</span><input data-ie-time inputmode="text" value="${toolAttr(e.time)}" placeholder="41:00"></label><div class="conversionResult"><span>Indice d’endurance</span><strong data-ie-output role="status">—</strong></div><p class="lbl" data-ie-note>Plus l’indice est proche de zéro, meilleure est l’endurance relative.</p></div>`;}
+function enduranceSeconds(value){const parts=String(value).trim().split(':');if(parts.length!==2&&parts.length!==3||parts.some(x=>!/^\d+$/.test(x)))return NaN;const p=parts.map(Number);if(parts.length===2&&p[1]>=60||parts.length===3&&(p[1]>=60||p[2]>=60))return NaN;return parts.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2];}
+function updateToolsUi(){const root=$('scr-ref');const t=root.querySelector('[data-chrono-tool]');if(t){const meters=chronoMeters(),pace=chronoSeconds(chronoState.pace),secs=meters*pace/1000;const valid=Number.isFinite(meters)&&meters>0&&meters<=1000000&&Number.isFinite(pace);t.querySelector('[data-chrono-output]').textContent=valid?chronoTime(secs):'—';t.querySelector('[data-chrono-to-endurance]').disabled=!valid||!['5000','10000','21097.5','42195'].includes(String(meters));t.querySelector('[data-chrono-note]').textContent=valid&&!['5000','10000','21097.5','42195'].includes(String(meters))?'Pour calculer l’indice, choisis une distance de 5 km au marathon.':'';}const e=root.querySelector('[data-endurance-tool]');if(e){const v=Number((enduranceState.vma||String(readState().vma)).replace(',','.')),secs=enduranceSeconds(enduranceState.time),meters=Number(enduranceState.distance),pct=meters/secs*3.6/v*100,ie=(pct-100)/Math.log(secs/360);const ok=v>0&&Number.isFinite(secs)&&secs>360&&Number.isFinite(ie);e.querySelector('[data-ie-output]').textContent=ok?ie.toFixed(2).replace('.',','):'—';e.querySelector('[data-ie-note]').textContent=ok?'Vitesse moyenne : '+pct.toFixed(1).replace('.',',')+' % de VMA. Plus l’indice est proche de zéro, meilleure est l’endurance relative.':'Saisis une VMA positive et un chrono supérieur à 6 minutes.';}}
+$('scr-ref').addEventListener('input',e=>{const d=e.target.dataset;if(d.chronoPace!==undefined)chronoState.pace=e.target.value;else if(d.chronoFree!==undefined)chronoState.free=e.target.value;else if(d.ieVma!==undefined)enduranceState.vma=e.target.value;else if(d.ieTime!==undefined)enduranceState.time=e.target.value;else return;updateToolsUi();});
+$('scr-ref').addEventListener('change',e=>{const d=e.target.dataset;if(d.chronoCategory!==undefined){chronoState.category=e.target.value;chronoState.distance=e.target.value==='official'?'5000':'400';renderApp();}else if(d.chronoDistance!==undefined){chronoState.distance=e.target.value;updateToolsUi();}else if(d.ieDistance!==undefined){enduranceState.distance=e.target.value;updateToolsUi();}});
+$('scr-ref').addEventListener('click',e=>{if(!e.target.closest('[data-chrono-to-endurance]'))return;const meters=chronoMeters(),secs=meters*chronoSeconds(chronoState.pace)/1000;if(!['5000','10000','21097.5','42195'].includes(String(meters))||!Number.isFinite(secs))return;enduranceState.distance=String(meters);{const n=Math.round(secs),hh=Math.floor(n/3600),mm=Math.floor(n%3600/60),ss=n%60;enduranceState.time=hh?`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${mm}:${String(ss).padStart(2,'0')}`;}renderApp();});
+
 function appRefHtml(){
   const st=readState(),C=lastPlan,valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
   h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
-  h+=conversionHtml();
-  if(valid&&Number.isFinite(st.vol)&&st.vol>0&&C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
-    h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
-      C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
-      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
+  h+=conversionHtml()+chronoToolHtml()+enduranceToolHtml();
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
@@ -786,7 +806,7 @@ function chronoFieldsHtml(){
 function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p>`;}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
-  let h=recoveryHtml()+'<div data-weekly-balance></div>';
+  let h=recoveryHtml();
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
@@ -897,9 +917,8 @@ function toggleTheme(){
 }
 function initBindings(screen){screen.querySelectorAll('select[data-bind]').forEach(x=>{x.value=$(x.dataset.bind).value;});}
 function initSet(){initBindings($('scr-set'));}
-function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;updateConversionUi();}
+function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;updateConversionUi();updateToolsUi();}
 function updateSet(){
-  const balance=document.querySelector('[data-weekly-balance]');if(balance)balance.innerHTML=weeklyBalanceHtml();
   const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
