@@ -591,9 +591,11 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc .timeWheelOverlay .timeWheelLabel{font-size:12px}
 @media(prefers-color-scheme:dark){body[data-theme="dark"] #scr-calc .simCard,body[data-theme="dark"] #scr-calc .conversionCard,body[data-theme="dark"] #scr-calc [data-chrono-tool],body[data-theme="dark"] #scr-calc [data-endurance-tool],body[data-theme="dark"] #scr-calc [data-critical-tool]{background:linear-gradient(135deg,#283038,#293c34)!important;border-color:#3b4b43!important}}
 
-/* Results remain white over the sage-gray tool cards */
+/* Calculator results: white in light mode, readable dark surface in dark mode. */
 #scr-calc .conversionResult{background:#fff!important;color:#222735}
-#scr-calc .conversionResult strong{color:#222735}
+#scr-calc .conversionResult strong,#scr-calc .conversionResult span{color:inherit}
+:root[data-theme="dark"] #scr-calc .conversionResult{background:var(--surface-2)!important;color:var(--ink)!important;border-color:var(--line)!important}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #scr-calc .conversionResult{background:var(--surface-2)!important;color:var(--ink)!important;border-color:var(--line)!important}}
 </style>
 </head>
 <body data-ui="app">
@@ -744,17 +746,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.21"></script>
+<script src="./planif-coros.js?v=2026.10.19.22"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.21"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.22"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.21"></script>
-<script src="./planif-rules.js?v=2026.10.19.21"></script>
-<script src="./planif-engine.js?v=2026.10.19.21"></script>
-<script src="./planif-evidence.js?v=2026.10.19.21"></script>
-<script src="./planif-ui.js?v=2026.10.19.21"></script>
+<script src="./planif-version.js?v=2026.10.19.22"></script>
+<script src="./planif-rules.js?v=2026.10.19.22"></script>
+<script src="./planif-engine.js?v=2026.10.19.22"></script>
+<script src="./planif-evidence.js?v=2026.10.19.22"></script>
+<script src="./planif-ui.js?v=2026.10.19.22"></script>
 </body>
 </html>
 
