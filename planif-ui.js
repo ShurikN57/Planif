@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.14').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.15').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -753,8 +753,11 @@ function appRefHtml(){
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
-const sim={dist:'1',time:'41:00'};
-function appCalcHtml(){const st=readState(),sec=parseTime(sim.time),pred=sec>0?predict({...st,refDist:Number(sim.dist),refTime:sec,ref2Dist:0,ref2Time:0}):null;return '<div class="card"><h2>Simulateur de chronos</h2><p class="lbl">Indépendant des références du plan.</p><label class="sf">Distance<select data-sim-dist>'+[['0','5 km'],['1','10 km'],['2','Semi-marathon'],['3','Marathon']].map(([v,l])=>'<option value="'+v+'"'+(sim.dist===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label><label class="sf">Chrono<input data-sim-time value="'+escA(sim.time)+'"></label><div class="kv" data-sim-result>'+(pred?pred.map(p=>'<span>'+p.lab+'</span><span>'+fmtTime(p.t)+'</span>').join(''):'<span>Chrono invalide</span>')+'</div></div>'+conversionHtml()+chronoToolHtml()+enduranceToolHtml()+criticalToolHtml();}
+const sim={dist:'1',time:'41:00',profile:'1',penalty:true,ref2Open:false,ref2Dist:'0',ref2Time:'20:00'};
+function simWheel(key,dist){const sec=parseTime(sim[key])||0,long=Number(dist)>=2,h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=Math.floor(sec%60),range=(max,v)=>Array.from({length:max+1},(_,i)=>'<option value="'+i+'"'+(i===v?' selected':'')+'>'+String(i).padStart(2,'0')+'</option>').join('');return '<div class="timeWheel simWheel" data-sim-wheel="'+key+'">'+(long?'<label>h<select data-sim-part="h">'+range(9,h)+'</select></label>':'')+'<label>min<select data-sim-part="m">'+range(long?59:99,m)+'</select></label><label>sec<select data-sim-part="s">'+range(59,ss)+'</select></label></div>';}
+function simPred(){const st=readState(),sec=parseTime(sim.time),sec2=sim.ref2Open?parseTime(sim.ref2Time):0;if(!Number.isFinite(sec)||sec<=0)return null;return predict({...st,refDist:Number(sim.dist),refTime:sec,profile:Number(sim.profile),penalty:sim.penalty,ref2Dist:Number(sim.ref2Dist),ref2Time:sec2});}
+function simResults(){const p=simPred();return p?p.map(x=>'<span>'+x.lab+(x.isRef?' (réf.)':'')+'</span><span class="v">'+fmtTime(x.t)+', '+paceHtml(kmh(x.v,x.v))+'</span>').join(''):'<span>Chrono invalide</span>';}
+function appCalcHtml(){const options=(current)=>[['0','5 km'],['1','10 km'],['2','Semi-marathon'],['3','Marathon']].map(([v,l])=>'<option value="'+v+'"'+(current===v?' selected':'')+'>'+l+'</option>').join('');return '<div class="card chronoCard simCard"><h2>Simulateur de chronos</h2><p class="lbl">Simulation indépendante : aucune modification des références ni du plan.</p><div class="chronoRefRow"><label class="sf"><span>Distance</span><select data-sim-dist>'+options(sim.dist)+'</select></label><label class="sf"><span>Profil</span><select data-sim-profile>'+PROFILES.map((p,i)=>'<option value="'+i+'"'+(sim.profile===String(i)?' selected':'')+'>'+p.lab+'</option>').join('')+'<option value="5"'+(sim.profile==='5'?' selected':'')+'>Mesuré</option></select></label></div>'+simWheel('time',sim.dist)+'<label class="sw"><input type="checkbox" data-sim-penalty'+(sim.penalty?' checked':'')+'> Palier semi vers marathon pénalisé</label>'+(sim.ref2Open?'<div class="simSecond"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-sim-remove>Supprimer</button></div><label class="sf"><span>Distance</span><select data-sim-dist2>'+options(sim.ref2Dist)+'</select></label>'+simWheel('ref2Time',sim.ref2Dist)+'</div>':'<button type="button" class="addRef" data-sim-add>+ Ajouter un autre chrono de référence</button>')+'<div class="kv" data-sim-result>'+simResults()+'</div></div>'+conversionHtml()+chronoToolHtml()+enduranceToolHtml()+criticalToolHtml();}
 /* ---------- Études : bibliothèque scientifique ---------- */
 let studyFilter='Toutes',studyScope='engine';
 function studyEvidenceHtml(sourceId){
@@ -789,8 +792,8 @@ function timeWheelHtml(target,dist){
   const sec=parseTime($(target).value)||0,h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=Math.floor(sec%60),long=+dist>=2;
   const range=(a,b,cur)=>Array.from({length:b-a+1},(_,i)=>opt(a+i,cur)).join('');
   return `<div class="timeWheel" data-time-target="${target}" data-time-long="${long?'1':'0'}">`+
-    (long?`<label>h<select data-timepart="h">${range(0,9,h)}</select></label><span class="timeSep">:</span>`:'')+
-    `<label>min<select data-timepart="m">${range(0,long?59:99,m)}</select></label><span class="timeSep">:</span><label>sec<select data-timepart="s">${range(0,59,ss)}</select></label></div>`;
+    (long?`<label>h<select data-timepart="h">${range(0,9,h)}</select></label>`:'')+
+    `<label>min<select data-timepart="m">${range(0,long?59:99,m)}</select></label><label>sec<select data-timepart="s">${range(0,59,ss)}</select></label></div>`;
 }
 /* Conversion de saisie uniquement : le moteur conserve ses repères en km/h. */
 let speedUnit='kmh';try{if(localStorage.getItem('planif-speed-unit')==='pace')speedUnit='pace';}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
@@ -818,7 +821,7 @@ function commitSpeedInput(input){
 }
 function syncSpeedInputs(){document.querySelectorAll('#scr-ref [data-speed]').forEach(input=>{input.value=speedInputValue(input.dataset.speed);input.setCustomValidity('');input.setAttribute('inputmode',speedUnit==='kmh'&&input.dataset.speed!=='s1'?'decimal':'text');input.setAttribute('aria-label',`${input.dataset.speed==='s1'?'S1':input.dataset.speed==='s2'?'S2':'VMA'}, ${speedUnit==='pace'?'min/km':'km/h'}`);});}
 function chronoFieldsHtml(){
-  let h=`${fSel('Distance','refDist')}${timeWheelHtml('refTime',$('refDist').value)}${fSel('Profil','profile')}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
+  let h=`<div class="chronoRefRow">${fSel('Distance','refDist')}${fSel('Profil','profile')}</div>${timeWheelHtml('refTime',$('refDist').value)}${fSw('Palier semi vers marathon pénalisé','penalty')}`;
   if(!ref2Open)h+=`<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
   else h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
   return h+`<p class="lbl" id="setProfileHint"></p>`;
@@ -1307,8 +1310,8 @@ function renderApp(){
   updateInputErrorBanner();
 }
 const setUi=u=>{document.body.dataset.ui=u;setBuilt=false;try{localStorage.setItem('calc-allures-ui',u);}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}if(u==='app')renderApp();window.scrollTo(0,0);};
-$('scr-calc').addEventListener('change',e=>{if(e.target.matches('[data-sim-dist]')){sim.dist=e.target.value;renderApp();}});
-$('scr-calc').addEventListener('input',e=>{if(e.target.matches('[data-sim-time]')){sim.time=e.target.value;const temp=document.createElement('div');temp.innerHTML=appCalcHtml();const el=$('scr-calc').querySelector('[data-sim-result]');if(el)el.innerHTML=temp.querySelector('[data-sim-result]').innerHTML;}});
+$('scr-calc').addEventListener('change',e=>{const d=e.target.dataset;if(d.simDist!==undefined){sim.dist=e.target.value;renderApp();}else if(d.simProfile!==undefined){sim.profile=e.target.value;renderApp();}else if(d.simPenalty!==undefined){sim.penalty=e.target.checked;renderApp();}else if(d.simDist2!==undefined){sim.ref2Dist=e.target.value;renderApp();}else if(d.simPart!==undefined){const box=e.target.closest('[data-sim-wheel]'),key=box.dataset.simWheel,long=Number(key==='time'?sim.dist:sim.ref2Dist)>=2,parts={};box.querySelectorAll('[data-sim-part]').forEach(el=>parts[el.dataset.simPart]=Number(el.value));sim[key]=long?parts.h+':'+String(parts.m).padStart(2,'0')+':'+String(parts.s).padStart(2,'0'):parts.m+':'+String(parts.s).padStart(2,'0');const out=$('scr-calc').querySelector('[data-sim-result]');if(out)out.innerHTML=simResults();}});
+$('scr-calc').addEventListener('click',e=>{if(e.target.closest('[data-sim-add]')){sim.ref2Open=true;renderApp();}else if(e.target.closest('[data-sim-remove]')){sim.ref2Open=false;renderApp();}});
 document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;appSession=null;appLib=false;setBuilt=false;appTab=b.dataset.tab;try{localStorage.setItem('calc-allures-tab',appTab);}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}renderApp();window.scrollTo(0,0);});
 $('appShell').addEventListener('click',e=>{
   if(e.target.closest('[data-coros-preview]')){try{PlanifCoros.preview(corosSessionSnapshot());}catch(error){PlanifCoros.preview({title:'Séance',description:'',unsupported:error.message});}return;}
