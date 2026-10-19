@@ -98,27 +98,31 @@ for(const type of ['rec','std','pro']){
  assert(E.efBandText(type,state).includes('/km ('));
  assert.deepEqual(Array.from(E.efBand(type,state)),Array.from(E.efBand('std',state)));
 }
-// Assimilation is an easy week regardless of the obsolete two-quality setting.
+// Assimilation preserves reduced quality work and an active-endurance replacement when feasible.
 for(const block of ['aero','s1','s2','vma','eco','spec'])for(const runs of [3,4,5,6])for(const vol of [180,240,300,420])for(const specDist of [0,1,2,3]){
  const st={...state,block,specDist,runs,vol,assimQ2:true},b=E.getBlock(st,pred);
  const w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,memory:{},block,specDist});
- assert.equal(w.sessions.length,0);assert.equal(w.qualityMinutes,0);
- const active=w.foot.filter(f=>f.assimilationActive);assert.equal(active.length,1);
+ assert(w.sessions.length>=1,'assimilation retains a quality session');
+ assert(w.qualityMinutes>0,'reduced quality work is measured');
+ const active=w.foot.filter(f=>f.assimilationActive);
+ if(runs>=4)assert.equal(active.length,1,'active endurance must replace one quality with four or more outings');
+ if(!active.length)continue;
  const f=active[0];assert([10,15,20].includes(f.activeRange[0]));assert.equal(f.activeRange[0],f.activeRange[1]);
  assert(f.wu>=10);assert.equal(f.wu+f.activeRange[0]+f.cd,f.min);
- assert.equal(w.vol,w.sl+w.foot.reduce((sum,f)=>sum+f.min,0));assert(Number.isFinite(w.load));
- assert.equal(w.z.z1,w.vol);assert(w.foot.length+1<=runs);
+ assert.equal(w.vol,w.sl+w.foot.reduce((sum,f)=>sum+f.min,0)+w.sessions.reduce((sum,s)=>sum+s.total,0));assert(Number.isFinite(w.load));
+ assert(w.z.z1<=w.vol);assert.equal(w.foot.length+w.sessions.length+(w.sl>0?1:0),runs);
 }
 for(const w of c.weeks.filter(w=>w.assimilation)){
- assert.equal(w.sessions.length,0);
+ assert(w.sessions.length>=1,'calendar assimilation retains quality');
  const active=w.days.flatMap(d=>d.items.map(it=>({d,it}))).find(x=>x.it.kind==='foot'&&x.it.f.assimilationActive);
  assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q1Day);
 }
 for(const [vol,minutes] of [[130,10],[140,15],[150,20]]){
  const st={...state,runs:3},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,block:'spec',specDist:1});
- assert.equal(w.foot.find(f=>f.assimilationActive).activeRange[0],minutes);
+ assert(w.sessions.length>=1);
+ assert(w.foot.every(f=>!f.assimilationActive||f.activeRange[0]<=20));
 }
-console.log('OK: Jogg/LD labels, shared easy guidance, assimilation without quality, 10/15/20-minute active blocks, preferred quality day and conserved minutes.');
+console.log('OK: Jogg/LD labels, shared easy guidance, assimilation with reduced quality, bounded active blocks, preferred quality day and conserved minutes.');
 
 // Render the real tile and detail functions, including block-mode links.
 context.state=state;context.plan=c;
@@ -217,7 +221,7 @@ assert(allowed.includes(thousand));assert(!allowed.includes(six));
 for(const block of ['s1','s2','vma']){
  const st={...state,mode:'bloc',block,N:4},plan=E.buildPlan(st,E.predict(st)),memory={};
  for(const week of plan.weeks){
-  if(week.assim){assert.equal(week.sessions.length,0);assert(week.foot.some(f=>f.assimilationActive));continue;}
+  if(week.assim){assert(week.sessions.length>=1,'assimilation retains quality');continue;}
   const old={...(memory.fractions||{})};
   const visit=v=>{if(v.structure?.components){v.structure.components.forEach(c=>visit(c.variant));return;}
    if(old[v.sector])assert(E.maxFractionMinutes(v)<=Math.max(old[v.sector]*1.5,old[v.sector]+2.5)+1e-9);
