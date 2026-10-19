@@ -26,6 +26,9 @@ const revived=E.reviveSavedPlan(saved.plan);
 assert.equal(JSON.stringify(revived),JSON.stringify(saved.plan));
 assert(Number.isFinite(+revived.race.date)&&Number.isFinite(+revived.start));
 assert(Number.isFinite(+revived.weeks[0].startDate)&&Number.isFinite(+revived.weeks[0].days[0].date));
+const refPendingDefinition=html.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)?.[0];
+assert(refPendingDefinition,'pending-reference loader must remain available');
+vm.runInContext(refPendingDefinition,ctx);
 vm.runInContext(html.slice(html.indexOf('let lastPlan=null,lastPred=null,lastSt=null;'),html.indexOf('const pts=x=>'))+`
 this.renderRecovery=render;this.rendered=()=>lastPlan;
 buildCalendar=()=>{throw Error('Unexpected regeneration during recovery');};
