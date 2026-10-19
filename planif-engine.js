@@ -58,6 +58,45 @@ function preservePastSessions(C){
   }));
   return C;
 }
+/* Reference updates are deliberately non-structural: retain the saved plan and
+   copy only intensities of equivalent sessions, never regenerate a workout. */
+function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Date()){
+ const result=JSON.parse(JSON.stringify(saved));
+ const completed=new Set(completedIds);
+ const cutoff=planDateKey(today);
+ const fresh=new Map();
+ for(const w of candidate.weeks||[])for(const d of w.days||[])for(const it of d.items||[])
+   if(it.planifId)fresh.set(planDateKey(d.date)+'|'+it.planifId,it);
+ function mergeIntensity(oldValue,newValue){
+   if(!oldValue||!newValue||typeof oldValue!=='object'||typeof newValue!=='object')return;
+   if(Array.isArray(oldValue)&&Array.isArray(newValue)){
+     if(oldValue.length!==newValue.length)return;
+     for(let i=0;i<oldValue.length;i++)mergeIntensity(oldValue[i],newValue[i]);
+     return;
+   }
+   if(oldValue.structure&&newValue.structure&&JSON.stringify(oldValue.structure)!==JSON.stringify(newValue.structure))return;
+   if(oldValue.fam&&newValue.fam&&oldValue.fam!==newValue.fam)return;
+   if(oldValue.kind&&newValue.kind&&oldValue.kind!==newValue.kind)return;
+   if(oldValue.intensity&&newValue.intensity&&JSON.stringify(Object.keys(oldValue.intensity).sort())===JSON.stringify(Object.keys(newValue.intensity).sort()))
+     oldValue.intensity=JSON.parse(JSON.stringify(newValue.intensity));
+   for(const key of ['v','lo','hi','minKmh','maxKmh','refKmh','speedKmh','paceKmh'])
+     if(typeof oldValue[key]==='number'&&typeof newValue[key]==='number')oldValue[key]=newValue[key];
+   if(Array.isArray(oldValue.parts)&&Array.isArray(newValue.parts)&&oldValue.parts.length===newValue.parts.length)
+     oldValue.parts.forEach((part,i)=>{if(Array.isArray(part)&&Array.isArray(newValue.parts[i])&&part[0]===newValue.parts[i][0]&&typeof part[1]==='number'&&typeof newValue.parts[i][1]==='number')part[1]=newValue.parts[i][1];});
+   for(const key of ['variants','components','segments','bands'])if(Array.isArray(oldValue[key])&&Array.isArray(newValue[key]))mergeIntensity(oldValue[key],newValue[key]);
+ }
+ for(const w of result.weeks||[])for(const d of w.days||[]){
+   if(planDateKey(d.date)<=cutoff)continue;
+   for(const it of d.items||[]){
+     if(!it.planifId||completed.has(it.planifId))continue;
+     const next=fresh.get(planDateKey(d.date)+'|'+it.planifId);
+     if(!next||it.kind!==next.kind)continue;
+     if(it.kind==='q'&&it.s&&next.s)mergeIntensity(it.s,next.s);
+     if(it.kind==='foot'&&it.f&&next.f)mergeIntensity(it.f,next.f);
+   }
+ }
+ return result;
+}
 function ensurePlanifSessionIds(C){
   (C.weeks||[]).forEach((w,wi)=>{
     const used={q:new Set(),foot:new Set()},counts={};
@@ -1436,7 +1475,7 @@ const PURPOSE={
 };
 const sessionPurpose=x=>PURPOSE[x.fam];
 
-return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
+return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
 }
 return {...createEngine(),createEngine};
 });

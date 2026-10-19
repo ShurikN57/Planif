@@ -3,7 +3,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.20').then(fun
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
 const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
@@ -287,7 +287,7 @@ function render(){
     if(!structureEditing){
       if(activePlan&&activePlan.structure&&!sameStructure(calendarStructure(),activePlan.structure)){
         restoreActiveStructure();
-      }else saveActivePlan(st,C,false);
+      }else if(!refPlanPending)saveActivePlan(st,C,false);
     }
     if(calSel){const w=C.weeks[calSel.w],dd=w&&w.days[calSel.d];if(!dd||!dd.items[calSel.i])calSel=null;}
     renderCalHeader(st,C);renderCalBody(st,C);return;}
@@ -685,11 +685,25 @@ function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>$
 const refEditorOpen={physio:false,chrono:false};
 let refDraft=null;
 let refPlanPending=false;
+let refApplyRequested=false;
 const REF_PLAN_PENDING_KEY='planif-reference-plan-pending-v1';
 function refSnapshot(){return Object.fromEntries(GLOBAL_IDS.map(id=>[id,isCheck($(id))?$(id).checked:$(id).value]));}
 function refRestore(snapshot){for(const [id,value] of Object.entries(snapshot)){if(!$(id))continue;if(isCheck($(id)))$(id).checked=!!value;else $(id).value=value;}}
 function refPendingLoad(){try{return !!(activePlan&&JSON.parse(localStorage.getItem(REF_PLAN_PENDING_KEY)||'null')?.id===activePlan.id);}catch{return false;}}
 function refPendingSet(value){refPlanPending=!!value;try{if(value&&activePlan)localStorage.setItem(REF_PLAN_PENDING_KEY,JSON.stringify({id:activePlan.id}));else localStorage.removeItem(REF_PLAN_PENDING_KEY);}catch(_){}}
+function applyReferencesToSavedPlan(){
+ if(!activePlan||!activePlan.plan)return false;
+ const st=readState(),pred=predict(st),candidate=buildCalendar(st,pred);
+ if(candidate.error){alert('Le programme ne peut pas être mis à jour : vérifie les références et les dates.');return false;}
+ ensurePlanifSessionIds(candidate);
+ const previous=activePlan.plan;
+ const revised=applyReferenceIntensities(previous,candidate,globalThis.PlanifStrava?.completedIds?.()||[]);
+ activePlan={...activePlan,updatedAt:new Date().toISOString(),plan:revised};
+ putJson(STORE.active,activePlan);
+ document.dispatchEvent?.(new CustomEvent('planif-plan-change'));
+ refPendingSet(false);
+ return true;
+}
 function refFinishEdit(saveChanges){
  if(!refDraft)return;
  const before=refDraft,after=refSnapshot();
@@ -698,7 +712,7 @@ function refFinishEdit(saveChanges){
    if(!confirm('Enregistrer ces nouvelles références ? Cette validation ne modifie pas le programme existant.'))return;
  }else refRestore(before);
  refDraft=null;refEditorOpen.physio=false;refEditorOpen.chrono=false;
- if(saveChanges){save();if(activePlan){refPendingSet(true);if(confirm('Appliquer maintenant les nouvelles références aux séances futures non réalisées ? Les séances passées et réalisées seront conservées.'))refPendingSet(false);}}
+ if(saveChanges){save();if(activePlan){refPendingSet(true);if(confirm('Appliquer maintenant les nouvelles références aux séances futures non réalisées ? Les séances passées et réalisées seront conservées.'))applyReferencesToSavedPlan();}}
  render();renderApp();
 }
 
@@ -1006,7 +1020,7 @@ function weeklyBalanceHtml(){
   return '<div class="card" role="status"><h2>Compatibilité du volume</h2>'+capacityHtml+rows.slice(0,3).map(row=>'<p class="lbl">'+row+'</p>').join('')+(rows.length>3?'<p class="lbl">Les autres ajustements sont indiqués dans les semaines concernées.</p>':'')+'</div>';
 }
 $('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(!(key in refEditorOpen))return;refEditorOpen[key]=e.target.open;if(e.target.open&&!refDraft)refDraft=refSnapshot();if(!e.target.open&&refDraft&&!Object.values(refEditorOpen).some(Boolean))refFinishEdit(false);},true);
-$('scr-ref').addEventListener('click',e=>{if(e.target.closest('[data-ref-save]')){refFinishEdit(true);return;}if(e.target.closest('[data-ref-cancel]')){refFinishEdit(false);return;}if(e.target.closest('[data-ref-apply]')&&refPlanPending&&confirm('Mettre à jour maintenant les séances futures non réalisées ?')){refPendingSet(false);render();renderApp();}});
+$('scr-ref').addEventListener('click',e=>{if(e.target.closest('[data-ref-save]')){refFinishEdit(true);return;}if(e.target.closest('[data-ref-cancel]')){refFinishEdit(false);return;}if(e.target.closest('[data-ref-apply]')&&refPlanPending&&confirm('Mettre à jour uniquement les intensités des séances futures non réalisées ?')){if(applyReferencesToSavedPlan()){render();renderApp();}}});
 $('scr-calc').addEventListener('input',e=>{if(!e.target.matches('[data-conversion-input]'))return;conversionInputs[conversionMode]=e.target.value;$('scr-calc').querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,e.target.value);});
 $('scr-calc').addEventListener('click',e=>{const btn=e.target.closest('button[data-conversion-mode]');if(!btn)return;conversionMode=btn.dataset.conversionMode;const group=btn.closest('.optSeg');group.querySelectorAll('button[data-conversion-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));updateConversionUi();});
 $('appShell').addEventListener('input',e=>{
