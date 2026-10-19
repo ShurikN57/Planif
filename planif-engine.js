@@ -66,6 +66,27 @@ function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Dat
  const fresh=new Map();
  for(const w of candidate.weeks||[])for(const d of w.days||[])for(const it of d.items||[])
    if(it.planifId)fresh.set(it.planifId,it);
+ // Index by stable format key across the entire regenerated plan: session order
+ // and training week may differ without changing the prescribed workout.
+ const byVariantKey=new Map();
+ for(const w of candidate.weeks||[])for(const d of w.days||[])for(const it of d.items||[]){
+   if(it.kind!=='q')continue;
+   for(const v of it.s?.variants||[]){
+     if(!byVariantKey.has(v.key))byVariantKey.set(v.key,[]);
+     byVariantKey.get(v.key).push(v);
+   }
+ }
+ function sameFormat(a,b){
+   if(!a||!b||a.sector!==b.sector||a.kind!==b.kind||a.key!==b.key)return false;
+   const sa=a.structure||{},sb=b.structure||{};
+   return sa.type===sb.type&&sa.distanceM===sb.distanceM&&sa.durationMin===sb.durationMin
+     &&JSON.stringify((sa.segments||[]).map(x=>[x.distanceM,x.durationMin]))===JSON.stringify((sb.segments||[]).map(x=>[x.distanceM,x.durationMin]));
+ }
+ function nearestFormat(oldV){
+   const pool=(byVariantKey.get(oldV.key)||[]).filter(v=>sameFormat(oldV,v));
+   if(!pool.length)return null;
+   return pool.reduce((best,v)=>Math.abs((v.work||0)-(oldV.work||0))<Math.abs((best.work||0)-(oldV.work||0))?v:best);
+ }
  function copyVariantIntensity(oldV,newV){
    if(!oldV||!newV||oldV.sector!==newV.sector||oldV.kind!==newV.kind)return false;
    // Only compatible formats are updated: repetitions, distance, time and recovery stay untouched.
@@ -87,16 +108,16 @@ function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Dat
      if(it.kind==='q')eligible++;
      let sessionChanged=false;
      const next=fresh.get(it.planifId);
-     if(!next||it.kind!==next.kind)continue;
-     if(it.kind==='q'&&it.s&&next.s&&it.s.fam===next.s.fam){
-       const source=new Map((next.s.variants||[]).map(v=>[v.key,v]));
+     if(it.kind!=='q'||!it.s)continue;
+     if(true){
+       const source=new Map((next?.kind==='q'&&next.s?.fam===it.s.fam?next.s.variants:[]||[]).map(v=>[v.key,v]));
        for(const v of it.s.variants||[]){
          const match=source.get(v.key);
-         if(copyVariantIntensity(v,match)){updated++;sessionChanged=true;}
+         if(copyVariantIntensity(v,match)||copyVariantIntensity(v,nearestFormat(v))){updated++;sessionChanged=true;}
        }
        // Preserve the week-level references used by the session detail view.
        const original=(w.sessions||[]).find(x=>x===it.s||x.variants?.some(v=>it.s.variants?.some(t=>t.key===v.key)));
-       if(original&&original!==it.s){for(const v of original.variants||[])copyVariantIntensity(v,source.get(v.key));}
+       if(original&&original!==it.s){for(const v of original.variants||[])copyVariantIntensity(v,source.get(v.key))||copyVariantIntensity(v,nearestFormat(v));}
      }
      if(sessionChanged)updatedSessions++;
    }

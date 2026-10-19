@@ -742,7 +742,10 @@ function refFinishEdit(saveChanges){
  if(!refDraft)return;
  const before=refDraft,after=refSnapshot();
  if(saveChanges){
-   const errors=[...referenceErrors(readState()),...referenceChangeErrors(before,after)];if(errors.length){alert(errors.join('\n'));return;}
+   const changes=referenceChangeErrors(before,after);
+   const worldRecordWarning='À moins que tu t\'appelles Yann Schrub, tu ne feras jamais ce chrono !';
+   if(changes.includes(worldRecordWarning)){alert(worldRecordWarning);return;}
+   const errors=[...referenceErrors(readState()),...changes];if(errors.length){alert(errors.join('\n'));return;}
    if(!confirm('Enregistrer ces nouvelles références ? Cette validation ne modifie pas le programme existant.'))return;
  }else refRestore(before);
  refDraft=null;refEditorOpen.physio=false;refEditorOpen.chrono=false;
