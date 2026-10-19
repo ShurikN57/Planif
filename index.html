@@ -687,6 +687,20 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
  background-color:var(--surface)!important;
 }
 :root[data-theme="dark"] #scr-calc .simCard::after,:root[data-theme="dark"] #scr-calc .conversionCard::after,:root[data-theme="dark"] #scr-calc [data-chrono-tool]::after,:root[data-theme="dark"] #scr-calc [data-endurance-tool]::after,:root[data-theme="dark"] #scr-calc [data-critical-tool]::after{background:rgba(148,153,188,.22);box-shadow:17px 18px 0 -1px rgba(148,153,188,.16)}
+
+/* Fix chrono modal stacking: cards create isolated clipping contexts.
+   Lift the active card above siblings and remove clipping while its picker is open. */
+#scr-calc .card:has(.timeWheelOverlay:not([hidden])),
+#scr-calc .chronoPanel:has(.timeWheelOverlay:not([hidden])),
+#scr-calc [data-chrono-tool]:has(.timeWheelOverlay:not([hidden])),
+#scr-calc [data-endurance-tool]:has(.timeWheelOverlay:not([hidden])),
+#scr-calc [data-critical-tool]:has(.timeWheelOverlay:not([hidden])){
+ position:relative!important;z-index:100000!important;overflow:visible!important;isolation:auto!important;
+}
+#scr-calc .timeWheelHost:has(.timeWheelOverlay:not([hidden])){position:relative!important;z-index:100001!important;isolation:auto!important}
+#scr-calc .timeWheelOverlay:not([hidden]){position:fixed!important;inset:0!important;z-index:100002!important;isolation:isolate!important;overflow:visible!important}
+#scr-calc .timeWheelOverlay:not([hidden]) .timeWheelBackdrop{position:absolute!important;inset:0!important;z-index:0!important}
+#scr-calc .timeWheelOverlay:not([hidden]) .timeWheelSheet{position:relative!important;z-index:1!important}
 </style>
 </head>
 <body data-ui="app">
@@ -837,17 +851,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.27"></script>
+<script src="./planif-coros.js?v=2026.10.19.28"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.27"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.28"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.27"></script>
-<script src="./planif-rules.js?v=2026.10.19.27"></script>
-<script src="./planif-engine.js?v=2026.10.19.27"></script>
-<script src="./planif-evidence.js?v=2026.10.19.27"></script>
-<script src="./planif-ui.js?v=2026.10.19.27"></script>
+<script src="./planif-version.js?v=2026.10.19.28"></script>
+<script src="./planif-rules.js?v=2026.10.19.28"></script>
+<script src="./planif-engine.js?v=2026.10.19.28"></script>
+<script src="./planif-evidence.js?v=2026.10.19.28"></script>
+<script src="./planif-ui.js?v=2026.10.19.28"></script>
 </body>
 </html>
 
