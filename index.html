@@ -671,7 +671,13 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc .simCard::after,#scr-calc .conversionCard::after,#scr-calc [data-chrono-tool]::after,#scr-calc [data-endurance-tool]::after,#scr-calc [data-critical-tool]::after{
  content:"";position:absolute;right:23px;top:57px;width:57px;height:7px;border-radius:9px;background:rgba(143,159,197,.28);box-shadow:17px 18px 0 -1px rgba(143,159,197,.23);pointer-events:none;z-index:0;
 }
-#scr-calc .simCard>*,#scr-calc .conversionCard>*,#scr-calc [data-chrono-tool]>*,#scr-calc [data-endurance-tool]>*,#scr-calc [data-critical-tool]>*{position:relative;z-index:1}
+/* Keep only ordinary card content above decoration; modal overlays must remain fixed. */
+#scr-calc .simCard>*:not(.timeWheelOverlay),#scr-calc .conversionCard>*:not(.timeWheelOverlay),#scr-calc [data-chrono-tool]>*:not(.timeWheelOverlay),#scr-calc [data-endurance-tool]>*:not(.timeWheelOverlay),#scr-calc [data-critical-tool]>*:not(.timeWheelOverlay){position:relative;z-index:1}
+#scr-calc .timeWheelOverlay{position:fixed!important;inset:0!important;z-index:99999!important;display:flex;align-items:flex-end;justify-content:center}
+#scr-calc .timeWheelOverlay[hidden]{display:none!important}
+#scr-calc .timeWheelOverlay .timeWheelBackdrop{position:absolute;inset:0;z-index:0}
+#scr-calc .timeWheelOverlay .timeWheelSheet{position:relative;z-index:1}
+
 :root[data-theme="dark"] #scr-calc .simCard,
 :root[data-theme="dark"] #scr-calc .conversionCard,
 :root[data-theme="dark"] #scr-calc [data-chrono-tool],
@@ -831,17 +837,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.26"></script>
+<script src="./planif-coros.js?v=2026.10.19.27"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.26"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.27"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.26"></script>
-<script src="./planif-rules.js?v=2026.10.19.26"></script>
-<script src="./planif-engine.js?v=2026.10.19.26"></script>
-<script src="./planif-evidence.js?v=2026.10.19.26"></script>
-<script src="./planif-ui.js?v=2026.10.19.26"></script>
+<script src="./planif-version.js?v=2026.10.19.27"></script>
+<script src="./planif-rules.js?v=2026.10.19.27"></script>
+<script src="./planif-engine.js?v=2026.10.19.27"></script>
+<script src="./planif-evidence.js?v=2026.10.19.27"></script>
+<script src="./planif-ui.js?v=2026.10.19.27"></script>
 </body>
 </html>
 
