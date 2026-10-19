@@ -622,7 +622,11 @@ function appTodayHtml(){
   let h='';
   const cur=days.find(o=>+o.x.date===+t),first=days[0],last=days[days.length-1];
   const dleft=dayDiff(t,C.race.date);
-  if(dleft>=0)h+=`<div class="card todayCountdown">${homeArt('map')}<div class="homeCopy"><div class="lbl">Course ${DIST[C.race.distance].lab}, ${fmtD(C.race.date)}</div><div class="big">J−${dleft}</div>${activePlan&&!structureEditing?'<span class="homeLock"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>Structure verrouillée</span>':''}<p class="lbl">${C.race.goal?'Objectif':'Estimation'} ${fmtTime(DIST[C.race.distance].km/C.race.speed*3600)}, ${paceHtml(kmh(C.race.speed,C.race.speed))}</p></div></div>`;
+  // The home race estimate follows current athlete references, even when
+  // the saved training schedule remains locked pending separate approval.
+  const racePrediction=!C.race.goal?predict(readState())?.[Number(C.race.distance)]:null;
+  const homeRaceSpeed=racePrediction&&Number.isFinite(racePrediction.v)&&racePrediction.v>0?racePrediction.v:C.race.speed;
+  if(dleft>=0)h+=`<div class="card todayCountdown">${homeArt('map')}<div class="homeCopy"><div class="lbl">Course ${DIST[C.race.distance].lab}, ${fmtD(C.race.date)}</div><div class="big">J−${dleft}</div>${activePlan&&!structureEditing?'<span class="homeLock"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>Structure verrouillée</span>':''}<p class="lbl">${C.race.goal?'Objectif':'Estimation'} ${fmtTime(DIST[C.race.distance].km/homeRaceSpeed*3600)}, ${paceHtml(kmh(homeRaceSpeed,homeRaceSpeed))}</p></div></div>`;
   if(cur){const it=cur.x.items;h+=`<div class="card homeDay"><div class="lbl">${fmtD(t)}</div>${it.length?it.map((i,k)=>tileHtml(i,cur.w,refOf(cur.w,cur.x,k))).join(''):`<div class="homeRest"><div class="big">Repos</div>${homeRestArt()}</div>`}</div>`;}
   else if(t<first.x.date)h+=`<div class="card"><div class="lbl">Avant le début</div><div class="big">J−${dayDiff(t,first.x.date)}</div><p class="lbl">La préparation commence le ${fmtD(first.x.date)}.</p></div>`;
   else if(t>last.x.date)h+='<div class="card"><h2>Préparation terminée</h2><p class="lbl">Crée un nouveau calendrier dans les réglages.</p></div>';
