@@ -616,6 +616,31 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   background:radial-gradient(ellipse 220px 160px at 104% -10%,rgba(107,154,132,.12),transparent 83%),radial-gradient(ellipse 210px 150px at 90% -12%,rgba(138,127,201,.09),transparent 85%),var(--surface)!important;
   border-color:var(--line)!important;
 }
+
+/* Decorative geometric pastel panels: white base, visible angular sage/lavender accents. */
+:root:not([data-theme="dark"]) #scr-calc .simCard,
+:root:not([data-theme="dark"]) #scr-calc .conversionCard,
+:root:not([data-theme="dark"]) #scr-calc [data-chrono-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-endurance-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-critical-tool]{
+ background-image:linear-gradient(140deg,transparent 0 61%,rgba(195,217,202,.30) 61% 100%),linear-gradient(35deg,transparent 0 75%,rgba(182,171,226,.25) 75% 100%),linear-gradient(118deg,transparent 0 87%,rgba(228,231,243,.75) 87% 100%)!important;
+ background-color:#fff!important;
+ background-size:100% 155px,100% 155px,100% 155px!important;
+ background-repeat:no-repeat!important;
+ background-position:right top!important;
+ border-color:#dedee9!important;
+}
+:root[data-theme="dark"] #scr-calc .simCard,
+:root[data-theme="dark"] #scr-calc .conversionCard,
+:root[data-theme="dark"] #scr-calc [data-chrono-tool],
+:root[data-theme="dark"] #scr-calc [data-endurance-tool],
+:root[data-theme="dark"] #scr-calc [data-critical-tool]{
+ background-image:linear-gradient(140deg,transparent 0 61%,rgba(89,131,106,.22) 61% 100%),linear-gradient(35deg,transparent 0 75%,rgba(113,99,164,.23) 75% 100%)!important;
+ background-color:var(--surface)!important;
+ background-size:100% 155px!important;
+ background-repeat:no-repeat!important;
+ background-position:right top!important;
+}
 </style>
 </head>
 <body data-ui="app">
@@ -766,17 +791,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.23"></script>
+<script src="./planif-coros.js?v=2026.10.19.24"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.23"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.24"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.23"></script>
-<script src="./planif-rules.js?v=2026.10.19.23"></script>
-<script src="./planif-engine.js?v=2026.10.19.23"></script>
-<script src="./planif-evidence.js?v=2026.10.19.23"></script>
-<script src="./planif-ui.js?v=2026.10.19.23"></script>
+<script src="./planif-version.js?v=2026.10.19.24"></script>
+<script src="./planif-rules.js?v=2026.10.19.24"></script>
+<script src="./planif-engine.js?v=2026.10.19.24"></script>
+<script src="./planif-evidence.js?v=2026.10.19.24"></script>
+<script src="./planif-ui.js?v=2026.10.19.24"></script>
 </body>
 </html>
 
