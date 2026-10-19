@@ -712,6 +712,8 @@ function applyReferencesToSavedPlan(){
  putJson(STORE.active,activePlan);
  document.dispatchEvent?.(new CustomEvent('planif-plan-change'));
  refPendingSet(false);
+ const changed=revised.referenceIntensitySessionsUpdated||0,total=revised.referenceIntensitySessionsEligible||0;
+ alert('Mise à jour des références : '+changed+' séance(s) de qualité actualisée(s) sur '+total+' séance(s) future(s) non réalisée(s).'+(total>changed?'\n'+(total-changed)+' séance(s) conservée(s) : format non compatible avec le recalcul.':''));
  return true;
 }
 // Reference validation applies only to authoritative Repères, never the Calcul simulator.

@@ -79,26 +79,31 @@ function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Dat
    }
    return true;
  }
- let updated=0;
+ let updated=0,eligible=0,updatedSessions=0;
  for(const w of result.weeks||[])for(const d of w.days||[]){
    if(planDateKey(d.date)<cutoff)continue;
    for(const it of d.items||[]){
      if(!it.planifId||completed.has(it.planifId))continue;
+     if(it.kind==='q')eligible++;
+     let sessionChanged=false;
      const next=fresh.get(it.planifId);
      if(!next||it.kind!==next.kind)continue;
      if(it.kind==='q'&&it.s&&next.s&&it.s.fam===next.s.fam){
        const source=new Map((next.s.variants||[]).map(v=>[v.key,v]));
        for(const v of it.s.variants||[]){
          const match=source.get(v.key);
-         if(copyVariantIntensity(v,match))updated++;
+         if(copyVariantIntensity(v,match)){updated++;sessionChanged=true;}
        }
        // Preserve the week-level references used by the session detail view.
        const original=(w.sessions||[]).find(x=>x===it.s||x.variants?.some(v=>it.s.variants?.some(t=>t.key===v.key)));
        if(original&&original!==it.s){for(const v of original.variants||[])copyVariantIntensity(v,source.get(v.key));}
      }
+     if(sessionChanged)updatedSessions++;
    }
  }
  result.referenceIntensityUpdates=updated;
+ result.referenceIntensitySessionsUpdated=updatedSessions;
+ result.referenceIntensitySessionsEligible=eligible;
  return result;
 }
 function ensurePlanifSessionIds(C){
