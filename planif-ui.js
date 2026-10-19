@@ -105,6 +105,7 @@ function load(){
   $('modeCal').checked=CURRENT_MODE==='cal';$('modeBloc').checked=CURRENT_MODE==='bloc';
   loadModeState(CURRENT_MODE);
   activePlan=getJson(STORE.active,null);
+  refPlanPending=refPendingLoad();
   planHistory=getJson(STORE.history,[])||[];
   const migrationKey='planif-weekly-balance-v2';
   if(validSavedPlan(activePlan)&&!localStorage.getItem(migrationKey)){
@@ -114,6 +115,7 @@ function load(){
   }
 }
 function save(){
+  if(refDraft)return;
   if(recoveryState?.status==='pending'||inputErrors(readState()).length)return;
   putJson(STORE.global,captureIds(GLOBAL_IDS));
   saveModeState(CURRENT_MODE);
@@ -246,6 +248,7 @@ const vText=v=>presentVariant(v).text,vChips=v=>presentVariant(v).chips;
 /* ---------- rendu ---------- */
 let lastPlan=null,lastPred=null,lastSt=null;
 function render(){
+  if(refDraft)return;
   if(recoveryState){
     lastCalError=null;
     if(recoveryState.status==='restored'){
@@ -255,6 +258,11 @@ function render(){
     return;
   }
   const st=readState();
+  if(refPlanPending&&activePlan&&st.mode==='cal'&&!structureEditing){
+    if(inputErrors(st).length){$('predSec').innerHTML=inputErrorHtml();return;}
+    const pred=predict(st);renderPred(st,pred);lastPlan=reviveSavedPlan(activePlan.plan);lastSt=st;lastPred=pred;
+    renderCalHeader(st,lastPlan);renderCalBody(st,lastPlan);return;
+  }
   if(inputErrors(st).length){$('predSec').innerHTML=inputErrorHtml();return;}
   save();
   $('specRow').style.display=st.block==='spec'?'':'none';
@@ -675,7 +683,26 @@ function appBlockWeeks(C,st){
 }
 function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;}
 const refEditorOpen={physio:false,chrono:false};
-function refEditHtml(title,key,body){return `<details class="refHelp refEditor" data-ref-section="${key}"${refEditorOpen[key]?' open':''}><summary><h2>${title}</h2><span class="refInfoIcon refEditIcon" aria-hidden="true">✎</span><span class="srOnly"> — modifier ${key==='physio'?'la physiologie':'les chronos de référence'}</span></summary><div class="refHelpBody settingsContent">${body}</div></details>`;}
+let refDraft=null;
+let refPlanPending=false;
+const REF_PLAN_PENDING_KEY='planif-reference-plan-pending-v1';
+function refSnapshot(){return Object.fromEntries(GLOBAL_IDS.map(id=>[id,isCheck($(id))?$(id).checked:$(id).value]));}
+function refRestore(snapshot){for(const [id,value] of Object.entries(snapshot)){if(!$(id))continue;if(isCheck($(id)))$(id).checked=!!value;else $(id).value=value;}}
+function refPendingLoad(){try{return !!(activePlan&&JSON.parse(localStorage.getItem(REF_PLAN_PENDING_KEY)||'null')?.id===activePlan.id);}catch{return false;}}
+function refPendingSet(value){refPlanPending=!!value;try{if(value&&activePlan)localStorage.setItem(REF_PLAN_PENDING_KEY,JSON.stringify({id:activePlan.id}));else localStorage.removeItem(REF_PLAN_PENDING_KEY);}catch(_){}}
+function refFinishEdit(saveChanges){
+ if(!refDraft)return;
+ const before=refDraft,after=refSnapshot();
+ if(saveChanges){
+   const errors=referenceErrors(readState());if(errors.length){alert(errors.join('\n'));return;}
+   if(!confirm('Enregistrer ces nouvelles références ? Cette validation ne modifie pas le programme existant.'))return;
+ }else refRestore(before);
+ refDraft=null;refEditorOpen.physio=false;refEditorOpen.chrono=false;
+ if(saveChanges){save();if(activePlan){refPendingSet(true);if(confirm('Appliquer maintenant les nouvelles références aux séances futures non réalisées ? Les séances passées et réalisées seront conservées.'))refPendingSet(false);}}
+ render();renderApp();
+}
+
+function refEditHtml(title,key,body){return `<details class="refHelp refEditor" data-ref-section="${key}"${refEditorOpen[key]?' open':''}><summary><h2>${title}</h2><span class="refInfoIcon refEditIcon" aria-hidden="true">✎</span><span class="srOnly"> — modifier ${key==='physio'?'la physiologie':'les chronos de référence'}</span></summary><div class="refHelpBody settingsContent">${body}<div class="refEditActions"><button type="button" class="cta ghost" data-ref-cancel>Annuler</button><button type="button" class="cta" data-ref-save>Enregistrer</button></div></div></details>`;}
 function conversionResult(mode,raw){
   const value=String(raw).trim();if(!value)return '—';
   if(mode==='speedToPace'){
@@ -755,6 +782,7 @@ function appRefHtml(){
   const st=readState(),C=lastPlan,valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
+  if(refPlanPending&&activePlan)h+='<div class="card" role="status"><p>Les références sont enregistrées, mais le programme existant est conservé.</p><button type="button" class="cta" data-ref-apply>Appliquer aux séances futures non réalisées</button></div>';
   h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
   
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
@@ -977,7 +1005,8 @@ function weeklyBalanceHtml(){
   if(!capacityHtml&&!rows.length)return '';
   return '<div class="card" role="status"><h2>Compatibilité du volume</h2>'+capacityHtml+rows.slice(0,3).map(row=>'<p class="lbl">'+row+'</p>').join('')+(rows.length>3?'<p class="lbl">Les autres ajustements sont indiqués dans les semaines concernées.</p>':'')+'</div>';
 }
-$('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(key in refEditorOpen)refEditorOpen[key]=e.target.open;},true);
+$('scr-ref').addEventListener('toggle',e=>{const key=e.target.dataset.refSection;if(!(key in refEditorOpen))return;refEditorOpen[key]=e.target.open;if(e.target.open&&!refDraft)refDraft=refSnapshot();if(!e.target.open&&refDraft&&!Object.values(refEditorOpen).some(Boolean))refFinishEdit(false);},true);
+$('scr-ref').addEventListener('click',e=>{if(e.target.closest('[data-ref-save]')){refFinishEdit(true);return;}if(e.target.closest('[data-ref-cancel]')){refFinishEdit(false);return;}if(e.target.closest('[data-ref-apply]')&&refPlanPending&&confirm('Mettre à jour maintenant les séances futures non réalisées ?')){refPendingSet(false);render();renderApp();}});
 $('scr-calc').addEventListener('input',e=>{if(!e.target.matches('[data-conversion-input]'))return;conversionInputs[conversionMode]=e.target.value;$('scr-calc').querySelector('[data-conversion-output]').textContent=conversionResult(conversionMode,e.target.value);});
 $('scr-calc').addEventListener('click',e=>{const btn=e.target.closest('button[data-conversion-mode]');if(!btn)return;conversionMode=btn.dataset.conversionMode;const group=btn.closest('.optSeg');group.querySelectorAll('button[data-conversion-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));updateConversionUi();});
 $('appShell').addEventListener('input',e=>{
@@ -995,13 +1024,13 @@ $('appShell').addEventListener('input',e=>{
 $('appShell').addEventListener('change',e=>{
   if(!e.target.closest('#scr-set, #scr-ref'))return;
   const unit=e.target.closest('[data-speed-unit]');if(unit){speedUnit=unit.value==='pace'?'pace':'kmh';try{localStorage.setItem('planif-speed-unit',speedUnit);}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}syncSpeedInputs();return;}
-  const speed=e.target.closest('[data-speed]');if(speed){if(!commitSpeedInput(speed))speed.reportValidity();else if(appTab==='ref')renderApp();return;}
-  const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));if(appTab==='ref')renderApp();return;}
+  const speed=e.target.closest('[data-speed]');if(speed){if(!commitSpeedInput(speed))speed.reportValidity();else if(appTab==='ref'&&!refDraft)renderApp();return;}
+  const tp=e.target.closest('[data-timepart]');if(tp){tp.dispatchEvent(new Event('input',{bubbles:true}));if(appTab==='ref'&&!refDraft)renderApp();return;}
   const el=e.target.closest('[data-bind]');if(!el)return;const src=$(el.dataset.bind);
   if(isCheck(src))src.checked=el.checked;else src.value=el.value;
   if(['hrMin','hrMax'].includes(el.dataset.bind)){save();if(appTab==='ref')renderApp();return;}
   $('f').dispatchEvent(new Event('input'));
-  if(appTab==='ref'||el.dataset.bind==='refDist'||el.dataset.bind==='ref2Dist'||el.dataset.bind==='qualityCount'){setBuilt=false;renderApp();}
+  if((appTab==='ref'&&!refDraft)||(!refDraft&&['refDist','ref2Dist','qualityCount'].includes(el.dataset.bind))){setBuilt=false;renderApp();}
 });
 async function updateApp(btn){
   const status=$('updateStatus');
