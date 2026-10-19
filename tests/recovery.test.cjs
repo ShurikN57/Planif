@@ -5,6 +5,9 @@ const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:
 const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};
 vm.createContext(ctx);
 loadRuntime(ctx);
+const refPendingDefinition=html.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)?.[0];
+assert(refPendingDefinition,'pending-reference loader must remain available');
+vm.runInContext(refPendingDefinition,ctx);
 vm.runInContext(`
 this.E={buildCalendar,predict,ensurePlanifSessionIds,protectPlanRecovery,reviveSavedPlan,load,saveActivePlan,switchModeState};
 this.defaults=()=>({...DEFAULTS});this.keys=STORE;
@@ -26,9 +29,6 @@ const revived=E.reviveSavedPlan(saved.plan);
 assert.equal(JSON.stringify(revived),JSON.stringify(saved.plan));
 assert(Number.isFinite(+revived.race.date)&&Number.isFinite(+revived.start));
 assert(Number.isFinite(+revived.weeks[0].startDate)&&Number.isFinite(+revived.weeks[0].days[0].date));
-const refPendingDefinition=html.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)?.[0];
-assert(refPendingDefinition,'pending-reference loader must remain available');
-vm.runInContext(refPendingDefinition,ctx);
 vm.runInContext(html.slice(html.indexOf('let lastPlan=null,lastPred=null,lastSt=null;'),html.indexOf('const pts=x=>'))+`
 this.renderRecovery=render;this.rendered=()=>lastPlan;
 buildCalendar=()=>{throw Error('Unexpected regeneration during recovery');};
