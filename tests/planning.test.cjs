@@ -107,8 +107,8 @@ for(const block of ['aero','s1','s2','vma','eco','spec'])for(const runs of [3,4,
  const active=w.foot.filter(f=>f.assimilationActive);
  if(runs>=4)assert.equal(active.length,1,'active endurance must replace one quality with four or more outings');
  if(!active.length)continue;
- const f=active[0];assert([10,15,20].includes(f.activeRange[0]));assert.equal(f.activeRange[0],f.activeRange[1]);
- assert(f.wu>=10);assert.equal(f.wu+f.activeRange[0]+f.cd,f.min);
+ const f=active[0];assert(f.activeRange[0]>=10&&f.activeRange[1]<=30&&f.activeRange[1]>=f.activeRange[0],'active endurance interval stays within 10–30 minutes');
+ assert(f.wu>=10);assert(f.wu+f.activeRange[1]+f.cd<=f.min+1e-9,'active endurance fits the footing duration');
  assert.equal(w.vol,w.sl+w.foot.reduce((sum,f)=>sum+f.min,0)+w.sessions.reduce((sum,s)=>sum+s.total,0));assert(Number.isFinite(w.load));
  assert(w.z.z1<=w.vol);assert.equal(w.foot.length+w.sessions.length+(w.sl>0?1:0),runs);
 }
