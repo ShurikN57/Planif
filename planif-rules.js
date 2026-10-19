@@ -198,7 +198,7 @@ const RULES={
       weeklyMax:1,minRuns:4,maxRuns:6,
       blockWhenFourRunsAndTwoQualities:true,
       work:[15,45],warmup:20,cooldown:10,intensityPctLT1:[0.92,0.98],
-      allowedContexts:['aero'],
+      allowedContexts:['aero','assimilation'],
       formats:['continuous','blocks']
     },
     assimilationActive:{blockMinutes:[10,15,20],preferredWarmup:20,cooldown:10,minEasy:10},

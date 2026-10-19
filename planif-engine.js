@@ -895,7 +895,7 @@ function applyActiveEndurance(st,foot,sl,sessionCount,context){
   const cand=foot.filter(x=>x.type==='std'||x.type==='pro').sort((a,b)=>b.min-a.min)[0];
   if(cand){
     const r=activeEnduranceRange(cand.min);
-    if(r){cand.type='active';cand.activeRange=r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
+    if(r){cand.type='active';cand.activeRange=context==='assimilation'?[Math.min(10,r[1]),Math.min(30,r[1])]:r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
   }
   const r=activeEnduranceRange(sl);
   return{slEA:r?{range:r,wu:RULES.organization.activeEndurance.warmup,cd:RULES.organization.activeEndurance.cooldown}:null};
@@ -973,9 +973,13 @@ function buildWeek(B,st,o){
     let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
     /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
     if(assim&&bW>0){
-      const C=mixedCfg(B.A.fam,bDef.fam,'assimilation');
+      // In an S2 block, the supported combination is S1 > S2, not S2 > S1.
+      const reverse=!mixedCfg(B.A.fam,bDef.fam,'assimilation')&&!!mixedCfg(bDef.fam,B.A.fam,'assimilation');
+      const firstFam=reverse?bDef.fam:B.A.fam,secondFam=reverse?B.A.fam:bDef.fam;
+      const C=mixedCfg(firstFam,secondFam,'assimilation');
       if(C){
-        const m=makeMixedSession(B.A.fam,bDef.fam,Math.max(B.A.min,aW*C.assimPrimaryFactor),Math.max(3,bW*C.assimSecondaryFactor),'assimilation',k,t,st,ctx);
+        const primary=reverse?bW:aW,secondary=reverse?aW:bW;
+        const m=makeMixedSession(firstFam,secondFam,Math.max(3,primary*C.assimPrimaryFactor),Math.max(3,secondary*C.assimSecondaryFactor),'assimilation',k,t,st,ctx);
         if(m){sessions=[m];mixedRole='assimilation';}
       }
     }
@@ -1049,6 +1053,12 @@ function buildWeek(B,st,o){
     const costly=sessions.slice().sort((a,b)=>b.loadMax-a.loadMax)[0];
     const fp=planFootings({contextFreeFooting:!o.calendar&&f===1,R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.min(slCap,Math.max(LR.minMinutes,r5(vol*LR.minShare))),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
     sl=fp.sl;const foot=fp.foot;warns.push(...fp.warns);
+    // Assimilation retains one recovery run, but needs a standard footing
+    // to host the replacement active-endurance workout.
+    if(assim&&st.qualityCount>=2&&foot.length){
+      const host=foot.slice().sort((a,b)=>b.min-a.min)[0];
+      host.type='std';
+    }
     // Calendar placement can extend a conservatively sized recovery run; check its final volume there.
     const actual=qTot+sl+foot.reduce((sum,x)=>sum+x.min,0);
     if(!o.calendar&&qualityDurationExceeded(sessions,Math.min(vol,actual))){const fitted=retryFit(Math.min(vol,actual),true);if(fitted)return fitted;}
