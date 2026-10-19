@@ -654,6 +654,33 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 :root[data-theme="dark"] #scr-calc .calcIcon::before{background:rgba(96,154,121,.29)}
 :root[data-theme="dark"] #scr-calc .calcTitle::after{background:rgba(147,131,211,.13)}
 @media(max-width:420px){#scr-calc .calcTitle{min-height:56px;gap:.6rem}#scr-calc .calcIcon,#scr-calc .calcIcon-sim,#scr-calc .calcIcon-endurance,#scr-calc .calcIcon-critical{flex:0 0 56px;width:56px;min-width:56px;height:60px}#scr-calc .calcIcon::before{width:37px;height:37px;top:12px;right:0}}
+
+/* Approved mockup: pronounced lavender swoosh, mint upper corner and fine dash marks. */
+:root:not([data-theme="dark"]) #scr-calc .simCard,
+:root:not([data-theme="dark"]) #scr-calc .conversionCard,
+:root:not([data-theme="dark"]) #scr-calc [data-chrono-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-endurance-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-critical-tool]{
+ background-image:radial-gradient(circle 19px at calc(100% - 115px) 39px,rgba(168,158,228,.21) 97%,transparent 100%),linear-gradient(15deg,transparent 0 68%,rgba(179,169,228,.14) 68% 100%),linear-gradient(108deg,transparent 0 81%,rgba(185,231,207,.30) 81% 100%)!important;
+ background-size:100% 155px!important;
+ background-position:right top!important;
+ background-repeat:no-repeat!important;
+ background-color:#fff!important;
+ position:relative;
+}
+#scr-calc .simCard::after,#scr-calc .conversionCard::after,#scr-calc [data-chrono-tool]::after,#scr-calc [data-endurance-tool]::after,#scr-calc [data-critical-tool]::after{
+ content:"";position:absolute;right:23px;top:57px;width:57px;height:7px;border-radius:9px;background:rgba(143,159,197,.28);box-shadow:17px 18px 0 -1px rgba(143,159,197,.23);pointer-events:none;z-index:0;
+}
+#scr-calc .simCard>*,#scr-calc .conversionCard>*,#scr-calc [data-chrono-tool]>*,#scr-calc [data-endurance-tool]>*,#scr-calc [data-critical-tool]>*{position:relative;z-index:1}
+:root[data-theme="dark"] #scr-calc .simCard,
+:root[data-theme="dark"] #scr-calc .conversionCard,
+:root[data-theme="dark"] #scr-calc [data-chrono-tool],
+:root[data-theme="dark"] #scr-calc [data-endurance-tool],
+:root[data-theme="dark"] #scr-calc [data-critical-tool]{
+ background-image:radial-gradient(circle 19px at calc(100% - 115px) 39px,rgba(161,143,220,.17) 97%,transparent 100%),linear-gradient(15deg,transparent 0 68%,rgba(137,119,192,.13) 68% 100%),linear-gradient(108deg,transparent 0 81%,rgba(104,157,125,.20) 81% 100%)!important;
+ background-color:var(--surface)!important;
+}
+:root[data-theme="dark"] #scr-calc .simCard::after,:root[data-theme="dark"] #scr-calc .conversionCard::after,:root[data-theme="dark"] #scr-calc [data-chrono-tool]::after,:root[data-theme="dark"] #scr-calc [data-endurance-tool]::after,:root[data-theme="dark"] #scr-calc [data-critical-tool]::after{background:rgba(148,153,188,.22);box-shadow:17px 18px 0 -1px rgba(148,153,188,.16)}
 </style>
 </head>
 <body data-ui="app">
@@ -804,17 +831,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.25"></script>
+<script src="./planif-coros.js?v=2026.10.19.26"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.25"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.26"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.25"></script>
-<script src="./planif-rules.js?v=2026.10.19.25"></script>
-<script src="./planif-engine.js?v=2026.10.19.25"></script>
-<script src="./planif-evidence.js?v=2026.10.19.25"></script>
-<script src="./planif-ui.js?v=2026.10.19.25"></script>
+<script src="./planif-version.js?v=2026.10.19.26"></script>
+<script src="./planif-rules.js?v=2026.10.19.26"></script>
+<script src="./planif-engine.js?v=2026.10.19.26"></script>
+<script src="./planif-evidence.js?v=2026.10.19.26"></script>
+<script src="./planif-ui.js?v=2026.10.19.26"></script>
 </body>
 </html>
 
