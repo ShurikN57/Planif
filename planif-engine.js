@@ -895,7 +895,7 @@ function applyActiveEndurance(st,foot,sl,sessionCount,context){
   const cand=foot.filter(x=>x.type==='std'||x.type==='pro').sort((a,b)=>b.min-a.min)[0];
   if(cand){
     const r=activeEnduranceRange(cand.min);
-    if(r){cand.type='active';cand.activeRange=context==='assimilation'?[Math.min(10,r[1]),Math.min(30,r[1])]:r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
+    if(r){cand.type='active';if(context==='assimilation')cand.assimilationActive=true;cand.activeRange=context==='assimilation'?[Math.min(10,r[1]),Math.min(30,r[1])]:r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
   }
   const r=activeEnduranceRange(sl);
   return{slEA:r?{range:r,wu:RULES.organization.activeEndurance.warmup,cd:RULES.organization.activeEndurance.cooldown}:null};
