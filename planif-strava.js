@@ -6,7 +6,7 @@ window.PlanifStrava=(()=>{
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const read=(storage,key,fallback)=>{try{return JSON.parse(storage.getItem(key)||'null')||fallback;}catch{return fallback;}};
   // Firebase Auth conserve et renouvelle la session propre à cette origine (Planif).
-  let firebaseAuth=null,auth=null,verified=false,records={},activities={},message='',busy=false,showLogin=false,loadedPlan=null,generation=0;
+  let firebaseAuth=null,auth=null,verified=false,records={},activities={},message='',busy=false,showLogin=false,loadedPlan=null,generation=0,hrZones=null;
   const ready=()=>verified&&!!firebaseAuth?.currentUser&&auth?.uid===firebaseAuth.currentUser.uid&&auth.expiresAt>Date.now();
   const cacheKey=(planId,uid=auth.uid)=>'planif-strava-records-v1:'+uid+':'+planId;
   function redraw(){ctx.redraw();}
@@ -38,13 +38,13 @@ window.PlanifStrava=(()=>{
   }
   async function restore(user){
     const seq=++generation;
-    if(!user){auth=null;verified=false;records={};activities={};loadedPlan=null;redraw();return;}
-    auth={uid:user.uid,name:user.displayName||user.email||'Athlète',expiresAt:0};verified=false;
+    if(!user){auth=null;verified=false;hrZones=null;records={};activities={};loadedPlan=null;redraw();return;}
+    auth={uid:user.uid,name:user.displayName||user.email||'Athlète',expiresAt:0};verified=false;hrZones=null;
     records={};activities={};loadedPlan=null;redraw();
     try{
       await token();const me=await api('me');
       if(generation!==seq||me.uid!==user.uid||!me.profile)throw Error('Compte athlète introuvable.');
-      auth.name=me.profile.displayName||auth.name;verified=true;
+      auth.name=me.profile.displayName||auth.name;const z=me.profile.zones;hrZones=z&&[z.z1Max,z.z2Max,z.z3Max,z.z4Max].every(Number.isFinite)&&z.z1Max>=30&&z.z1Max<z.z2Max&&z.z2Max<z.z3Max&&z.z3Max<z.z4Max&&z.z4Max<=240?{z1Max:z.z1Max,z2Max:z.z2Max,z3Max:z.z3Max,z4Max:z.z4Max}:null;verified=true;
       message='';
       await refresh();
     }catch(e){if(generation===seq){verified=false;message='Connexion à vérifier : '+e.message;}}
@@ -145,5 +145,5 @@ window.PlanifStrava=(()=>{
   function onPlan(){if(firebaseAuth?.currentUser&&auth&&ctx.activePlan&&loadedPlan!==ctx.activePlan.id){loadedPlan=ctx.activePlan.id;records=read(localStorage,cacheKey(loadedPlan),{});perform(refresh);}}
   document.addEventListener('planif-plan-change',onPlan);
   setTimeout(()=>{onPlan();redraw();},0);
-  return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};
+  return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,heartRateZones:()=>ready()?hrZones:null};
 })();

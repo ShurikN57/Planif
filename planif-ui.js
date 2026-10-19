@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.02').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.03').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -726,12 +726,13 @@ $('scr-ref').addEventListener('input',e=>{const d=e.target.dataset;if(d.chronoPa
 $('scr-ref').addEventListener('change',e=>{const d=e.target.dataset;if(d.chronoCategory!==undefined){chronoState.category=e.target.value;chronoState.distance=e.target.value==='official'?'5000':'400';renderApp();}else if(d.chronoDistance!==undefined){chronoState.distance=e.target.value;updateToolsUi();}else if(d.ieDistance!==undefined){enduranceState.distance=e.target.value;updateToolsUi();}});
 $('scr-ref').addEventListener('click',e=>{if(!e.target.closest('[data-chrono-to-endurance]'))return;const meters=chronoMeters(),secs=meters*chronoSeconds(chronoState.pace)/1000;if(!['5000','10000','21097.5','42195'].includes(String(meters))||!Number.isFinite(secs))return;enduranceState.distance=String(meters);{const n=Math.round(secs),hh=Math.floor(n/3600),mm=Math.floor(n%3600/60),ss=n%60;enduranceState.time=hh?`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${mm}:${String(ss).padStart(2,'0')}`;}renderApp();});
 
+function syncedHrZonesHtml(){const z=globalThis.PlanifStrava?.heartRateZones?.();if(!z)return '';const rows=[['Z1','≤ '+z.z1Max],['Z2',(z.z1Max+1)+'–'+z.z2Max],['Z3',(z.z2Max+1)+'–'+z.z3Max],['Z4',(z.z3Max+1)+'–'+z.z4Max],['Z5','≥ '+(z.z4Max+1)]];return `<section class="card" aria-label="Zones cardiaques Strava"><h2>Zones FC Strava <span class="connectionTag">Synchronisées</span></h2><div class="kv">${rows.map(([name,range])=>`<span>${name}</span><span class="v">${range} bpm</span>`).join('')}</div><p class="lbl">Zones issues du profil Flow Strava, en lecture seule. Les repères physiologiques S1/S2 sont distincts de ces zones et ne sont pas remplacés automatiquement.</p></section>`;}
 function appRefHtml(){
   const st=readState(),C=lastPlan,valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
   h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
-  h+=conversionHtml()+chronoToolHtml()+enduranceToolHtml();
+  h+=syncedHrZonesHtml()+conversionHtml()+chronoToolHtml()+enduranceToolHtml();
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
