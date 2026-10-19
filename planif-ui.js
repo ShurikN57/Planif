@@ -700,6 +700,45 @@ function refSnapshot(){return Object.fromEntries(GLOBAL_IDS.map(id=>[id,isCheck(
 function refRestore(snapshot){for(const [id,value] of Object.entries(snapshot)){if(!$(id))continue;if(isCheck($(id)))$(id).checked=!!value;else $(id).value=value;}}
 function refPendingLoad(){try{return !!(activePlan&&JSON.parse(localStorage.getItem(REF_PLAN_PENDING_KEY)||'null')?.id===activePlan.id);}catch{return false;}}
 function refPendingSet(value){refPlanPending=!!value;try{if(value&&activePlan)localStorage.setItem(REF_PLAN_PENDING_KEY,JSON.stringify({id:activePlan.id}));else localStorage.removeItem(REF_PLAN_PENDING_KEY);}catch(error){console.warn('Statut des références non sauvegardé',error?.name);}}
+function refreshSavedPlanStructure(){
+ if(recoveryState||structureEditing||refDraft||refPlanPending||!activePlan?.plan){alert('Termine d’abord les modifications en attente du programme.');return false;}
+ const st=readState();
+ if(st.mode!=='cal'||!sameStructure(calendarStructure(),activePlan.structure)){alert('La structure du plan actif ne correspond pas aux paramètres affichés.');return false;}
+ const errors=inputErrors(st);if(errors.length){alert(errors.join('\\n'));return false;}
+ const candidate=buildCalendar(st,predict(st));
+ if(candidate.error){alert('Recalcul impossible : '+warnText(candidate.error));return false;}
+ ensurePlanifSessionIds(candidate);
+ const now=new Date(),cut=planDateKey(now),completed=new Set(globalThis.PlanifStrava?.completedIds?.()||[]);
+ const old=reviveSavedPlan(activePlan.plan);
+ const oldDays=new Map(old.weeks.flatMap(w=>(w.days||[]).map(d=>[planDateKey(d.date),d])));
+ const protectedItems=new Map();
+ for(const w of old.weeks)for(const d of w.days||[])for(const it of d.items||[]){
+   if(completed.has(it.planifId))protectedItems.set(it.planifId,{item:it,date:planDateKey(d.date)});
+ }
+ let futureDays=0,protectedDays=0;
+ for(const w of candidate.weeks)for(const d of w.days||[]){
+   const date=planDateKey(d.date),prev=oldDays.get(date);
+   if(date<=cut){if(prev){d.items=JSON.parse(JSON.stringify(prev.items||[]));protectedDays++;}else d.items=[];continue;}
+   futureDays++;
+   d.items=(d.items||[]).filter(it=>!protectedItems.has(it.planifId));
+   for(const [id,record] of protectedItems){if(record.date===date&&!d.items.some(it=>it.planifId===id))d.items.push(JSON.parse(JSON.stringify(record.item)));}
+ }
+ // Completed sessions on a moved date must remain on that date, even when
+ // the new engine places a different workout there.
+ const candidateDates=new Set(candidate.weeks.flatMap(w=>(w.days||[]).map(d=>planDateKey(d.date))));
+ const outOfRange=[...protectedItems.values()].filter(v=>!candidateDates.has(v.date));
+ if(outOfRange.length){alert('Le nouveau calendrier ne couvre pas toutes les séances déjà réalisées. Le plan est conservé.');return false;}
+ if(!futureDays){alert('Aucune journée future à actualiser.');return false;}
+ if(!confirm('Mettre à jour la structure des séances futures avec le moteur actuel ?\\n\\nLes séances passées et celles déjà réalisées seront conservées. Une sauvegarde du plan actuel sera créée dans les archives.'))return false;
+ archiveActivePlan('avant mise à jour du moteur');
+ activePlan={...activePlan,updatedAt:new Date().toISOString(),plan:snapshotPlan(candidate),referenceIntensityLock:true,moves:[]};
+ putJson(STORE.active,activePlan);
+ document.dispatchEvent?.(new CustomEvent('planif-plan-change'));
+ lastPlan=reviveSavedPlan(activePlan.plan);lastSt=st;lastPred=predict(st);
+ calSel=null;appSession=null;setBuilt=false;render();renderApp();
+ alert('Programme mis à jour : '+futureDays+' journée(s) future(s) recalculée(s), '+protectedDays+' journée(s) passée(s) conservée(s). Les séances déjà réalisées restent protégées.');
+ return true;
+}
 function applyReferencesToSavedPlan(){
  if(!activePlan||!activePlan.plan)return false;
  const st=readState(),pred=predict(st),candidate=buildCalendar(st,pred);
@@ -932,7 +971,7 @@ function appSetHtml(){
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
   if(cal&&activePlan){
-    h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div><button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+    h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div>${!structureEditing?'<button type="button" class="cta ghost" data-act="refresh-program">Mettre à jour le programme</button>':''}<button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
   }
 
   if(!recoveryState&&cal&&(!activePlan||structureEditing)){
@@ -1151,6 +1190,7 @@ $('appShell').addEventListener('click',e=>{
   if(a.dataset.act==='update'){updateApp(a);return;}
   if(a.dataset.act==='add-ref2'){ref2Open=true;setBuilt=false;renderApp();return;}
   if(a.dataset.act==='remove-ref2'){ref2Open=false;$('ref2Time').value='';save();render();setBuilt=false;renderApp();return;}
+  if(a.dataset.act==='refresh-program'){refreshSavedPlanStructure();return;}
   if(a.dataset.act==='edit-structure'&&recoveryState){alert('Vérifie tes repères puis reprends les calculs avant de modifier la structure.');return;}
   if(a.dataset.act==='edit-structure'){structureEditing=true;setBuilt=false;renderApp();return;}
   if(a.dataset.act==='cancel-structure'){structureEditing=false;restoreActiveStructure();render();setBuilt=false;calOpen=null;renderApp();return;}
