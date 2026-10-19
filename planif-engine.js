@@ -939,7 +939,7 @@ function qualityDurationExceeded(sessions,minutes){
 /* Construction d'UNE semaine d'un bloc : partagée par le mode Bloc et par le calendrier.
    o = {k, N, t, assim, vol, memory, block, specDist} ; k et N sont locaux au bloc. */
 function buildWeek(B,st,o){
-  if(o.assim)return buildAssimilationWeek(B,st,o);
+  // Assimilation keeps one reduced quality instead of removing all quality sessions.
   const{k,N,t,assim,vol,memory}=o,warns=[];
   const initialMemory=memory?JSON.parse(JSON.stringify(memory)):null;
   const allowedQualities=Math.min(st.qualityCount,maxQualityForRuns(st.runs),o.qualityLimit??Infinity);
@@ -948,11 +948,11 @@ function buildWeek(B,st,o){
     slCap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=B.id==='aero'?Math.min(1,allowedQualities):allowedQualities;
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=assim?Math.min(1,allowedQualities):B.id==='aero'?Math.min(1,allowedQualities):allowedQualities;
     let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
     const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
-    let bW=qN>=2?(assim?bDef.W[0]*AS.secondOfFirstWeek:lerp(bDef.W)):0;
+    let bW=assim&&st.qualityCount>=2&&qN>0?bDef.W[0]*AS.secondOfFirstWeek:qN>=2?lerp(bDef.W):0;
     let cW=!assim&&qN>=3?lerp(cDef.W)*QF.thirdQualityFactor:0;
     /* volume de base × facteur volume hebdo × progression du bloc, puis plafond du secteur (le budget qualité suit) */
     const fA=volumeFactor(B.A.fam==='spec'&&B.dist===1?'spec10k':B.A.fam,st.vol),fB=volumeFactor(bDef.fam,st.vol),fC=volumeFactor(cDef.fam,st.vol);
@@ -1006,8 +1006,8 @@ function buildWeek(B,st,o){
       const alt=makeAlternatingSession(Math.min(A.maxMinutes,remaining,target+2),st,ctx);
       if(alt){sessions.push(alt);mixedRole='alternating';}
     }
-    if(bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
-    else if(bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
+    if(!assim&&bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
+    else if(!assim&&bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     if(cW>0&&sessions.length<3)sessions.push(makeSession(cDef.fam,cW,k+2,t,st,{...ctx,memory:null}));
     for(let i=0;i<sessions.length;i++){
       const mix=sessions[i];if(mix.fam!=='mixed')continue;
@@ -1042,7 +1042,7 @@ function buildWeek(B,st,o){
       const fitted=retryFit(Math.min(vol,o.durationBudget??Infinity),qualityDurationExceeded(sessions,Math.min(vol,o.durationBudget??Infinity)));if(fitted)return fitted;
       warns.push({code:'weekly_volume_incompatible',params:{minimum:Math.ceil(qTot+reservedEasy),target:Math.round(vol)}});
     }
-    if(sessions.length<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:sessions.length}});
+    if(!assim&&sessions.length<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:sessions.length}});
     else if(workScale<1)warns.push({code:'quality_work_reduced'});
     const workLoad=sessions.reduce((a,x)=>a+x.loadBreakdown.z2+x.loadBreakdown.z3+x.loadBreakdown.z4,0);
     const heavy=!assim&&workLoad/vol>=RULES.load.heavyWeek;
