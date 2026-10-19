@@ -115,11 +115,14 @@ for(const block of ['aero','s1','s2','vma','eco','spec'])for(const runs of [3,4,
 for(const w of c.weeks.filter(w=>w.assimilation)){
  assert(w.sessions.length>=1,'calendar assimilation retains quality');
  const active=w.days.flatMap(d=>d.items.map(it=>({d,it}))).find(x=>x.it.kind==='foot'&&x.it.f.assimilationActive);
- assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q1Day);
+ assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q2Day);
 }
 for(const [vol,minutes] of [[130,10],[140,15],[150,20]]){
  const st={...state,runs:3},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,block:'spec',specDist:1});
- assert(w.sessions.length>=1);
+ if(vol===130){
+  assert.equal(w.sessions.length,0,'130 minutes cannot fit the minimum specific session under the 35% cap');
+  assert(w.warns.some(x=>x.code==='qualities_reduced'&&x.params.actual===0),'an infeasible retained quality must be explained');
+ }else assert(w.sessions.length>=1);
  assert(w.foot.every(f=>!f.assimilationActive||f.activeRange[0]<=20));
 }
 console.log('OK: Jogg/LD labels, shared easy guidance, assimilation with reduced quality, bounded active blocks, preferred quality day and conserved minutes.');

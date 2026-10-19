@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.20').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.44').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -196,6 +196,8 @@ const WARN_TEXT={
   protected_footing_shortfall:p=>`Environ ${p.minutes}' n’ont pas pu être réparties : les footings proches des séances exigeantes restent courts. Ajoute une sortie ou réduis la cible.`,
   quality_exceeds_volume:()=>'Les séances de qualité et la sortie longue dépassent déjà le volume visé : augmente le volume moyen ou réduis la durée du bloc.',
   footings_removed:p=>`Volume trop faible pour ${p.runs} sorties : ${p.removed} footing${p.removed>1?'s':''} retiré${p.removed>1?'s':''}. Une semaine à ${p.runs-p.removed} sorties est plus logique.`,
+  assimilation_mixed_unavailable:()=>`Aucun format mixte ne respecte les durées et récupérations disponibles ; une qualité simple réduite est retenue si le volume le permet.`,
+  assimilation_active_unavailable:()=>`Le temps disponible ne permet pas d’ajouter 10 minutes d’endurance active avec un échauffement et un retour au calme ; les sorties sont conservées.`,
   budget_too_small:()=>'Le volume hebdomadaire est trop faible pour loger la qualité minimale de ce bloc sans dépasser le budget. Augmente le volume ou choisis un autre bloc.',
   cap_exceeded:p=>`Garde-fou : l'option ${p.option} de « ${sessionTitle(p.session)} » dépasse ${p.caps.map(c=>CAPLAB[c]).join(' et ')}. Elle ne doit pas être utilisée telle quelle.`,
   volume_deviation:p=>`Volume réel ${fmtDur(p.volume)} pour une cible de ${fmtDur(p.target)} : écart supérieur à ${Math.round(RULES.volume.deviationAlert*100)} %.`,
@@ -1100,7 +1102,7 @@ function weeklyBalanceHtml(){
   const capacityHtml=capacity?'<p class="lbl" data-volume-capacity>Avec les séances et les jours actuels : jusqu’à environ '+fmtDur(capacity)+' par semaine ('+st.runs+' sorties).'+(st.vol>capacity?' Pour atteindre '+fmtDur(st.vol)+', ajoute une sortie ou réduis la cible.':' Cette estimation varie selon les semaines et les qualités.')+'</p>':'';
   const rows=lastPlan.weeks.flatMap((w,i)=>{
     if(w.raceWeek||w.phase==='intro')return [];
-    const messages=(w.warns||[]).filter(x=>['weekly_volume_incompatible','qualities_reduced','quality_work_reduced','volume_short','protected_footing_shortfall','no_day_footing_reduce'].includes(x.code)).map(warnText);
+    const messages=(w.warns||[]).filter(x=>['weekly_volume_incompatible','qualities_reduced','quality_work_reduced','assimilation_mixed_unavailable','assimilation_active_unavailable','volume_short','protected_footing_shortfall','no_day_footing_reduce'].includes(x.code)).map(warnText);
     if(!messages.length)return [];
     return [`S${i+1} : ${fmtDur(w.vol)} construites pour ${fmtDur(w.targetVolume??w.target)} visées. ${[...new Set(messages)].join(' ')}`];
   });

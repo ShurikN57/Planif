@@ -1,7 +1,7 @@
 name: Test Planif
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/**']
   workflow_dispatch:
 jobs:
   test:
@@ -16,5 +16,5 @@ jobs:
       - name: Run tests
         run: TZ=Europe/Paris node --test tests/*.test.cjs
       - name: Verify live files
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: node scripts/verify-live.cjs

@@ -892,10 +892,31 @@ function canUseActiveEndurance(st,sessionCount,context){
 }
 function applyActiveEndurance(st,foot,sl,sessionCount,context){
   if(!canUseActiveEndurance(st,sessionCount,context))return{slEA:null};
+  if(context==='assimilation'){
+    if(st.qualityCount<2)return{slEA:null};
+    const A=RULES.organization.assimilationActive;
+    const host=foot.slice().sort((a,b)=>b.min-a.min)[0];
+    if(host){
+      const minWork=A.blockMinutes[0];
+      const warmup=Math.max(A.minEasy,Math.min(A.preferredWarmup,host.min-minWork-A.cooldown));
+      const work=Math.min(30,host.min-warmup-A.cooldown);
+      if(work>=minWork){
+        host.type='active';host.assimilationActive=true;host.activeRange=[minWork,work];
+        host.wu=warmup;host.cd=A.cooldown;
+        const intensity=RULES.organization.activeEndurance.intensityPctLT1;
+        const extra=loadFactorForSpeed(lt1Ref(st)*(intensity[0]+intensity[1])/2,st)-RULES.load.intensity.easy;
+        host.loadMin=host.min*RULES.load.intensity.easy+minWork*extra;
+        host.loadMax=host.min*RULES.load.intensity.easy+work*extra;
+        host.load=(host.loadMin+host.loadMax)/2;
+        foot.sort((a,b)=>Number(!!b.assimilationActive)-Number(!!a.assimilationActive));
+      }
+    }
+    return{slEA:null};
+  }
   const cand=foot.filter(x=>x.type==='std'||x.type==='pro').sort((a,b)=>b.min-a.min)[0];
   if(cand){
     const r=activeEnduranceRange(cand.min);
-    if(r){cand.type='active';if(context==='assimilation')cand.assimilationActive=true;cand.activeRange=context==='assimilation'?[Math.min(10,r[1]),Math.min(30,r[1])]:r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
+    if(r){cand.type='active';cand.activeRange=r;cand.wu=RULES.organization.activeEndurance.warmup;cand.cd=RULES.organization.activeEndurance.cooldown;return{slEA:null};}
   }
   const r=activeEnduranceRange(sl);
   return{slEA:r?{range:r,wu:RULES.organization.activeEndurance.warmup,cd:RULES.organization.activeEndurance.cooldown}:null};
@@ -939,8 +960,9 @@ function qualityDurationExceeded(sessions,minutes){
 /* Construction d'UNE semaine d'un bloc : partagée par le mode Bloc et par le calendrier.
    o = {k, N, t, assim, vol, memory, block, specDist} ; k et N sont locaux au bloc. */
 function buildWeek(B,st,o){
-  // Assimilation keeps one reduced quality instead of removing all quality sessions.
+  // Retain one fewer quality in assimilation, with a minimum of one when requested.
   const{k,N,t,assim,vol,memory}=o,warns=[];
+  if(assim)st={...st,vol:Math.min(st.vol,vol)};
   const initialMemory=memory?JSON.parse(JSON.stringify(memory)):null;
   const allowedQualities=Math.min(st.qualityCount,maxQualityForRuns(st.runs),o.qualityLimit??Infinity);
   const isMara=o.block==='spec'&&o.specDist===3&&allowedQualities>0;
@@ -948,11 +970,14 @@ function buildWeek(B,st,o){
     slCap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
     const lerp=W=>W[0]+(W[1]-W[0])*t;
     const toMin=(fam,W)=>fam==='spec'?W/B.v*60:W, fromMin=(fam,m)=>fam==='spec'?m*B.v/60:m;
-    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency,qN=assim?Math.min(1,allowedQualities):B.id==='aero'?Math.min(1,allowedQualities):allowedQualities;
+    const normalQualities=Math.min(st.qualityCount,maxQualityForRuns(st.runs),B.id==='aero'?1:Infinity);
+    const retainedQualities=Math.max(normalQualities>0?1:0,normalQualities-1);
+    const AS=RULES.blocks.assimilation,QF=RULES.organization.qualityFrequency;
+    const qN=assim?Math.min(allowedQualities,retainedQualities):B.id==='aero'?Math.min(1,allowedQualities):allowedQualities;
     let aW=assim?(B.A.assimW||B.A.W[0]*AS.mainOfFirstWeek):lerp(B.A.W);
     const bDef=B.seq?B.seq(k,N):B.B[k%B.B.length];
     const altDefs=(B.B||[]).filter(x=>x.fam!==bDef.fam),cDef=altDefs[0]||bDef;
-    let bW=assim&&st.qualityCount>=2&&qN>0?bDef.W[0]*AS.secondOfFirstWeek:qN>=2?lerp(bDef.W):0;
+    let bW=assim&&normalQualities>=2&&qN>0?bDef.W[0]*AS.secondOfFirstWeek:qN>=2?lerp(bDef.W):0;
     let cW=!assim&&qN>=3?lerp(cDef.W)*QF.thirdQualityFactor:0;
     /* volume de base × facteur volume hebdo × progression du bloc, puis plafond du secteur (le budget qualité suit) */
     const fA=volumeFactor(B.A.fam==='spec'&&B.dist===1?'spec10k':B.A.fam,st.vol),fB=volumeFactor(bDef.fam,st.vol),fC=volumeFactor(cDef.fam,st.vol);
@@ -972,7 +997,7 @@ function buildWeek(B,st,o){
     const ctx={v:B.v,dist:B.dist,vol,assim,memory,fractionHistory:{...(memory?.fractions||{})},calendar:!!o.calendar};
     let sessions=[makeSession(B.A.fam,aW,k,t,st,ctx)],mixedRole=null;
     /* Assimilation : si une 2e qualité est demandée, les deux stimuli sont regroupés dans UNE séance mixte allégée. */
-    if(assim&&bW>0){
+    if(assim&&qN===1&&bW>0){
       // In an S2 block, the supported combination is S1 > S2, not S2 > S1.
       const reverse=!mixedCfg(B.A.fam,bDef.fam,'assimilation')&&!!mixedCfg(bDef.fam,B.A.fam,'assimilation');
       const firstFam=reverse?bDef.fam:B.A.fam,secondFam=reverse?B.A.fam:bDef.fam;
@@ -981,6 +1006,7 @@ function buildWeek(B,st,o){
         const primary=reverse?bW:aW,secondary=reverse?aW:bW;
         const m=makeMixedSession(firstFam,secondFam,Math.max(3,primary*C.assimPrimaryFactor),Math.max(3,secondary*C.assimSecondaryFactor),'assimilation',k,t,st,ctx);
         if(m){sessions=[m];mixedRole='assimilation';}
+        else warns.push({code:'assimilation_mixed_unavailable'});
       }
     }
     /* Transition : dernière semaine de charge, le stimulus principal prépare la qualité du bloc suivant. */
@@ -1010,7 +1036,7 @@ function buildWeek(B,st,o){
       const alt=makeAlternatingSession(Math.min(A.maxMinutes,remaining,target+2),st,ctx);
       if(alt){sessions.push(alt);mixedRole='alternating';}
     }
-    if(!assim&&bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
+    if((!assim||qN>=2)&&bW>0&&sessions.length===1&&!mixedRole)sessions.push(makeSession(bDef.fam,bW,k+1,t,st,secondCtx));
     else if(!assim&&bW>0&&sessions.length===1&&mixedRole==='transition')sessions.push(makeSession(bDef.fam,bW,k+1,t,st,ctx));
     if(cW>0&&sessions.length<3)sessions.push(makeSession(cDef.fam,cW,k+2,t,st,{...ctx,memory:null}));
     for(let i=0;i<sessions.length;i++){
@@ -1046,25 +1072,21 @@ function buildWeek(B,st,o){
       const fitted=retryFit(Math.min(vol,o.durationBudget??Infinity),qualityDurationExceeded(sessions,Math.min(vol,o.durationBudget??Infinity)));if(fitted)return fitted;
       warns.push({code:'weekly_volume_incompatible',params:{minimum:Math.ceil(qTot+reservedEasy),target:Math.round(vol)}});
     }
-    if(!assim&&sessions.length<st.qualityCount)warns.push({code:'qualities_reduced',params:{requested:st.qualityCount,actual:sessions.length}});
+    const requestedQualities=assim?retainedQualities:st.qualityCount;
+    if(sessions.length<requestedQualities)warns.push({code:'qualities_reduced',params:{requested:requestedQualities,actual:sessions.length}});
     else if(workScale<1)warns.push({code:'quality_work_reduced'});
     const workLoad=sessions.reduce((a,x)=>a+x.loadBreakdown.z2+x.loadBreakdown.z3+x.loadBreakdown.z4,0);
     const heavy=!assim&&workLoad/vol>=RULES.load.heavyWeek;
     const costly=sessions.slice().sort((a,b)=>b.loadMax-a.loadMax)[0];
     const fp=planFootings({contextFreeFooting:!o.calendar&&f===1,R:vol-qTot-sl,f,nQ:sessions.length,assim,heavy,vol,runs:st.runs,sl,slMin:Math.min(slCap,Math.max(LR.minMinutes,r5(vol*LR.minShare))),slSoft:Math.min(slCap,r5(vol*LR.softShare)),slMax:Math.min(slCap,r5(vol*LR.maxShare)),isMara});
     sl=fp.sl;const foot=fp.foot;warns.push(...fp.warns);
-    // Assimilation retains one recovery run, but needs a standard footing
-    // to host the replacement active-endurance workout.
-    if(assim&&st.qualityCount>=2&&foot.length){
-      const host=foot.slice().sort((a,b)=>b.min-a.min)[0];
-      host.type='std';
-    }
     // Calendar placement can extend a conservatively sized recovery run; check its final volume there.
     const actual=qTot+sl+foot.reduce((sum,x)=>sum+x.min,0);
     if(!o.calendar&&qualityDurationExceeded(sessions,Math.min(vol,actual))){const fitted=retryFit(Math.min(vol,actual),true);if(fitted)return fitted;}
     const aeContext=assim?'assimilation':B.id==='aero'?'aero':null;
     const ae=aeContext?applyActiveEndurance(st,foot,sl,sessions.length,aeContext):{slEA:null};
     const slEA=ae.slEA;
+    if(assim&&st.qualityCount>=2&&st.runs>=4&&st.runs<=6&&!foot.some(f=>f.assimilationActive))warns.push({code:'assimilation_active_unavailable'});
     if(!assim&&costly){const r=foot.find(x=>x.type==='rec');if(r)r.after=sessionKey(costly);}
     if(B.id==='aero'&&!assim){
       const easy=foot.filter(x=>x.type==='std'||x.type==='pro');
@@ -1097,7 +1119,7 @@ function buildWeek(B,st,o){
     sessions.forEach(s=>['z1','z2','z3','z4'].forEach(q=>{bd[q]+=s.loadBreakdown[q];}));
     ['z1','z2'].forEach(q=>{bd[q]+=slBd[q];});foot.forEach(x=>{bd.z1+=x.load;});
     const load=sumBd(bd);
-    const spread=sessions.reduce((a,x)=>a+(x.loadMax-x.load),0);
+    const spread=sessions.reduce((a,x)=>a+(x.loadMax-x.load),0)+foot.reduce((a,f)=>a+(f.assimilationActive?f.loadMax-f.load:0),0);
     const loadMin=load-spread,loadMax=load+spread;
     if(Math.abs(volume-vol)>RULES.volume.deviationAlert*vol)warns.push({code:'volume_deviation',params:{volume,target:vol}});
     const reminders=(assim?['strides_optional_week','evaluation']:B.reminders).map(code=>({code,params:{block:B.id,dist:B.dist}}));
@@ -1105,26 +1127,8 @@ function buildWeek(B,st,o){
   rememberFractionDurations(sessions,memory);
   return{k,assim,target:vol,vol:volume,volume,ruleRefs:sessions.some(()=>true)?ruleRefs.concat(aeContext?['organization.activeEndurance']:[]):ruleRefs,sessions,sl,slS1,slEA,slLoad:sumBd(slBd),foot,z,pct,qualityMinutes:qWork,qualityPct:pct,load,loadMin,loadMax,heavy,workLoad,loadBreakdown:bd,warns,reminders,budget:B.budget,costly:costly&&sessionKey(costly)};
 }
-/* Assimilation : aucune qualité, un Jogg actif au jour de qualité habituel.
-   Les anciens types rec/std ne servent plus qu'au placement et aux durées. */
-function buildAssimilationWeek(B,st,o){
-  const LR=RULES.organization.longRun,tenK=o.calendar&&o.specDist===1||o.block==='spec'&&o.specDist===1;
-  const cap=Math.min(o.block==='spec'?LR.cap.spec[o.specDist]:o.block==='aero'?LR.cap.aero:LR.cap.default,tenK?RULES.calendar.longRun10k.capMinutes:Infinity,o.longRunCap??Infinity);
-  const sl=clamp(r5(o.vol*LR.share),Math.min(LR.minMinutes,cap),cap);
-  const fp=planFootings({R:o.vol-sl,f:Math.max(1,st.runs-1),nQ:0,assim:false,heavy:false,vol:o.vol,runs:st.runs,sl,slMin:Math.min(cap,LR.minMinutes),slSoft:Math.min(cap,r5(o.vol*LR.softShare)),slMax:Math.min(cap,r5(o.vol*LR.maxShare)),isMara:false});
-  const A=RULES.organization.assimilationActive,foot=fp.foot,cand=foot.slice().sort((a,b)=>b.min-a.min)[0];
-  if(cand){
-    const block=A.blockMinutes.slice().reverse().find(m=>m<=cand.min-A.preferredWarmup-A.cooldown)||A.blockMinutes[0];
-    cand.type='active';cand.assimilationActive=true;cand.activeRange=[block,block];cand.wu=cand.min-block-A.cooldown;cand.cd=A.cooldown;
-  }
-  foot.sort((a,b)=>Number(!!b.assimilationActive)-Number(!!a.assimilationActive));
-  const ld=foot.find(f=>f!==cand);if(ld&&B.ld)ld.ld='strides_optional';
-  const volume=fp.sl+foot.reduce((sum,f)=>sum+f.min,0),bd=emptyBd();bd.z1=volume*RULES.load.intensity.easy;
-  return{k:o.k,assim:true,target:o.vol,vol:volume,volume,sessions:[],foot,sl:fp.sl,slS1:0,slEA:null,slLoad:fp.sl*RULES.load.intensity.easy,
-    z:{z1:volume,z2:0,z3:0,z4:0},pct:0,qualityMinutes:0,qualityPct:0,load:bd.z1,loadMin:bd.z1,loadMax:bd.z1,loadBreakdown:bd,
-    heavy:false,workLoad:0,budget:[0,0],warns:fp.warns,ruleRefs:['volume.assimilationFactor','organization.activeEndurance','organization.assimilationActive','blocks.assimilation','recovery.footing'],
-    reminders:[{code:'strides_optional_week'},{code:'evaluation',params:{block:B.id,dist:B.dist}}]};
-}
+// Compatibility entry point; assimilation uses the same guards as every other week.
+function buildAssimilationWeek(B,st,o){return buildWeek(B,st,{...o,assim:true});}
 function buildPlan(st,pred){
   const B=getBlock(st,pred),N=st.N;
   const BR=RULES.volume.blockRamp,ramp=Math.min(BR.base+BR.perWeek*(N-2),BR.max)+(B.ramp||0);
@@ -1305,7 +1309,7 @@ function placeWeek(wk,win,st){
       return score;
     };
     const afterQ=qDays.map(q=>addDays(q.d,1));
-    wk.foot.forEach(f=>{let d=f.assimilationActive&&st.q1Day!==''?byWd(st.q1Day):null;if(d&&!isFree(d))d=null;
+    wk.foot.forEach(f=>{const replacementDay=qs.length>=2?st.q3Day:st.q2Day;let d=f.assimilationActive&&replacementDay!==''?byWd(replacementDay):null;if(d&&!isFree(d))d=null;
       const choices=free(),okAfter=afterQ.filter(x=>x<=win.end&&st.avail[wd(x)]&&isFree(x));
       if(!d&&f.type==='rec')d=choices.slice().sort((a,b)=>risk(b)-risk(a)||((qualityAt(addDays(b,-1))?.s.loadMax||0)-(qualityAt(addDays(a,-1))?.s.loadMax||0)))[0];
       if(!d&&okAfter.length)d=okAfter.slice().sort((a,b)=>risk(a)-risk(b))[0];
@@ -1358,7 +1362,7 @@ function placeWeek(wk,win,st){
     if(spare>0){
       warns.push({code:'protected_footing_shortfall',params:{minutes:Math.round(spare)}});
     }
-    placed.forEach(({f})=>{f.load=f.min*RULES.load.intensity.easy;});
+    placed.forEach(({f})=>{if(!f.assimilationActive)f.load=f.min*RULES.load.intensity.easy;});
 
   }
   return{list:dates.map(d=>({date:d,items:slot.get(+d)||[]})),warns};
