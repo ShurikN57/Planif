@@ -44,7 +44,7 @@ for(const w of calendar.weeks.filter(w=>!w.raceWeek&&w.phase!=='intro')){
  assert(w.sl<=90);
  if(w.assim){
   assert(w.sessions.length>=1&&w.sessions.length<=2,'assimilation retains reduced quality work');
-  if(st.runs>=4)assert(w.foot.some(f=>f.assimilationActive),'assimilation includes active endurance with four or more outings');
+  if(base.runs>=4)assert(w.foot.some(f=>f.assimilationActive),'assimilation includes active endurance with four or more outings');
  }
 }
 for(const vol of [150,180,300,420])for(const runs of [3,4,5,6]){
