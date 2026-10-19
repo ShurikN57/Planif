@@ -707,6 +707,7 @@ function applyReferencesToSavedPlan(){
  ensurePlanifSessionIds(candidate);
  const previous=activePlan.plan;
  const revised=applyReferenceIntensities(previous,candidate,globalThis.PlanifStrava?.completedIds?.()||[]);
+ if(!revised.referenceIntensityUpdates){alert('Aucune allure compatible n’a été actualisée. Le plan est conservé sans changement.');return false;}
  activePlan={...activePlan,updatedAt:new Date().toISOString(),referenceIntensityLock:true,plan:revised};
  putJson(STORE.active,activePlan);
  document.dispatchEvent?.(new CustomEvent('planif-plan-change'));

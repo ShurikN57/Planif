@@ -62,39 +62,43 @@ function preservePastSessions(C){
    copy only intensities of equivalent sessions, never regenerate a workout. */
 function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Date()){
  const result=JSON.parse(JSON.stringify(saved));
- const completed=new Set(completedIds);
- const cutoff=planDateKey(today);
+ const completed=new Set(completedIds),cutoff=planDateKey(today);
  const fresh=new Map();
  for(const w of candidate.weeks||[])for(const d of w.days||[])for(const it of d.items||[])
-   if(it.planifId)fresh.set(planDateKey(d.date)+'|'+it.planifId,it);
- function mergeIntensity(oldValue,newValue){
-   if(!oldValue||!newValue||typeof oldValue!=='object'||typeof newValue!=='object')return;
-   if(Array.isArray(oldValue)&&Array.isArray(newValue)){
-     if(oldValue.length!==newValue.length)return;
-     for(let i=0;i<oldValue.length;i++)mergeIntensity(oldValue[i],newValue[i]);
-     return;
+   if(it.planifId)fresh.set(it.planifId,it);
+ function copyVariantIntensity(oldV,newV){
+   if(!oldV||!newV||oldV.sector!==newV.sector||oldV.kind!==newV.kind)return false;
+   // Only compatible formats are updated: repetitions, distance, time and recovery stay untouched.
+   if(oldV.structure?.type!==newV.structure?.type)return false;
+   if(oldV.structure?.distanceM!==newV.structure?.distanceM)return false;
+   if(oldV.structure?.repDurationMin!==newV.structure?.repDurationMin)return false;
+   if(oldV.structure?.segments&&JSON.stringify(oldV.structure.segments.map(s=>[s.distanceM,s.target]))!==JSON.stringify(newV.structure?.segments?.map(s=>[s.distanceM,s.target])))return false;
+   if(newV.intensity)oldV.intensity=JSON.parse(JSON.stringify(newV.intensity));
+   if(Array.isArray(oldV.parts)&&Array.isArray(newV.parts)&&oldV.parts.length===newV.parts.length){
+     oldV.parts.forEach((p,i)=>{if(Array.isArray(p)&&Array.isArray(newV.parts[i])&&typeof p[1]==='number'&&typeof newV.parts[i][1]==='number')p[1]=newV.parts[i][1];});
    }
-   if(oldValue.structure&&newValue.structure&&JSON.stringify(oldValue.structure)!==JSON.stringify(newValue.structure))return;
-   if(oldValue.fam&&newValue.fam&&oldValue.fam!==newValue.fam)return;
-   if(oldValue.kind&&newValue.kind&&oldValue.kind!==newValue.kind)return;
-   if(oldValue.intensity&&newValue.intensity&&JSON.stringify(Object.keys(oldValue.intensity).sort())===JSON.stringify(Object.keys(newValue.intensity).sort()))
-     oldValue.intensity=JSON.parse(JSON.stringify(newValue.intensity));
-   for(const key of ['v','lo','hi','minKmh','maxKmh','refKmh','speedKmh','paceKmh'])
-     if(typeof oldValue[key]==='number'&&typeof newValue[key]==='number')oldValue[key]=newValue[key];
-   if(Array.isArray(oldValue.parts)&&Array.isArray(newValue.parts)&&oldValue.parts.length===newValue.parts.length)
-     oldValue.parts.forEach((part,i)=>{if(Array.isArray(part)&&Array.isArray(newValue.parts[i])&&part[0]===newValue.parts[i][0]&&typeof part[1]==='number'&&typeof newValue.parts[i][1]==='number')part[1]=newValue.parts[i][1];});
-   for(const key of ['variants','components','segments','bands'])if(Array.isArray(oldValue[key])&&Array.isArray(newValue[key]))mergeIntensity(oldValue[key],newValue[key]);
+   return true;
  }
+ let updated=0;
  for(const w of result.weeks||[])for(const d of w.days||[]){
-   if(planDateKey(d.date)<=cutoff)continue;
+   if(planDateKey(d.date)<cutoff)continue;
    for(const it of d.items||[]){
      if(!it.planifId||completed.has(it.planifId))continue;
-     const next=fresh.get(planDateKey(d.date)+'|'+it.planifId);
+     const next=fresh.get(it.planifId);
      if(!next||it.kind!==next.kind)continue;
-     if(it.kind==='q'&&it.s&&next.s)mergeIntensity(it.s,next.s);
-     if(it.kind==='foot'&&it.f&&next.f)mergeIntensity(it.f,next.f);
+     if(it.kind==='q'&&it.s&&next.s&&it.s.fam===next.s.fam){
+       const source=new Map((next.s.variants||[]).map(v=>[v.key,v]));
+       for(const v of it.s.variants||[]){
+         const match=source.get(v.key);
+         if(copyVariantIntensity(v,match))updated++;
+       }
+       // Preserve the week-level references used by the session detail view.
+       const original=(w.sessions||[]).find(x=>x===it.s||x.variants?.some(v=>it.s.variants?.some(t=>t.key===v.key)));
+       if(original&&original!==it.s){for(const v of original.variants||[])copyVariantIntensity(v,source.get(v.key));}
+     }
    }
  }
+ result.referenceIntensityUpdates=updated;
  return result;
 }
 function ensurePlanifSessionIds(C){
