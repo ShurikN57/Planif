@@ -701,6 +701,22 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc .timeWheelOverlay:not([hidden]){position:fixed!important;inset:0!important;z-index:100002!important;isolation:isolate!important;overflow:visible!important}
 #scr-calc .timeWheelOverlay:not([hidden]) .timeWheelBackdrop{position:absolute!important;inset:0!important;z-index:0!important}
 #scr-calc .timeWheelOverlay:not([hidden]) .timeWheelSheet{position:relative!important;z-index:1!important}
+
+/* iOS modal portal: the active picker is a direct child of the screen,
+   not nested in a decorative card or a result grid. */
+#scr-calc > .timeWheelOverlay.timeWheelPortaled:not([hidden]){
+ position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;
+ z-index:2147483000!important;display:flex!important;align-items:flex-end!important;
+ justify-content:center!important;transform:none!important;filter:none!important;
+ pointer-events:auto!important;isolation:isolate!important;
+}
+#scr-calc > .timeWheelOverlay.timeWheelPortaled .timeWheelBackdrop{
+ position:absolute!important;inset:0!important;z-index:0!important;background:rgba(0,0,0,.70)!important;
+}
+#scr-calc > .timeWheelOverlay.timeWheelPortaled .timeWheelSheet{
+ position:relative!important;z-index:1!important;width:100%!important;
+ max-width:520px!important;box-sizing:border-box!important;overflow:auto!important;
+}
 </style>
 </head>
 <body data-ui="app">
@@ -851,17 +867,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.32"></script>
+<script src="./planif-coros.js?v=2026.10.19.33"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.32"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.33"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.32"></script>
-<script src="./planif-rules.js?v=2026.10.19.32"></script>
-<script src="./planif-engine.js?v=2026.10.19.32"></script>
-<script src="./planif-evidence.js?v=2026.10.19.32"></script>
-<script src="./planif-ui.js?v=2026.10.19.32"></script>
+<script src="./planif-version.js?v=2026.10.19.33"></script>
+<script src="./planif-rules.js?v=2026.10.19.33"></script>
+<script src="./planif-engine.js?v=2026.10.19.33"></script>
+<script src="./planif-evidence.js?v=2026.10.19.33"></script>
+<script src="./planif-ui.js?v=2026.10.19.33"></script>
 </body>
 </html>
 
