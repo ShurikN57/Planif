@@ -29,6 +29,7 @@ const revived=E.reviveSavedPlan(saved.plan);
 assert.equal(JSON.stringify(revived),JSON.stringify(saved.plan));
 assert(Number.isFinite(+revived.race.date)&&Number.isFinite(+revived.start));
 assert(Number.isFinite(+revived.weeks[0].startDate)&&Number.isFinite(+revived.weeks[0].days[0].date));
+vm.runInContext('let refDraft=null;',ctx);
 vm.runInContext(html.slice(html.indexOf('let lastPlan=null,lastPred=null,lastSt=null;'),html.indexOf('const pts=x=>'))+`
 this.renderRecovery=render;this.rendered=()=>lastPlan;
 buildCalendar=()=>{throw Error('Unexpected regeneration during recovery');};
