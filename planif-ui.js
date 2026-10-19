@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.03').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.04').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -164,7 +164,7 @@ function inputErrorHtml(){
 }
 function readState(){
   return{mode:$('modeCal').checked?'cal':'bloc',calStart:$('calStart').value,calRace:$('calRace').value,calDist:+$('calDist').value,calGoal:parseTime($('calGoal').value),
-    avail:[0,1,2,3,4,5,6].map(i=>$('av'+i).checked),q1Day:$('q1Day').value,q2Day:$('q2Day').value,q3Day:$('q3Day').value,slDay:$('slDay').value,vma:num($('vma').value),s2:num($('s2').value),s1lo:num($('s1lo').value),s1hi:num($('s1hi').value),lt1Hr:num($('lt1Hr').value),lt2Hr:num($('lt2Hr').value),
+    avail:[0,1,2,3,4,5,6].map(i=>$('av'+i).checked),q1Day:$('q1Day').value,q2Day:$('q2Day').value,q3Day:$('q3Day').value,slDay:$('slDay').value,vma:num($('vma').value),s2:num($('s2').value),s1lo:num($('s1lo').value),s1hi:num($('s1hi').value),lt1Hr:globalThis.PlanifStrava?.heartRateZones?.()?.z1Max??num($('lt1Hr').value),lt2Hr:globalThis.PlanifStrava?.heartRateZones?.()?.z4Max??num($('lt2Hr').value),
     refDist:+$('refDist').value,refTime:parseTime($('refTime').value),profile:+$('profile').value,penalty:$('penalty').checked,
     ref2Dist:+$('ref2Dist').value,ref2Time:parseTime($('ref2Time').value),
     block:$('block').value,specDist:+$('specDist').value,specGoal:parseTime($('specGoal').value),
@@ -726,13 +726,19 @@ $('scr-ref').addEventListener('input',e=>{const d=e.target.dataset;if(d.chronoPa
 $('scr-ref').addEventListener('change',e=>{const d=e.target.dataset;if(d.chronoCategory!==undefined){chronoState.category=e.target.value;chronoState.distance=e.target.value==='official'?'5000':'400';renderApp();}else if(d.chronoDistance!==undefined){chronoState.distance=e.target.value;updateToolsUi();}else if(d.ieDistance!==undefined){enduranceState.distance=e.target.value;updateToolsUi();}});
 $('scr-ref').addEventListener('click',e=>{if(!e.target.closest('[data-chrono-to-endurance]'))return;const meters=chronoMeters(),secs=meters*chronoSeconds(chronoState.pace)/1000;if(!['5000','10000','21097.5','42195'].includes(String(meters))||!Number.isFinite(secs))return;enduranceState.distance=String(meters);{const n=Math.round(secs),hh=Math.floor(n/3600),mm=Math.floor(n%3600/60),ss=n%60;enduranceState.time=hh?`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${mm}:${String(ss).padStart(2,'0')}`;}renderApp();});
 
-function syncedHrZonesHtml(){const z=globalThis.PlanifStrava?.heartRateZones?.();if(!z)return '';const rows=[['Z1','≤ '+z.z1Max],['Z2',(z.z1Max+1)+'–'+z.z2Max],['Z3',(z.z2Max+1)+'–'+z.z3Max],['Z4',(z.z3Max+1)+'–'+z.z4Max],['Z5','≥ '+(z.z4Max+1)]];return `<section class="card" aria-label="Zones cardiaques Strava"><h2>Zones FC Strava <span class="connectionTag">Synchronisées</span></h2><div class="kv">${rows.map(([name,range])=>`<span>${name}</span><span class="v">${range} bpm</span>`).join('')}</div><p class="lbl">Zones issues du profil Flow Strava, en lecture seule. Les repères physiologiques S1/S2 sont distincts de ces zones et ne sont pas remplacés automatiquement.</p></section>`;}
+function syncedHrZonesHtml(){return '';}
+function heartRatePanelHtml(){
+  const z=globalThis.PlanifStrava?.heartRateZones?.();
+  const rows=z?[['Z1','0–'+z.z1Max],['Z2',(z.z1Max+1)+'–'+z.z2Max],['Z3',(z.z2Max+1)+'–'+z.z3Max],['Z4',(z.z3Max+1)+'–'+z.z4Max],['Z5','≥ '+(z.z4Max+1)]]:[];
+  const box=(name,value)=>`<label class="sf"><span>${name}</span><input type="text" value="${value??'—'}" disabled aria-label="${name} synchronisée depuis Flow Strava"></label>`;
+  return `<div class="hrStravaPanel"><h3>Zones de FC</h3><p class="lbl">${z?'Synchronisées depuis Flow Strava · lecture seule.':'Connecte Flow Strava pour récupérer les zones de FC.'}</p><div class="physioHr">${fText('FC repos','hrMin','numeric')}${fText('FC max','hrMax','numeric')}${box('Z1 max',z?.z1Max)}${box('Z2 max',z?.z2Max)}${box('Z3 max',z?.z3Max)}${box('Z4 max',z?.z4Max)}</div>${rows.length?`<div class="hrStravaRows">${rows.map(([name,range])=>`<div><strong>${name}</strong><span>${range} bpm</span></div>`).join('')}</div><p class="lbl">Z2 : endurance active · Z3 : S1/tempo · Z4 : S2 · Z5 : au-dessus du S2.</p>`:`<p class="lbl">En attendant la connexion, les plafonds locaux restent utilisés pour les séances.</p><div class="physioHr">${fText('Plafond EF','lt1Hr','numeric')}${fText('Plafond S2','lt2Hr','numeric')}</div>`}</div>`;
+}
 function appRefHtml(){
   const st=readState(),C=lastPlan,valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
   h+=`<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés','chrono',chronoFieldsHtml())}${pred?'<div class="kv">'+pred.map(p=>`<span class="${p.isRef?'predRef predRefLabel':''}">${p.lab}${p.isRef?' (réf.)':''}</span><span class="v${p.isRef?' predRef predRefValue':''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v,p.v))}</span>`).join('')+'</div>':'<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
-  h+=syncedHrZonesHtml()+conversionHtml()+chronoToolHtml()+enduranceToolHtml();
+  h+=conversionHtml()+chronoToolHtml()+enduranceToolHtml();
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
@@ -804,7 +810,7 @@ function chronoFieldsHtml(){
   else h+=`<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance','ref2Dist')}${timeWheelHtml('ref2Time',$('ref2Dist').value)}</div>`;
   return h+`<p class="lbl" id="setProfileHint"></p>`;
 }
-function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p><div class="physioHr">${fText('FC min','hrMin','numeric')}${fText('FC S1','lt1Hr','numeric')}${fText('FC S2','lt2Hr','numeric')}${fText('FC max','hrMax','numeric')}</div><p class="lbl">Fréquences cardiaques en bpm, facultatives.</p>`;}
+function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p>${heartRatePanelHtml()}`;}
 function appSetHtml(){
   const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   let h=recoveryHtml();
@@ -1073,8 +1079,8 @@ function thresholdHrText(v,st){
   if(v.structure?.components)return [...new Set(v.structure.components.flatMap(c=>thresholdHrText(c.variant,st)))];
   const sector=v.sector||(v.fam||'').split('.')[0];
   if(!['s1','s2'].includes(sector))return [];
-  const value=sector==='s1'?st?.lt2Hr*0.95:st?.lt2Hr,label=sector==='s1'?'S1':'S2';
-  return [`Plafond FC ${label} : ${value>0?Math.round(value)+' bpm':'à renseigner dans Physiologie (FC S2)'}`];
+  const z=globalThis.PlanifStrava?.heartRateZones?.();const value=z?(sector==='s1'?z.z3Max:z.z4Max):(sector==='s1'?st?.lt2Hr*0.95:st?.lt2Hr),label=sector==='s1'?'S1':'S2';
+  return [z?`${label} : ${sector==='s1'?z.z2Max+1:z.z3Max+1}–${value} bpm (Flow Strava)`:`Plafond FC ${label} : ${value>0?Math.round(value)+' bpm':'à renseigner dans Physiologie (FC S2)'}`];
 }
 function qualityScheduleHtml(v,s,st){
   const rows=sessionRecoveryRows(v),S=v.structure||{};

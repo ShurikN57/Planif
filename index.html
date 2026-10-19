@@ -556,6 +556,15 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-cal .calVolume .kv{font-size:.9rem}
 #scr-cal .calVolume .vbars{margin-top:.6rem}
 #scr-cal .calVolume .legend{margin-top:.8rem}
+
+/* Zones FC : grille et plages alignées sur Flow Strava, couleurs Planif. */
+#scr-ref .hrStravaPanel{margin-top:1rem}
+#scr-ref .hrStravaPanel h3{margin:0 0 .5rem;font-size:1.12rem}
+#scr-ref .hrStravaPanel .physioHr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem .7rem;margin:.8rem 0}
+#scr-ref .hrStravaPanel .physioHr .sf{min-width:0;margin:0}
+#scr-ref .hrStravaPanel input:disabled{opacity:1;background:color-mix(in srgb,var(--surface) 85%,#888 15%);color:var(--muted);-webkit-text-fill-color:var(--muted)}
+#scr-ref .hrStravaRows{display:grid;gap:.4rem;margin:.7rem 0}
+#scr-ref .hrStravaRows>div{display:flex;justify-content:space-between;gap:1rem;border:1px solid var(--line);border-radius:9px;padding:.55rem .7rem;font-size:.88rem}
 </style>
 </head>
 <body data-ui="app">
@@ -706,17 +715,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.03"></script>
+<script src="./planif-coros.js?v=2026.10.19.04"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.03"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.04"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.03"></script>
-<script src="./planif-rules.js?v=2026.10.19.03"></script>
-<script src="./planif-engine.js?v=2026.10.19.03"></script>
-<script src="./planif-evidence.js?v=2026.10.19.03"></script>
-<script src="./planif-ui.js?v=2026.10.19.03"></script>
+<script src="./planif-version.js?v=2026.10.19.04"></script>
+<script src="./planif-rules.js?v=2026.10.19.04"></script>
+<script src="./planif-engine.js?v=2026.10.19.04"></script>
+<script src="./planif-evidence.js?v=2026.10.19.04"></script>
+<script src="./planif-ui.js?v=2026.10.19.04"></script>
 </body>
 </html>
 
