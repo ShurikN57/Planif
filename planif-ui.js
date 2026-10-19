@@ -263,6 +263,11 @@ function render(){
     const pred=predict(st);renderPred(st,pred);lastPlan=reviveSavedPlan(activePlan.plan);lastSt=st;lastPred=pred;
     renderCalHeader(st,lastPlan);renderCalBody(st,lastPlan);return;
   }
+  if(activePlan?.referenceIntensityLock&&st.mode==='cal'&&!structureEditing&&sameStructure(calendarStructure(),activePlan.structure)){
+    if(inputErrors(st).length){$('predSec').innerHTML=inputErrorHtml();return;}
+    const pred=predict(st);renderPred(st,pred);lastPlan=reviveSavedPlan(activePlan.plan);lastSt=st;lastPred=pred;
+    renderCalHeader(st,lastPlan);renderCalBody(st,lastPlan);return;
+  }
   if(inputErrors(st).length){$('predSec').innerHTML=inputErrorHtml();return;}
   save();
   $('specRow').style.display=st.block==='spec'?'':'none';
@@ -538,7 +543,7 @@ $('copyBtn').addEventListener('click',async()=>{
   catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='Plan copié';}catch(_){b.textContent='Copie impossible';}ta.remove();}
   setTimeout(()=>{b.textContent='Copier le plan';},1800);
 });
-$('f').addEventListener('input',render);$('f').addEventListener('change',render);
+$('f').addEventListener('input',()=>{if(activePlan?.referenceIntensityLock&&!refDraft){activePlan={...activePlan,referenceIntensityLock:false};putJson(STORE.active,activePlan);}render();});$('f').addEventListener('change',render);
 $('f').addEventListener('input',()=>{syncQualityPrereqs();if(!$('auditSec').hidden)renderAudit();});
 
 /* ---------- audit des règles (interne, v8.2) : lecture seule du socle scientifique ---------- */
@@ -698,7 +703,7 @@ function applyReferencesToSavedPlan(){
  ensurePlanifSessionIds(candidate);
  const previous=activePlan.plan;
  const revised=applyReferenceIntensities(previous,candidate,globalThis.PlanifStrava?.completedIds?.()||[]);
- activePlan={...activePlan,updatedAt:new Date().toISOString(),plan:revised};
+ activePlan={...activePlan,updatedAt:new Date().toISOString(),referenceIntensityLock:true,plan:revised};
  putJson(STORE.active,activePlan);
  document.dispatchEvent?.(new CustomEvent('planif-plan-change'));
  refPendingSet(false);
