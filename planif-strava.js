@@ -145,5 +145,5 @@ window.PlanifStrava=(()=>{
   function onPlan(){if(firebaseAuth?.currentUser&&auth&&ctx.activePlan&&loadedPlan!==ctx.activePlan.id){loadedPlan=ctx.activePlan.id;records=read(localStorage,cacheKey(loadedPlan),{});perform(refresh);}}
   document.addEventListener('planif-plan-change',onPlan);
   setTimeout(()=>{onPlan();redraw();},0);
-  return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,heartRateZones:()=>ready()?hrZones:null};
+  return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,heartRateZones:()=>ready()?hrZones:null,completedIds:()=>Object.entries(records).filter(([,r])=>r&&['realized','adapted'].includes(r.status)).map(([id])=>id)};
 })();

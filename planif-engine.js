@@ -44,10 +44,16 @@ function preservePastSessions(C){
   const old=new Map();
   activePlan.plan.weeks.forEach(w=>(w.days||[]).forEach(d=>old.set(planDateKey(d.date),d)));
   const today=new Date(),cut=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const completed=new Set(context.getCompletedIds?.()||[]);
   C.weeks.forEach(w=>(w.days||[]).forEach(d=>{
-    if(d.date<=cut){
-      const prev=old.get(planDateKey(d.date));
-      if(prev&&Array.isArray(prev.items))d.items=JSON.parse(JSON.stringify(prev.items));
+    const prev=old.get(planDateKey(d.date));
+    if(!prev||!Array.isArray(prev.items))return;
+    if(d.date<=cut){d.items=JSON.parse(JSON.stringify(prev.items));return;}
+    // Completed activities remain untouched even when moved to a future date.
+    for(const item of prev.items){
+      if(!completed.has(item.planifId))continue;
+      d.items=d.items.filter(x=>x.planifId!==item.planifId);
+      d.items.push(JSON.parse(JSON.stringify(item)));
     }
   }));
   return C;
