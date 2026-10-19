@@ -42,7 +42,10 @@ for(const w of calendar.weeks.filter(w=>!w.raceWeek&&w.phase!=='intro')){
  assert(Math.abs(duration-w.vol)<1e-7,'placement keeps displayed minutes consistent');
  assert(Math.abs(Object.values(w.loadBreakdown).reduce((a,b)=>a+b,0)-w.load)<1e-7);
  assert(w.sl<=90);
- if(w.assim){assert.equal(w.sessions.length,0);assert(w.foot.some(f=>f.assimilationActive));}
+ if(w.assim){
+  assert(w.sessions.length>=1&&w.sessions.length<=2,'assimilation retains reduced quality work');
+  if(st.runs>=4)assert(w.foot.some(f=>f.assimilationActive),'assimilation includes active endurance with four or more outings');
+ }
 }
 for(const vol of [150,180,300,420])for(const runs of [3,4,5,6]){
  const st={...base,mode:'cal',vol,runs,qualityCount:3,avail:[true,true,true,true,true,true,true],q1Day:'',q2Day:'',q3Day:'',slDay:''};
