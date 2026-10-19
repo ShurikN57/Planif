@@ -596,6 +596,26 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc .conversionResult strong,#scr-calc .conversionResult span{color:inherit}
 :root[data-theme="dark"] #scr-calc .conversionResult{background:var(--surface-2)!important;color:var(--ink)!important;border-color:var(--line)!important}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #scr-calc .conversionResult{background:var(--surface-2)!important;color:var(--ink)!important;border-color:var(--line)!important}}
+
+/* Calcul: light, mostly-white panels matching Planif's chronology and studies cards.
+   Decorative lavender/sage washes are confined to the top-right corner. */
+:root:not([data-theme="dark"]) #scr-calc .simCard,
+:root:not([data-theme="dark"]) #scr-calc .conversionCard,
+:root:not([data-theme="dark"]) #scr-calc [data-chrono-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-endurance-tool],
+:root:not([data-theme="dark"]) #scr-calc [data-critical-tool]{
+  background:radial-gradient(ellipse 220px 165px at 106% -12%,rgba(174,205,185,.18),transparent 83%),radial-gradient(ellipse 235px 170px at 94% -15%,rgba(139,128,205,.085),transparent 85%),#fff!important;
+  border-color:var(--line)!important;
+}
+/* The explicit dark theme keeps its own dark surface and restrained accents. */
+:root[data-theme="dark"] #scr-calc .simCard,
+:root[data-theme="dark"] #scr-calc .conversionCard,
+:root[data-theme="dark"] #scr-calc [data-chrono-tool],
+:root[data-theme="dark"] #scr-calc [data-endurance-tool],
+:root[data-theme="dark"] #scr-calc [data-critical-tool]{
+  background:radial-gradient(ellipse 220px 160px at 104% -10%,rgba(107,154,132,.12),transparent 83%),radial-gradient(ellipse 210px 150px at 90% -12%,rgba(138,127,201,.09),transparent 85%),var(--surface)!important;
+  border-color:var(--line)!important;
+}
 </style>
 </head>
 <body data-ui="app">
@@ -746,17 +766,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.22"></script>
+<script src="./planif-coros.js?v=2026.10.19.23"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.22"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.23"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.22"></script>
-<script src="./planif-rules.js?v=2026.10.19.22"></script>
-<script src="./planif-engine.js?v=2026.10.19.22"></script>
-<script src="./planif-evidence.js?v=2026.10.19.22"></script>
-<script src="./planif-ui.js?v=2026.10.19.22"></script>
+<script src="./planif-version.js?v=2026.10.19.23"></script>
+<script src="./planif-rules.js?v=2026.10.19.23"></script>
+<script src="./planif-engine.js?v=2026.10.19.23"></script>
+<script src="./planif-evidence.js?v=2026.10.19.23"></script>
+<script src="./planif-ui.js?v=2026.10.19.23"></script>
 </body>
 </html>
 
