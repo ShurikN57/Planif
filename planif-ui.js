@@ -699,7 +699,7 @@ const REF_PLAN_PENDING_KEY='planif-reference-plan-pending-v1';
 function refSnapshot(){return Object.fromEntries(GLOBAL_IDS.map(id=>[id,isCheck($(id))?$(id).checked:$(id).value]));}
 function refRestore(snapshot){for(const [id,value] of Object.entries(snapshot)){if(!$(id))continue;if(isCheck($(id)))$(id).checked=!!value;else $(id).value=value;}}
 function refPendingLoad(){try{return !!(activePlan&&JSON.parse(localStorage.getItem(REF_PLAN_PENDING_KEY)||'null')?.id===activePlan.id);}catch{return false;}}
-function refPendingSet(value){refPlanPending=!!value;try{if(value&&activePlan)localStorage.setItem(REF_PLAN_PENDING_KEY,JSON.stringify({id:activePlan.id}));else localStorage.removeItem(REF_PLAN_PENDING_KEY);}catch(_){}}
+function refPendingSet(value){refPlanPending=!!value;try{if(value&&activePlan)localStorage.setItem(REF_PLAN_PENDING_KEY,JSON.stringify({id:activePlan.id}));else localStorage.removeItem(REF_PLAN_PENDING_KEY);}catch(error){console.warn('Statut des références non sauvegardé',error?.name);}}
 function applyReferencesToSavedPlan(){
  if(!activePlan||!activePlan.plan)return false;
  const st=readState(),pred=predict(st),candidate=buildCalendar(st,pred);
@@ -731,7 +731,7 @@ function referenceChangeErrors(before,after){
  for(const [distanceId,timeId,label] of [['refDist','refTime','Chrono de référence'],['ref2Dist','ref2Time','Deuxième chrono de référence']]){
    const distance=Number(after[distanceId]),time=parseTime(after[timeId]);
    if(!Number.isInteger(distance)||distance<0||distance>=DIST.length||!Number.isFinite(time)||time<=0)continue;
-   if(time<ROAD_WORLD_RECORD_SECONDS[distance])errors.push('À moins que tu t\'appelles Yann Schrub, tu ne feras jamais ce chrono ! ('+DIST[distance].lab+', record du monde '+fmtTime(ROAD_WORLD_RECORD_SECONDS[distance])+').');
+   if(time<ROAD_WORLD_RECORD_SECONDS[distance])errors.push('À moins que tu t\'appelles Yann Schrub, tu ne feras jamais ce chrono !');
    const previous=oldSpeed(before[distanceId],before[timeId]),next=oldSpeed(distance,after[timeId]);
    if(Number.isFinite(previous)&&previous>0&&Number.isFinite(next)&&next>previous*1.2+1e-9)
      errors.push(label+': progression de '+((next/previous-1)*100).toFixed(1).replace('.',',')+' % en km/h, maximum autorisé +20 %.');
