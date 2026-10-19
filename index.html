@@ -364,10 +364,10 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 :root[data-theme="dark"] .connectionTag.pending{color:#ffbd69}
 .settingsTitle h2{margin:0}
 .lockTag{font-size:.75rem;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.2rem .5rem}
-.timeWheel{display:flex;align-items:end;gap:.35rem;margin-bottom:.7rem}
-.timeWheel label{flex:1;min-width:0;font-size:.8rem;color:var(--muted)}
-.timeWheel select{width:100%;font-size:1.05rem;min-height:44px;padding:.45rem .35rem;border-radius:8px}
-.timeSep{padding:0 0 .8rem;color:var(--muted);font-weight:700}
+.timeWheel[data-time-target]{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:end;gap:.35rem;margin-bottom:.7rem;min-width:0;width:100%}
+.timeWheel[data-time-target] label{flex:1 1 0;min-width:0;font-size:.8rem;color:var(--muted)}
+.timeWheel[data-time-target] select{display:block;width:100%;min-width:0;font-size:1.05rem;min-height:44px;padding:.45rem .2rem;border-radius:8px}
+.timeWheel[data-time-target] .timeSep{flex:0 0 auto;padding:0 0 .8rem;color:var(--muted);font-weight:700}
 .addRef{width:100%;min-height:44px;border:1px dashed var(--line);background:var(--surface-2);color:var(--accent);font-weight:700;border-radius:10px;margin:.1rem 0 .7rem}
 .sectionHint{font-size:.84rem;color:var(--muted);margin:-.15rem 0 .7rem}
 @media (max-width:340px){.sf2{grid-template-columns:1fr}}
@@ -715,17 +715,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.19.10"></script>
+<script src="./planif-coros.js?v=2026.10.19.11"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.19.10"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.19.11"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.19.10"></script>
-<script src="./planif-rules.js?v=2026.10.19.10"></script>
-<script src="./planif-engine.js?v=2026.10.19.10"></script>
-<script src="./planif-evidence.js?v=2026.10.19.10"></script>
-<script src="./planif-ui.js?v=2026.10.19.10"></script>
+<script src="./planif-version.js?v=2026.10.19.11"></script>
+<script src="./planif-rules.js?v=2026.10.19.11"></script>
+<script src="./planif-engine.js?v=2026.10.19.11"></script>
+<script src="./planif-evidence.js?v=2026.10.19.11"></script>
+<script src="./planif-ui.js?v=2026.10.19.11"></script>
 </body>
 </html>
 
