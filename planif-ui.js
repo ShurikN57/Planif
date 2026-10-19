@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.01').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.02').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -705,9 +705,9 @@ function updateConversionUi(){
 }
 function volumeChargeHtml(st,C){let h='';const valid=referenceErrors(st).length===0;
   if(valid&&Number.isFinite(st.vol)&&st.vol>0&&C&&C.weeks){const vols=C.weeks.map(w=>w.vol),mx=Math.max(...vols),avg=vols.reduce((a,x)=>a+x,0)/vols.length;
-    h+=`<div class="card">${refHelpHtml('Volume et charge',`<p>La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient d'intensité × correctif de densité. Ce n'est pas une mesure physiologique.</p><p>Charge par semaine : ${C.weeks.map((w,i)=>`S${i+1} ${Math.round(w.load)}`).join(', ')} pts.</p>`)}<div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
+    h+=`<section class="calVolume" aria-label="Volume et charge"><h3>Volume et charge</h3><div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">`+
       C.weeks.map((w,i)=>`<div class="vbar"><span>S${i+1}</span>${zoneBar(w.z,w.vol,w.vol/mx*100)}<span class="v">${fmtDur(w.vol)}</span></div>`).join('')+
-      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></div>';}
+      '</div><div class="legend">'+Object.values(ZONES).map(z=>`<span style="--c:${z.c}">${z.lab}</span>`).join('')+'</div></section>';}
   return h;
 }
 
