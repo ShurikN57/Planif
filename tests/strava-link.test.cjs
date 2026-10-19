@@ -18,7 +18,7 @@ function env(){
  document:{addEventListener:(k,fn)=>documentHandlers[k]=fn},Date,JSON,crypto:require('node:crypto').webcrypto,Uint8Array,setTimeout:fn=>setImmediate(fn),console,
  fetch:async(url,opt)=>{fetches.push({url,opt});if(failOnce){failOnce=false;return{ok:false,status:401,json:async()=>({error:'expired'})};}let body={};if(url.endsWith('/api/me'))body={uid:user.uid,profile:{displayName:user.displayName}};else if(url.includes('/plans/'))body=opt?.method==='PUT'?{id:'w0-q0',status:'planned',revision:1}:{sessions:[]};else if(url.includes('activities?'))body={activities:[],truncated:false};return{ok:true,status:200,json:async()=>body};}};
  context.window.PlanifStravaContext={get activePlan(){return{id:'plan-1',title:'10 km'};},get appOpt(){return 0;},sessionInfo:()=>null,redraw:()=>redraws++,settings:()=>{}};
- vm.createContext(context);vm.runInContext(source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel};','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,search,api};'),context);
+ vm.createContext(context);vm.runInContext(source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,heartRateZones:','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,search,api,heartRateZones:'),context);
  return{link:context.window.PlanifStrava,documentHandlers,windowHandlers,context};
 }
 (async()=>{
