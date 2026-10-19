@@ -92,8 +92,8 @@ function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Dat
    // Only compatible formats are updated: repetitions, distance, time and recovery stay untouched.
    if(oldV.structure?.type!==newV.structure?.type)return false;
    if(oldV.structure?.distanceM!==newV.structure?.distanceM)return false;
-   if(oldV.structure?.repDurationMin!==newV.structure?.repDurationMin)return false;
-   if(oldV.structure?.segments&&JSON.stringify(oldV.structure.segments.map(s=>[s.distanceM,s.target]))!==JSON.stringify(newV.structure?.segments?.map(s=>[s.distanceM,s.target])))return false;
+   // Distance-based repetition duration naturally changes with the new speed.
+   // Mixed-session segment targets may change while their original timing is preserved.
    if(newV.intensity)oldV.intensity=JSON.parse(JSON.stringify(newV.intensity));
    if(Array.isArray(oldV.parts)&&Array.isArray(newV.parts)&&oldV.parts.length===newV.parts.length){
      oldV.parts.forEach((p,i)=>{if(Array.isArray(p)&&Array.isArray(newV.parts[i])&&typeof p[1]==='number'&&typeof newV.parts[i][1]==='number')p[1]=newV.parts[i][1];});
@@ -109,8 +109,8 @@ function applyReferenceIntensities(saved,candidate,completedIds=[],today=new Dat
      let sessionChanged=false;
      const next=fresh.get(it.planifId);
      if(it.kind!=='q'||!it.s)continue;
-     if(true){
-       const source=new Map((next?.kind==='q'&&next.s?.fam===it.s.fam?next.s.variants:[]||[]).map(v=>[v.key,v]));
+     {
+       const source=new Map((next?.kind==='q'&&next.s?.fam===it.s.fam?(next.s.variants||[]):[]).map(v=>[v.key,v]));
        for(const v of it.s.variants||[]){
          const match=source.get(v.key);
          if(copyVariantIntensity(v,match)||copyVariantIntensity(v,nearestFormat(v))){updated++;sessionChanged=true;}
