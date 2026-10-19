@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.10').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.19.13').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -753,8 +753,8 @@ function appRefHtml(){
   h+=`<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
   return h;
 }
-const sim={dist:'10000',time:'41:00'};
-function appCalcHtml(){const st=readState(),sec=parseTime(sim.time),pred=sec>0?predict({...st,refDist:Number(sim.dist),refTime:sec,ref2Time:0}):null;return '<div class="card"><h2>Simulateur de chronos</h2><p class="lbl">Indépendant des références du plan.</p><label class="sf">Distance<select data-sim-dist>'+[['1000','1 km'],['3000','3 km'],['5000','5 km'],['10000','10 km'],['21097.5','Semi'],['42195','Marathon']].map(([v,l])=>'<option value="'+v+'"'+(sim.dist===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label><label class="sf">Chrono<input data-sim-time value="'+escA(sim.time)+'"></label><div class="kv" data-sim-result>'+(pred?pred.map(p=>'<span>'+p.lab+'</span><span>'+fmtTime(p.t)+'</span>').join(''):'<span>Chrono invalide</span>')+'</div></div>'+conversionHtml()+chronoToolHtml()+enduranceToolHtml()+criticalToolHtml();}
+const sim={dist:'1',time:'41:00'};
+function appCalcHtml(){const st=readState(),sec=parseTime(sim.time),pred=sec>0?predict({...st,refDist:Number(sim.dist),refTime:sec,ref2Dist:0,ref2Time:0}):null;return '<div class="card"><h2>Simulateur de chronos</h2><p class="lbl">Indépendant des références du plan.</p><label class="sf">Distance<select data-sim-dist>'+[['0','5 km'],['1','10 km'],['2','Semi-marathon'],['3','Marathon']].map(([v,l])=>'<option value="'+v+'"'+(sim.dist===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label><label class="sf">Chrono<input data-sim-time value="'+escA(sim.time)+'"></label><div class="kv" data-sim-result>'+(pred?pred.map(p=>'<span>'+p.lab+'</span><span>'+fmtTime(p.t)+'</span>').join(''):'<span>Chrono invalide</span>')+'</div></div>'+conversionHtml()+chronoToolHtml()+enduranceToolHtml()+criticalToolHtml();}
 /* ---------- Études : bibliothèque scientifique ---------- */
 let studyFilter='Toutes',studyScope='engine';
 function studyEvidenceHtml(sourceId){
