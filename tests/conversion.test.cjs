@@ -24,5 +24,6 @@ assert.equal(convert('paceToSpeed',''),'—');
 assert.equal(convert('paceToSpeed','4:'),'—');
 assert.equal(convert('speedToPace','15,'),'—');
 assert(html.includes('function appCalcHtml()'),'Calcul view must exist');
-assert(/function appCalcHtml\(\)[\s\S]*?conversionHtml\(\)/.test(html),'converter must be rendered in Calcul');
+const calcLine=html.split('\n').find(line=>line.startsWith('function appCalcHtml()'));
+assert(calcLine&&calcLine.includes('+conversionHtml()+'),'converter must be rendered inside Calcul');
 console.log('OK: bidirectional pace/speed conversion, French decimal input, rounding, invalid values and Calcul placement.');
