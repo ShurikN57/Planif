@@ -714,11 +714,33 @@ function applyReferencesToSavedPlan(){
  refPendingSet(false);
  return true;
 }
+// Reference validation applies only to authoritative Repères, never the Calcul simulator.
+const REFERENCE_MAX_SPEED_GAIN=0.20;
+// Men's ratified road benchmarks (October 2026); not used for training predictions.
+const ROAD_WORLD_RECORD_SECONDS=[12*60+49,26*60+31,57*60+20,1*3600+59*60+30];
+function referenceChangeErrors(before,after){
+ const errors=[];
+ const oldSpeed=(dist,time)=>{const t=parseTime(time);return t>0?DIST[Number(dist)]?.km*3600/t:NaN;};
+ for(const [key,label] of [['s1lo','S1 basse'],['s1hi','S1 haute'],['s2','Second seuil'],['vma','VMA']]){
+   const previous=num(before[key]),next=num(after[key]);
+   if(Number.isFinite(previous)&&previous>0&&Number.isFinite(next)&&next>previous*(1+REFERENCE_MAX_SPEED_GAIN+1e-9))
+     errors.push(label+': progression maximale autorisée de +20 % en km/h (ancienne valeur '+fmtSpd(previous)+' km/h, limite '+fmtSpd(previous*1.2)+' km/h).');
+ }
+ for(const [distanceId,timeId,label] of [['refDist','refTime','Chrono de référence'],['ref2Dist','ref2Time','Deuxième chrono de référence']]){
+   const distance=Number(after[distanceId]),time=parseTime(after[timeId]);
+   if(!Number.isInteger(distance)||distance<0||distance>=DIST.length||!Number.isFinite(time)||time<=0)continue;
+   if(time<ROAD_WORLD_RECORD_SECONDS[distance])errors.push('À moins que tu t\'appelles Yann Schrub, tu ne feras jamais ce chrono ! ('+DIST[distance].lab+', record du monde '+fmtTime(ROAD_WORLD_RECORD_SECONDS[distance])+').');
+   const previous=oldSpeed(before[distanceId],before[timeId]),next=oldSpeed(distance,after[timeId]);
+   if(Number.isFinite(previous)&&previous>0&&Number.isFinite(next)&&next>previous*1.2+1e-9)
+     errors.push(label+': progression de '+((next/previous-1)*100).toFixed(1).replace('.',',')+' % en km/h, maximum autorisé +20 %.');
+ }
+ return errors;
+}
 function refFinishEdit(saveChanges){
  if(!refDraft)return;
  const before=refDraft,after=refSnapshot();
  if(saveChanges){
-   const errors=referenceErrors(readState());if(errors.length){alert(errors.join('\n'));return;}
+   const errors=[...referenceErrors(readState()),...referenceChangeErrors(before,after)];if(errors.length){alert(errors.join('\n'));return;}
    if(!confirm('Enregistrer ces nouvelles références ? Cette validation ne modifie pas le programme existant.'))return;
  }else refRestore(before);
  refDraft=null;refEditorOpen.physio=false;refEditorOpen.chrono=false;
