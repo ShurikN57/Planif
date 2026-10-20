@@ -412,15 +412,18 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-today .card{position:relative;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:22px;padding:.85rem 1.2rem;box-shadow:0 3px 9px #23213b0c}
 #scr-today>.card+.card{margin-top:.65rem}
 #scr-today .lbl{font-size:.96rem;line-height:1.4;color:var(--muted)}
-#scr-today .todayCountdown{border-left:5px solid var(--accent);background:var(--surface);overflow:hidden;min-height:160px}
+#scr-today .todayCountdown{border-left:5px solid var(--accent);background:var(--surface);overflow:hidden;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.15rem .6rem;align-items:center}
 #scr-today .todayCountdown .homeCopy{position:relative;z-index:1;max-width:76%}
 #scr-today .todayCountdown .big{font-family:"Source Sans 3",system-ui,sans-serif;font-size:clamp(2.8rem,10.5vw,3.6rem);letter-spacing:-.04em;margin:.35rem 0;color:var(--accent)}
 #scr-today .todayCountdown .lbl{color:var(--ink)}
 .homeArt{mask-image:linear-gradient(to right,transparent,#000 45%);pointer-events:none;position:absolute;right:0;bottom:0;width:58%;height:100%;opacity:.48}
 .homeLock{position:relative;z-index:2;display:inline-flex;gap:.3rem;align-items:center;color:var(--accent);background:var(--surface-2);border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line));border-radius:999px;font-size:.75rem;padding:.25rem .55rem;margin-bottom:.2rem}
 .homeLock svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}
-.homeCountdownHeader{position:relative;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.35rem .65rem;margin-bottom:.35rem}
-.homeCountdownHeader .homeLock{margin:0 0 0 auto;white-space:nowrap}
+.homeCountdownHeader,#scr-today .todayCountdown .homeCopy{display:contents}
+.homeCountdownHeader>.lbl{grid-column:1 / -1;grid-row:1;position:relative;z-index:1}
+.homeCountdownHeader .homeLock{grid-column:2;grid-row:2;margin:0;white-space:nowrap}
+#scr-today .todayCountdown .big{grid-column:1;grid-row:2;position:relative;z-index:1}
+#scr-today .todayCountdown .homeCopy>p{grid-column:1 / -1;grid-row:3;position:relative;z-index:1;margin-top:0}
 #scr-today .homeDay{min-height:112px}
 .homeRest{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-top:.2rem}
 .homeRest .big{font-size:2.9rem;color:var(--ink)}
@@ -588,6 +591,11 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc .simWheel{gap:.6rem}
 #scr-calc .simWheel label{line-height:1.25;gap:.25rem}
 #scr-calc .calcResultRow{margin:.65rem 0}
+#scr-calc input,#scr-calc select{box-sizing:border-box}
+#scr-calc .sf input,#scr-calc .sf select,#scr-calc .simWheel select{height:44px;min-height:44px}
+#scr-calc [data-endurance-tool] .simWheel{gap:.25rem}
+#scr-calc [data-endurance-tool] .simWheel select{appearance:none;-webkit-appearance:none;padding:.45rem .1rem;text-align:center;font-size:16px;font-variant-numeric:tabular-nums}
+#scr-calc [data-endurance-tool] .addRef{background:transparent}
 /* Illustrations des cinq outils Calcul */
 #scr-calc .calcTitle{gap:.85rem;align-items:center;min-height:72px}#scr-calc .calcIcon{display:flex;align-items:center;justify-content:center;flex:0 0 74px;width:74px;min-width:74px;height:78px;background:transparent;border-radius:0;font-size:inherit}#scr-calc .calcIcon svg{display:block;width:100%;height:100%;overflow:visible}#scr-calc .calcIcon-sim{width:80px;flex-basis:80px}#scr-calc .calcIcon-endurance{width:70px;flex-basis:70px}#scr-calc .calcIcon-critical{width:76px;flex-basis:76px}@media(max-width:420px){#scr-calc .calcTitle{min-height:54px;gap:.65rem}#scr-calc .calcIcon,#scr-calc .calcIcon-sim,#scr-calc .calcIcon-endurance,#scr-calc .calcIcon-critical{width:52px;min-width:52px;flex-basis:52px;height:58px}}
 
@@ -881,17 +889,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.20.06"></script>
+<script src="./planif-coros.js?v=2026.10.20.07"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.20.06"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.20.07"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.20.06"></script>
-<script src="./planif-rules.js?v=2026.10.20.06"></script>
-<script src="./planif-engine.js?v=2026.10.20.06"></script>
-<script src="./planif-evidence.js?v=2026.10.20.06"></script>
-<script src="./planif-ui.js?v=2026.10.20.06"></script>
+<script src="./planif-version.js?v=2026.10.20.07"></script>
+<script src="./planif-rules.js?v=2026.10.20.07"></script>
+<script src="./planif-engine.js?v=2026.10.20.07"></script>
+<script src="./planif-evidence.js?v=2026.10.20.07"></script>
+<script src="./planif-ui.js?v=2026.10.20.07"></script>
 </body>
 </html>
 
