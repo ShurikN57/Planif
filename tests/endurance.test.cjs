@@ -58,4 +58,30 @@ assert.equal(run("wheelSaved.endurance4['42195']"),12600,'removing a middle refe
 click('[data-ie-add]');run('updateToolsUi()');assert(comparison.innerHTML.includes('Semi-marathon · 1h 30’00'));
 input({ieVma:''},'0');assert.equal((comparison.innerHTML.match(/IE : —/g)||[]).length,4);
 input({ieVma:''},'17');assert.equal((comparison.innerHTML.match(/IE : —/g)||[]).length,0);
-console.log('OK: unchanged single IE; up to four independent references; all four distances and indices; shared VMA; invalid inputs; add/remove, middle deletion and distance changes.');
+// Native selects update the same stored times without rerendering the focused control.
+function nativeTime(scope,meters,unit,value,event='change',key=meters){
+ const box={dataset:{wheelScope:scope,wheelKey:String(key),wheelMeters:String(meters)},querySelectorAll:()=>[]};
+ const target={dataset:{wheelUnitInput:unit},value:String(value),matches:s=>s==='[data-wheel-unit-input]',closest:()=>box};
+ listeners[event].forEach(fn=>fn({target}));
+}
+const shortPicker=run("wheelPicker('chrono','100',100,'')");
+assert.equal((shortPicker.match(/<select /g)||[]).length,2);
+assert(shortPicker.includes('Centièmes'));assert(!shortPicker.includes('data-wheel-open'));
+nativeTime('chrono',100,'s',24,'input');nativeTime('chrono',100,'c',35);
+assert.equal(run("wheelSaved.chrono['100']"),24.35);
+assert.equal(run("chronoTime(wheelSaved.chrono['100'],true)"),'24″35');
+nativeTime('endurance',10000,'h',1);nativeTime('endurance',10000,'m',2);nativeTime('endurance',10000,'s',3);
+assert.equal(run("wheelSaved.endurance['10000']"),3723);
+assert(run("wheelPicker('endurance','10000',10000,'')").includes('<option value="1" selected>01</option>'));
+nativeTime('endurance2',5000,'m',90);nativeTime('endurance2',5000,'s',15);
+assert.equal(run("wheelSaved.endurance2['5000']"),5415);
+assert(run("wheelPicker('endurance2','5000',5000,'')").includes('<option value="90" selected>90</option>'));
+nativeTime('endurance3',21097.5,'h',2);nativeTime('endurance4',42195,'h',4);
+assert.equal(run("wheelSaved.endurance3['21097.5']"),9000);
+assert.equal(run("wheelSaved.endurance4['42195']"),16200);
+assert.equal(run("wheelSaved.endurance2['5000']"),5415,'other selects keep independent references');
+nativeTime('critical',5000,'m',3,'change',0);nativeTime('critical',5000,'s',30,'change',0);
+assert.equal(run("wheelSaved.critical['0']"),210);
+nativeTime('critical',5000,'s',60,'change',0);assert.equal(run("wheelSaved.critical['0']"),210,'invalid unit value is ignored');
+assert.equal(run('enduranceState.references.filter(r=>r.active).length'),3);
+console.log('OK: single/four-reference IE; independent times; shared VMA; add/remove; native select input/change events; hours, long minutes and hundredths; invalid values.');
