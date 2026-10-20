@@ -568,7 +568,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 /* Chrono bottom sheets: shared by Calcul tools, scoped to avoid reference time selectors */
 .timeWheelHost{width:100%;min-width:0}.timeWheelTrigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border:1px solid rgba(128,128,128,.4);border-radius:10px;background:rgba(128,128,128,.07);color:inherit;font-size:16px;font-variant-numeric:tabular-nums}.timeWheelOverlay[hidden]{display:none!important}.timeWheelOverlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center}.timeWheelBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.65)}.timeWheelSheet{position:relative;width:100%;max-width:520px;max-height:85dvh;overflow:auto;padding:18px 20px max(24px,env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:#192432;color:#eef3fb;box-shadow:0 -12px 36px rgba(0,0,0,.35)}.timeWheelHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}.timeWheelHeader button{background:none;border:0;color:#89aafa;font-size:16px;padding:8px}.timeWheels{display:flex;gap:8px;width:100%;justify-content:space-evenly;padding:10px 0}.timeWheelOverlay .timeWheel{display:flex;flex:1;min-width:0;max-width:115px;flex-direction:column;align-items:center;gap:5px}.timeWheelLabel{font-size:11px;opacity:.75}.timeWheelSide{font-size:17px;opacity:.3;font-variant-numeric:tabular-nums}.timeWheelOverlay .timeWheel input{box-sizing:border-box;width:100%;min-width:0;text-align:center;padding:9px 2px;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;color:inherit;background:rgba(128,128,128,.09);border:1px solid rgba(128,128,128,.4);border-radius:10px;appearance:textfield;-moz-appearance:textfield}.timeWheelOverlay .timeWheel input::-webkit-inner-spin-button,.timeWheelOverlay .timeWheel input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.timeWheelOverlay .timeWheel button{border:0;background:transparent;color:inherit;font-size:21px;min-height:28px;width:100%;opacity:.75}
 
-.chronoRefRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;align-items:end}.chronoRefRow>.sf{min-width:0}.chronoRefRow select{width:100%;min-width:0}.timeWheel[data-time-target],.simWheel{display:flex;flex-direction:row;gap:.65rem;align-items:end;width:100%;min-width:0}.timeWheel[data-time-target] label,.simWheel label{flex:1 1 0;min-width:0}.simWheel select{display:block;width:100%;min-width:0;min-height:44px;border-radius:8px}.simCard{background:var(--surface)}.simCard .simSecond{border-top:1px solid var(--line);padding-top:.7rem;margin-top:.6rem}.simCard .addRef{background:transparent}.refEditor .refHelpBody{background:transparent!important}.chronoCard .refHelpBody{background:transparent!important}.chronoCard .settingsContent{background:transparent!important}
+.chronoRefRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;align-items:end}.chronoRefRow>.sf{min-width:0}.chronoRefRow select{width:100%;min-width:0}.timeWheel[data-time-target],.simWheel{display:flex;flex-direction:row;gap:.65rem;align-items:end;width:100%;min-width:0}.timeWheel[data-time-target] label,.simWheel label{flex:1 1 0;min-width:0}.simWheel select{display:block;width:100%;min-width:0;min-height:44px;border-radius:8px}.simCard{background:var(--surface)}.simCard .simSecond,[data-endurance-tool] .simSecond{border-top:1px solid var(--line);padding-top:.7rem;margin-top:.6rem}.simCard .addRef{background:transparent}.refEditor .refHelpBody{background:transparent!important}.chronoCard .refHelpBody{background:transparent!important}.chronoCard .settingsContent{background:transparent!important}
 
 #scr-calc .calcTitle{display:flex;align-items:center;gap:.65rem;margin:0 0 .55rem}#scr-calc .calcIcon{width:2.5rem;min-width:2.5rem;height:2.5rem;display:grid;place-items:center;color:#6c65b8;font-size:2rem;font-weight:600;background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:9px}#scr-calc .sf2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}#scr-calc .sf2>*{min-width:0}#scr-calc .calcResultRow{align-items:end;margin:.5rem 0}#scr-calc .simPenalty{display:flex;align-items:center;justify-content:flex-start;gap:.5rem}#scr-calc .simPenalty input{flex:0 0 auto;margin:0}#scr-calc .simPenalty span{min-width:0}#scr-calc [data-critical-pace]{font-size:1.35rem;font-weight:700;color:var(--ink)}#scr-calc [data-critical-vc]{font-size:.8rem;color:var(--muted)}#scr-calc .conversionResult{background:transparent;border:1px solid var(--line)}@media(max-width:360px){#scr-calc .sf2{gap:.35rem}#scr-calc .calcIcon{width:2rem;min-width:2rem;height:2rem}}
 
@@ -867,17 +867,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.20.01"></script>
+<script src="./planif-coros.js?v=2026.10.20.02"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.20.01"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.20.02"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.20.01"></script>
-<script src="./planif-rules.js?v=2026.10.20.01"></script>
-<script src="./planif-engine.js?v=2026.10.20.01"></script>
-<script src="./planif-evidence.js?v=2026.10.20.01"></script>
-<script src="./planif-ui.js?v=2026.10.20.01"></script>
+<script src="./planif-version.js?v=2026.10.20.02"></script>
+<script src="./planif-rules.js?v=2026.10.20.02"></script>
+<script src="./planif-engine.js?v=2026.10.20.02"></script>
+<script src="./planif-evidence.js?v=2026.10.20.02"></script>
+<script src="./planif-ui.js?v=2026.10.20.02"></script>
 </body>
 </html>
 
