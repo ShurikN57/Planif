@@ -1,7 +1,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8');
 const listeners={},output={},comparison={},tool={querySelector:s=>s==='[data-ie-output]'?output:s==='[data-ie-comparison]'?comparison:null};
-const root={addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn),querySelector:s=>s==='[data-endurance-tool]'?tool:null};
+let chronoVisible=false;
+const target={},chronoOutput={},chronoSpeed={},chronoButton={},chronoTool={querySelector:s=>s==='[data-chrono-output]'?chronoOutput:s==='[data-chrono-speed]'?chronoSpeed:chronoButton};
+const root={addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn),querySelector:s=>s==='[data-endurance-tool]'?tool:chronoVisible&&s==='[data-chrono-tool]'?chronoTool:chronoVisible&&s==='[data-chrono-target]'?target:null};
 let renders=0;
 const context={$:()=>root,readState:()=>({vma:17}),renderApp:()=>renders++};
 vm.createContext(context);
@@ -84,4 +86,24 @@ nativeTime('critical',5000,'m',3,'change',0);nativeTime('critical',5000,'s',30,'
 assert.equal(run("wheelSaved.critical['0']"),210);
 nativeTime('critical',5000,'s',60,'change',0);assert.equal(run("wheelSaved.critical['0']"),210,'invalid unit value is ignored');
 assert.equal(run('enduranceState.references.filter(r=>r.active).length'),3);
-console.log('OK: single/four-reference IE; independent times; shared VMA; add/remove; native select input/change events; hours, long minutes and hundredths; invalid values.');
+// A free-distance edit must replace both the displayed units and the timer key.
+chronoVisible=true;
+click('[data-chrono-mode]',{chronoMode:'time'});change({chronoCategory:''},'free');
+input({chronoFree:''},'0,1');
+assert(target.innerHTML.includes('data-wheel-meters="100"'));
+assert(target.innerHTML.includes('Centièmes'));
+nativeTime('chrono',100,'s',24);nativeTime('chrono',100,'c',35);
+assert.equal(chronoOutput.textContent,'4’04 /km');
+input({chronoFree:''},'10');
+assert(target.innerHTML.includes('data-wheel-meters="10000"'));
+assert(target.innerHTML.includes('Heures'));assert(!target.innerHTML.includes('Centièmes'));
+nativeTime('chrono',10000,'m',40);
+assert.equal(chronoOutput.textContent,'4’00 /km');assert.equal(chronoSpeed.textContent,'15,00 km/h');
+input({chronoFree:''},'0,1');assert(target.innerHTML.includes('<option value="35" selected>35</option>'),'distance changes retain each target time');
+input({chronoFree:''},'');assert(target.innerHTML.includes('distance valide'));assert.equal(chronoOutput.textContent,'—');
+input({chronoFree:''},'abc');assert.equal(chronoOutput.textContent,'—');
+for(const [distance,unit] of [['100','Centièmes'],['400','Minutes'],['5000','Minutes'],['10000','Heures'],['21097.5','Heures'],['42195','Heures']]){
+ change({chronoCategory:''},Number(distance)<=2000?'fractions':'official');change({chronoDistance:''},distance);
+ assert(run('chronoTargetHtml()').includes(unit));
+}
+console.log('OK: single/four-reference IE; native input/change events; free-distance timer keys/units and pace recalculation; hours, long minutes, hundredths and invalid values.');
