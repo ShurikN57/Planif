@@ -315,17 +315,18 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .cwHead small{font-size:.78rem;line-height:1.35}
 .phaseList{font-size:.86rem}
 .dayRow .rest3{color:var(--muted);font-size:.9rem;padding:.7rem 0}
-.moveGrip{float:right;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-.4rem -.35rem -.4rem .2rem;font-size:1.5rem;color:var(--muted);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+[data-move-session]{cursor:grab;touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .calDragging{opacity:.4}
 .dayRow.calDropTarget{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .calDragGhost{position:fixed;z-index:10000;pointer-events:none;margin:0;box-sizing:border-box;box-shadow:0 8px 24px #0003;opacity:.95;background:var(--surface)}
 .cwFoot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;color:var(--muted);font-size:.85rem;padding:.3rem 0 .2rem}
 .cwFoot .weekLoad{flex-basis:100%;color:var(--ink)}
-.tileTop{display:flex;align-items:baseline;justify-content:space-between;gap:.3rem;flex-wrap:wrap}
+.tileTop{display:flex;align-items:baseline;justify-content:space-between;gap:.3rem}
+.tileTop .k{min-width:0;overflow-wrap:anywhere}
 .tileTop .inPlan{margin-top:0;margin-left:auto;white-space:nowrap}
-.tileContent{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:.2rem .6rem}
+.tileContent{display:flex;align-items:baseline;gap:.4em}
 .tileContent .s{min-width:0;overflow-wrap:anywhere}
-.tileContent .t{white-space:nowrap;margin-left:auto}
+.tileContent .t{white-space:nowrap;flex:none}
 .sessionCharge{margin-top:.4rem;font-size:.9rem;font-weight:600;color:var(--ink)}
 .phaseList{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.4rem .8rem;font-size:.9rem}
 .phaseList b{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
@@ -916,17 +917,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.21.08"></script>
+<script src="./planif-coros.js?v=2026.10.21.09"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.21.08"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.21.09"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.21.08"></script>
-<script src="./planif-rules.js?v=2026.10.21.08"></script>
-<script src="./planif-engine.js?v=2026.10.21.08"></script>
-<script src="./planif-evidence.js?v=2026.10.21.08"></script>
-<script src="./planif-ui.js?v=2026.10.21.08"></script>
+<script src="./planif-version.js?v=2026.10.21.09"></script>
+<script src="./planif-rules.js?v=2026.10.21.09"></script>
+<script src="./planif-engine.js?v=2026.10.21.09"></script>
+<script src="./planif-evidence.js?v=2026.10.21.09"></script>
+<script src="./planif-ui.js?v=2026.10.21.09"></script>
 </body>
 </html>
 

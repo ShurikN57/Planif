@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.08').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.09').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -613,8 +613,8 @@ let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="tileTop"><span class="k">${c.k}</span>${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}</span><span class="tileContent"><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}</span>`;
-  const grip=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?`<span class="moveGrip" data-move-grip="${it.planifId}" aria-hidden="true" title="Glisser vers un autre jour de cette semaine">⠿</span>`:'';
-  return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${grip}<span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
+  const movable=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?` data-move-session="${it.planifId}"`:'';
+  return ref?`<button type="button" class="${cls}" style="${st}"${movable} data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${opt.calendar?'':'<span class="go" aria-hidden="true">›</span>'}${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
 /* Fonds SVG décoratifs propres à chaque rubrique, disponibles hors connexion. */
@@ -678,7 +678,7 @@ function appCalendarWeeks(C,st){
     h+=volumeChargeHtml(st,C);
   }
   h+='</div>';
-  h+=`<p class="lbl">Glisse la poignée ⠿ vers un autre jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
+  h+=`<p class="lbl">Appui long sur une séance, puis glisse-la vers un jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
   C.weeks.forEach((w,i)=>{
     const open=calOpen.has(i),pos=w.phase!=='assim'&&w.segLen?` ${w.segK+1}/${w.segLen}`:'';
     h+=`<div class="cw${i===curIdx?' nowW':''}${w.assimilation?' assimW':''}${w.raceWeek?' raceW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>`+
