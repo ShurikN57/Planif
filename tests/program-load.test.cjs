@@ -42,7 +42,8 @@ const protectedPlan=E.recalculatePlanLoads(clone(legacy),st,{preserve:true,today
 assert.deepEqual(protectedPlan.weeks[0],legacy.weeks[0],'entire started week remains byte-equivalent');assert.deepEqual(protectedPlan.weeks[3],legacy.weeks[3],'future completed session protects its full week');assert.equal(protectedPlan.weeks[2].loadModel,'personal-v1');
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),data=new Map(),record={id:'test-load-plan',structure:{},plan:legacy},saved=JSON.stringify(record);data.set('active',saved);data.set('planif-strava-records-v1:athlete:test-load-plan',JSON.stringify({[done]:{status:'realized'}}));
 assert(source.includes('Charge estimée : ${pts(w.load)}</strong>'),'weekly footer exposes points');
-assert(source.includes('class="sessionLoad"'),'workout tiles expose points');
+assert(source.includes('class="sessionCharge"'),'workout detail exposes points without opening an info panel');
+assert(!source.slice(source.indexOf('function tileHtml('),source.indexOf('const refOf=')).includes('Charge estimée'),'calendar tiles stay concise');
 let failActive=false,alerts=0;
 const context={...E,activePlan:clone(record),planHistory:[],STORE:{active:'active',history:'history'},recoveryState:null,refPlanPending:false,structureEditing:false,globalThis:null,readState:()=>st,validSavedPlan:p=>!!p?.plan?.weeks,getJson:(k,f)=>JSON.parse(data.get(k)||'null')||f,inputErrors:()=>[],console:{error(){}},alert:()=>alerts++,localStorage:{get length(){return data.size;},key:i=>[...data.keys()][i],setItem:(k,v)=>{if(k==='active'&&failActive)throw Error('quota');data.set(k,v);}}};delete context.globalThis;
 // Use the real date revival and migration code with an explicit fixed date for repeatability.

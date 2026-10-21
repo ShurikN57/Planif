@@ -131,7 +131,7 @@ console.log('OK: Jogg/LD labels, shared easy guidance, assimilation with reduced
 context.state=state;context.plan=c;
 vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts',ptsRange=(a,b)=>pts(a)+' à '+pts(b);const vText=v=>presentVariantRaw(v).text,vChips=v=>presentVariantRaw(v).chips;`+
  html.slice(html.indexOf('const activeRangeText='),html.indexOf('function renderWeeks('))+
- html.slice(html.indexOf('function itemColor('),html.indexOf('/* Résumé de case'))+
+ html.slice(html.indexOf('const SECT_SHORT='),html.indexOf('function calWeekHtml('))+
  html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
  html.slice(html.indexOf('const splitRec='),html.indexOf('const LIB_SECTORS='))+
  html.slice(html.indexOf('function sessionInfoHeaderHtml('),html.indexOf('function libSessionHtml('))+
@@ -142,6 +142,14 @@ assert(context.ui.tileHtml({kind:'foot',f:aw.foot[af]},aw,{w:aw.index,f:af}).inc
 assert(!context.ui.show({w:aw.index,f:af}).includes('Un bloc de 10'));
 assert(!context.ui.show({w:aw.index,f:af}).includes('% LT1'));
 assert(context.ui.show({w:aw.index,f:af}).includes('<strong>'));
+assert(context.ui.show({w:aw.index,f:af}).includes('class="sessionCharge"'),'charge is visible immediately after opening a workout');
+context.PlanifStrava={badge:()=>'<span class="inPlan">✓ Réalisée</span>'};context.planifSessionInfo=()=>({id:'completed-test'});
+const compactTile=context.ui.tileHtml({kind:'q',s:aw.sessions[0]},aw,{w:aw.index,q:0},{calendar:true});
+assert(compactTile.includes('class="tileTop"><span class="k"'));
+assert(/class="tileTop">.*class="inPlan">✓ Réalisée<\/span><\/span>/.test(compactTile),'completion shares the title row');
+assert(/class="tileContent"><span class="s">.*<\/span><span class="t">/.test(compactTile),'content and total duration share a row');
+assert(!compactTile.includes('Charge estimée'),'points are reserved for workout detail');
+delete context.PlanifStrava;delete context.planifSessionInfo;
 assert.equal(context.ui.itemShort({kind:'foot',f:{type:'std',min:50,ld:'strides'}},aw).k,'Jogg + LD');
 console.log('OK: calendar/block tiles, active detail link and LD heading.');
 

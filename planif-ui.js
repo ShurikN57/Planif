@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.06').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.07').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -612,7 +612,7 @@ let appTab='today';
 let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
-function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,load=it.kind==='sl'?w.slLoad:it.s?.load??it.f?.load??it.load,inner=`${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}${Number.isFinite(load)?`<span class="sessionLoad">Charge estimée : ${pts(load)}</span>`:''}`;
+function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="tileTop"><span class="k">${c.k}</span>${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}</span><span class="tileContent"><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}</span>`;
   const grip=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?`<span class="moveGrip" data-move-grip="${it.planifId}" aria-hidden="true" title="Glisser vers un autre jour de cette semaine">⠿</span>`:'';
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${grip}<span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
@@ -1491,7 +1491,8 @@ function sessionScreenHtml(){
   if(r.sl&&w){it={kind:'sl'};day=null;}
   if(!it)return'<div class="card"><p class="lbl">Cette séance n\'existe plus dans le plan actuel.</p></div>';
   const when=day?fmtD(day.date):`Semaine ${r.w+1}`,ph=day?`${phaseLab(w.phase,C.race.distance)}, semaine ${w.index+1}`:`${blockLabel(C.B)}${w.assim?', assimilation':''}`,col=itemColor(it,w);
-  const head=(t,info='')=>`<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div></div>`;
+  const load=it.kind==='q'?it.s.variants[appOpt]?.load??it.s.variants[0]?.load:it.kind==='sl'?w.slLoad:it.s?.load??it.f?.load??it.load;
+  const head=(t,info='')=>`<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div>${Number.isFinite(load)?`<div class="sessionCharge">Charge estimée : ${pts(load)}</div>`:''}</div>`;
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0],[main,rec]=splitRec(vText(v));
     let h=head(sessionTitle(s),sessionInfoHeaderHtml('Pourquoi cette séance',`<p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}`));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
