@@ -1,0 +1,31 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const E=require('../planif-engine.js').createEngine(),clone=x=>JSON.parse(JSON.stringify(x));
+const st={...require('./fixtures/plans-before-modules.json')[0].st,block:'s2',mode:'bloc',vma:17,s1lo:11.5,s1hi:12,s2:14,refDist:1,refTime:2460,profile:2,vol:300,runs:5,qualityCount:2};
+const close=(a,b)=>assert(Math.abs(a-b)<1e-7,`${a} != ${b}`);
+function session(sector,minutes,speed){const v={sector,fam:sector+'.time',key:sector+minutes,structure:{type:'intervals',reps:5,durationMin:minutes/5},parts:[[minutes,speed]],work:minutes,rec:5,total:minutes+5};return {fam:sector,sector,zone:sector==='s2'?'z3':'z2',wu:20,cd:10,total:minutes+35,variants:[v,clone(v)]};}
+function week(minutes=20){const sessions=[session('s2',minutes,st.s2),session('s1',20,E.lt1Ref(st))];return {sessions,foot:[{type:'std',min:45},{type:'std',min:45}],sl:100,target:minutes+280};}
+const plan={B:{id:'s2'},weeks:[week(),week(30)]},before=clone(plan),report=E.reviewBlockLoads(plan,st),a=report.weeks[0],b=report.weeks[1];
+assert.deepEqual(plan,before,'review never mutates saved workouts or counters');
+close(a.target,12);close(a.session,19);close(a.total,70);close(a.sessionShare,19/70*100);close(a.targetShare,12/70*100);
+assert.equal(a.primaryIndex,0);assert(a.notes.includes('outside_observed_band'));assert.deepEqual(a.ranges.session,[29,34]);assert.deepEqual(a.ranges.target,[19,24]);
+close(b.progression.targetPct,50);assert(!b.notes.includes('target_decrease'));
+const lowered=E.reviewBlockLoads({B:plan.B,weeks:[week(30),week(20)]},st);assert(lowered.weeks[1].notes.includes('target_decrease'));
+const transition=clone(plan);transition.weeks[0].block='s1';transition.weeks[1].block='s2';transition.weeks[1].segK=0;assert.equal(E.reviewBlockLoads(transition,st).weeks[1].progression,null,'block transition resets comparison');
+const reduced=clone(plan);reduced.weeks[0].assim=true;assert.equal(E.reviewBlockLoads(reduced,st).weeks[0].ranges,null,'assimilation has no charge-week quota');
+const heavyAssim={B:plan.B,weeks:[week(),{...week(),assim:true,foot:[{type:'std',min:250},{type:'std',min:250}]}]};assert(E.reviewBlockLoads(heavyAssim,st).weeks[1].notes.includes('assimilation_not_lighter'));
+const interpolate=E.reviewBlockLoads(plan,{...st,vol:330}).weeks[0];assert.deepEqual(interpolate.ranges.session,[27.5,32]);assert.deepEqual(interpolate.ranges.target,[18,22.5]);
+assert.equal(E.reviewBlockLoads(plan,{...st,vol:180}).weeks[0].ranges,null,'never extrapolate outside audited volumes');
+assert.equal(E.reviewBlockLoads(plan,{...st,qualityCount:3}).weeks[0].ranges,null,'reduced qualities suspend comparisons');
+const variantMean=clone(plan);variantMean.weeks[0].sessions[0].variants[1].parts=[[30,st.s2]];close(E.reviewBlockLoads(variantMean,st).weeks[0].target,15,'mean across options');
+const mixed=clone(plan);const m=mixed.weeks[0].sessions[0];m.fam='mixed';m.variants.forEach(v=>{v.sector='mixed';v.parts=[[15,E.lt1Ref(st)],[10,st.s2]];v.structure={type:'mixed_zones',components:[{fam:'s1',variant:{sector:'s1',parts:[[15,E.lt1Ref(st)]]}},{fam:'s2',variant:{sector:'s2',parts:[[10,st.s2]]}}]};});close(E.reviewBlockLoads(mixed,st).weeks[0].target,6,'mixed workout counts only the S2 component');
+const specific=clone(plan);specific.B={id:'spec',dist:1};const sv=specific.weeks[0].sessions[0];sv.fam='spec';sv.variants.forEach(v=>{v.sector='spec10k';v.parts=[[10,st.s2],[5,15]];v.structure={type:'sets',segments:[{target:'s2'},{target:'race'}]};});
+const specReport=E.reviewBlockLoads(specific,st).weeks[0];close(specReport.target,5*E.programLoadFactor(15,st));assert.equal(specReport.ranges,null,'other blocks remain descriptive until calibrated');
+const placed=clone(plan);const w=placed.weeks[0],actual=w.sessions;w.sessions=[session('s1',60,E.lt1Ref(st))];w.days=Array.from({length:7},(_,i)=>({date:`2026-10-${19+i}`,items:i===0?[{kind:'q',s:actual[0],planifId:'main'}]:i===1?[{kind:'q',s:actual[1]}]:i===2?[{kind:'foot',f:w.foot[0]}]:i===3?[{kind:'foot',f:w.foot[1]}]:i===6?[{kind:'sl'}]:[]}));
+const calendar=E.reviewBlockLoads(placed,st).weeks[0];close(calendar.target,12);assert.equal(calendar.primaryId,'main','placed workouts override stale weekly lists');
+w.days=w.days.slice(1);const partial=E.reviewBlockLoads(placed,st).weeks[0];assert(partial.notes.includes('partial_week'));assert.equal(partial.ranges,null);
+const empty=E.reviewBlockLoads({B:plan.B,weeks:[{sessions:[],foot:[],sl:0,target:0}]},st).weeks[0];assert.equal(empty.sessionShare,null);assert.equal(empty.targetShare,null);
+for(const row of E.RULES.load.blockReview.s2)assert(row[3]>=8,'bands require enough audited examples');
+const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),context={...E,pts:x=>Math.round(x)+' pts'};vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function blockLoadRowHtml('),source.indexOf('function libSessionHtml(')),context);
+const html=context.blockLoadReviewHtml(plan,st);assert(html.includes('Repères provisoires Planif'));assert(html.includes('pas sur le temps'));assert(html.includes('Travail ciblé'));assert(html.includes('27,1 %'));assert(html.includes('17,1 %'));assert(html.includes('à examiner'));
+assert(context.primaryLoadReviewHtml(plan,st,0,plan.weeks[0].sessions[0]).includes('Place de la séance'));assert.equal(context.primaryLoadReviewHtml(plan,st,0,plan.weeks[0].sessions[1]),'');
+console.log('OK: exact load shares; work-only mixed/specific accounting; options; volume interpolation without extrapolation; actual placed workouts; block resets, assimilation, partial/capacity guards; pure saved-plan review and accessible UI.');

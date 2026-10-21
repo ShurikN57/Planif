@@ -1,9 +1,9 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.09').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.10').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
 const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
@@ -676,6 +676,7 @@ function appCalendarWeeks(C,st){
     phaseGroups(C).forEach(g=>{h+=`<b>S${g.from+1}${g.to>g.from?`–S${g.to+1}`:''}</b><span><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase,d)}</span>`;});
     h+='</div>';
     h+=volumeChargeHtml(st,C);
+    h+=blockLoadReviewHtml(C,st);
   }
   h+='</div>';
   h+=`<p class="lbl">Appui long sur une séance, puis glisse-la vers un jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
@@ -701,7 +702,7 @@ function appCalendarWeeks(C,st){
 /* mode Bloc : pas de dates, les séances de chaque semaine s'ouvrent quand même */
 function appBlockWeeks(C,st){
   if(calOpen===null)calOpen=new Set([0]);
-  let h=`<div class="card"><div class="lbl">Bloc sans dates</div><h2 style="margin:.2rem 0 0">${blockLabel(C.B)}, ${C.weeks.length} semaines</h2></div>`;
+  let h=`<div class="card"><div class="lbl">Bloc sans dates</div><h2 style="margin:.2rem 0 0">${blockLabel(C.B)}, ${C.weeks.length} semaines</h2>${blockLoadReviewHtml(C,st)}</div>`;
   C.weeks.forEach((w,i)=>{const open=calOpen.has(i);
     h+=`<div class="cw${w.assim?' assimW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${w.assim?PHASE_C.assim:PHASE_C[C.B.id==='spec'?'spec':C.B.id]||'var(--line)'}"></i><div><b>Semaine ${i+1}</b><small>${w.assim?'Assimilation':'Charge'}</small></div><div class="v">${fmtDur(w.vol)}<small>${pts(w.load)}</small></div></button>`;
     if(open){h+='<div class="cwBody">'+loadAccountingNote(w)+w.sessions.map((s,qi)=>tileHtml({kind:'q',s},w,{w:i,q:qi})).join('')+
@@ -1407,6 +1408,27 @@ const libColor=sec=>sec==='s1'?ZONES.z2.c:sec==='s2'?ZONES.z3.c:sec==='spec10k'?
 function sessionInfoHeaderHtml(label,body){
   return `<details class="footInfo"><summary aria-label="${label}" title="${label}">ⓘ</summary><div class="footInfoBody">${body}</div></details>`;
 }
+function blockLoadRowHtml(r){
+ const pct=x=>Number.isFinite(x)?x.toFixed(1).replace('.',',')+' %':'—',range=a=>a.map(x=>Math.round(x)).join('–')+' %';
+ const change=x=>Number.isFinite(x)?(x>0?'+':'')+pct(x):'—';
+ const names={partial_week:'Semaine partielle : proportions données à titre descriptif.',capacity_adjusted:'Volume, sorties ou qualités ajustés : comparaison aux plages suspendue.',missing_primary:'Aucun travail ciblé du bloc identifié parmi les séances placées.',uncalibrated:'Plages à calibrer pour ce bloc ou cette configuration.',outside_observed_band:'Répartition hors des plages observées : à examiner avec le contenu des séances.',target_decrease:'Le travail ciblé diminue de plus de 5 % : vérifier la progression ou la transition prévue.',assimilation_not_lighter:'La charge ne diminue pas en assimilation : à examiner.'};
+ let h=`<div class="blockLoadWeek"><b>Semaine ${r.index+1} · ${phaseLab(r.phase,r.dist)||'Bloc'}${r.mode==='assimilation'?' · assimilation':r.mode==='taper'?' · affûtage':r.mode==='intro'?' · mise en route':''}</b><div class="kv"><span>Volume</span><span class="v">${fmtDur(r.volume)}</span><span>Charge hebdomadaire</span><span class="v">${pts(r.total)}</span>`;
+ if(r.session!==null)h+=`<span>Séance principale entière</span><span class="v">${pts(r.session)} · ${pct(r.sessionShare)}</span><span>Travail ciblé de cette séance</span><span class="v">${pts(r.target)} · ${pct(r.targetShare)}</span>`;
+ h+='</div>';
+ if(r.ranges)h+=`<p class="lbl">Plages observées : séance ${range(r.ranges.session)} ; travail S2 ${range(r.ranges.target)}. Configuration : ${r.runs} sorties, ${r.qualities} qualités. Interpolation entre ${r.ranges.volume.map(fmtDur).join(' et ')} ; au moins ${r.ranges.samples} semaines simulées par point.</p>`;
+ if(r.progression)h+=`<p class="lbl">Depuis la semaine comparable précédente : volume ${change(r.progression.volumePct)}, charge ${change(r.progression.totalPct)}, travail ciblé ${change(r.progression.targetPct)}.</p>`;
+ h+=r.notes.map(code=>`<p class="lbl">${names[code]}</p>`).join('');
+ return h+'</div>';
+}
+function blockLoadReviewHtml(C,st){
+ const report=reviewBlockLoads(C,st);
+ return `<details class="blockLoadReview"><summary>Charge et progression des blocs</summary><p class="lbl">Repères provisoires Planif issus de simulations, sans validation physiologique. Les pourcentages portent sur les points de charge, pas sur le temps d’entraînement. Moyenne des options proposées. Les plages décrivent les semaines de charge S2 ; aucune plage n’est imposée en assimilation ou en affûtage. La séance prioritaire n’est pas forcément celle qui coûte le plus de points.</p>${report.weeks.map(blockLoadRowHtml).join('')}</details>`;
+}
+function primaryLoadReviewHtml(C,st,index,s){
+ const r=reviewBlockLoads(C,st).weeks[index];
+ if(!r||r.primaryKey!==JSON.stringify(s.variants.map(v=>[v.key,v.parts])))return '';
+ return `<details class="blockLoadReview"><summary>Place de la séance dans le bloc</summary><p class="lbl">Séance principale : celle qui contient le plus de travail ciblé du bloc. Les valeurs ci-dessous moyennent les options ; la charge affichée en tête concerne l’option sélectionnée.</p>${blockLoadRowHtml(r)}</details>`;
+}
 function libSessionHtml(r){
   const st=lastSt,sec=r.sector,Ws=libWork(sec);if(!Ws)return'';
   const o=libCandidates(sec,Ws[libVol]).find(x=>x.c.key===r.key);if(!o)return'<div class="card"><p class="lbl">Ce format n\'existe plus avec les réglages actuels.</p></div>';
@@ -1496,7 +1518,7 @@ function sessionScreenHtml(){
   if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0],[main,rec]=splitRec(vText(v));
     let h=head(sessionTitle(s),sessionInfoHeaderHtml('Pourquoi cette séance',`<p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}`));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
-    h+=qualityScheduleHtml(v,s,st);
+    h+=primaryLoadReviewHtml(C,st,r.w,s)+qualityScheduleHtml(v,s,st);
 
     return h;}
   if(it.kind==='race'){const r2=it.s;

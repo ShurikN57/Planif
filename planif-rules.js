@@ -150,6 +150,18 @@ const RULES={
     }
   },
   load:{
+    /* Repères descriptifs Planif, audit synthétique du 21/10/2026.
+       Interpolation entre volumes audités seulement ; aucun plafond physiologique.
+       Chaque ligne : sorties, qualités, minutes moyennes, effectif, part séance,
+       part du travail S2 (percentiles 10–90 arrondis vers l'extérieur). */
+    blockReview:{version:1,kind:'planif_heuristic',volumeTolerance:.1,progressionTolerance:.05,minSamples:8,
+      s2:[
+        [3,1,180,12,[44,48],[28,35]],[3,1,240,12,[38,42],[23,29]],
+        [4,2,240,11,[30,36],[18,24]],[4,2,300,12,[29,34],[19,24]],[4,2,360,9,[27,32],[17,23]],
+        [5,2,240,9,[29,35],[18,23]],[5,2,300,12,[29,34],[19,24]],[5,2,360,12,[26,30],[17,21]],
+        [6,2,300,12,[27,33],[15,24]],[6,2,360,12,[26,30],[17,21]],[6,2,420,12,[23,27],[15,20]],
+        [6,3,360,12,[21,27],[12,20]],[6,3,420,12,[21,25],[14,19]]
+      ]},
     /* coefficients d'intensité (S2 = 1,00) */
     intensity:{recovery:0.30,activeRec:0.35,easy:0.40,easyHigh:0.50,s1:0.65,between:0.80,s2:1.00,pace10k:1.10,pace5k:1.20,pace3k:1.30,vma100:1.40,vma105:1.60,vma110:1.80,max:2.00},
     /* vitesses d'ancrage des coefficients : fractions du S1 bas ou de la VMA */

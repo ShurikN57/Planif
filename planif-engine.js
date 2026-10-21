@@ -1545,6 +1545,64 @@ function recalculatePlanSummary(plan,st){
  }
  plan.summaryVersion=2;return plan;
 }
+/* Read-only block review: descriptive bands never change scheduling or safety. */
+function reviewBlockLoads(plan,st){
+ const C=recalculatePlanSummary(snapshotPlan(plan),st),R=RULES.load.blockReview,model=programLoadModel(st);
+ function parts(v,sector){
+  if(v.structure?.components)return v.structure.components.filter(c=>c.fam===sector).flatMap(c=>parts(c.variant,sector));
+  if(sector==='spec'&&v.structure?.segments)return (v.parts||[]).filter((_,i)=>v.structure.segments[i]?.target==='race');
+  const actual=v.sector||({spec:'spec',hills:'hills',fartlek:'fartlek'}[v.fam?.split('.')[0]]);
+  if(actual&&actual!==sector&&!(sector==='spec'&&actual==='spec10k'))return [];
+  return v.parts||[];
+ }
+ function band(runs,q){
+  const a=R.s2.filter(x=>x[0]===runs&&x[1]===q&&x[3]>=R.minSamples).sort((a,b)=>a[2]-b[2]);
+  if(!a.length||st.vol<a[0][2]||st.vol>a.at(-1)[2])return null;
+  const hi=a.find(x=>x[2]>=st.vol),lo=a.filter(x=>x[2]<=st.vol).at(-1),t=hi[2]===lo[2]?0:(st.vol-lo[2])/(hi[2]-lo[2]);
+  const interpolate=i=>lo[i].map((v,j)=>v+t*(hi[i][j]-v));
+  return {session:interpolate(4),target:interpolate(5),samples:Math.min(lo[3],hi[3]),volume:[lo[2],hi[2]]};
+ }
+ let previous=null;
+ const weeks=(C.weeks||[]).map((w,index)=>{
+  const phase=w.block||C.B?.id||w.phase||st.block,dist=C.race?.distance??C.B?.dist??st.specDist;
+  const mode=w.assim||w.assimilation||w.phase==='assim'?'assimilation':w.taper||w.raceWeek||w.phase==='taper'?'taper':w.phase==='intro'?'intro':'charge';
+  const items=w.days?.length?w.days.flatMap(d=>d.items||[]):null;
+  const sessions=items?items.filter(it=>it.kind==='q').map(it=>({s:it.s,id:it.planifId})):(w.sessions||[]).filter(s=>!s.unplaced).map(s=>({s}));
+  const runs=items?items.filter(it=>['q','sl','foot','veille','race'].includes(it.kind)).length:sessions.length+(w.foot||[]).filter(f=>!f.unplaced).length+Number(!!w.sl)+Number(!!w.veille)+Number(!!w.race);
+  const sector={vma:'vo2',eco:'hills',aero:'fartlek'}[phase]||phase;
+  const candidates=phase==='aero'?[]:sessions.map(({s,id},i)=>{
+   const variants=s.variants||[],target=variants.map(v=>parts(v,sector).reduce((n,[m,speed])=>n+m*programLoadFactor(speed,st,model),0));
+   const minutes=variants.map(v=>parts(v,sector).reduce((n,[m])=>n+m,0));
+   return {s,id,i,target:target.length?target.reduce((a,b)=>a+b,0)/target.length:0,minutes:minutes.length?minutes.reduce((a,b)=>a+b,0)/minutes.length:0};
+  }).filter(c=>c.target>0).sort((a,b)=>b.target-a.target);
+  const main=candidates[0],total=w.load,notes=[];
+  const partial=!!w.days&&w.days.length!==7;
+  const capacity=Math.abs(w.vol-(w.targetVolume??w.target??w.vol))>R.volumeTolerance*(w.targetVolume??w.target??w.vol)||runs!==st.runs||sessions.length!==st.qualityCount;
+  const ranges=mode==='charge'&&main&&!partial&&!capacity&&phase==='s2'?band(runs,sessions.length):null;
+  const row={index,phase,dist,mode,volume:w.vol,total,runs,qualities:sessions.length,primaryKey:main?JSON.stringify(main.s.variants.map(v=>[v.key,v.parts])):null,primaryId:main?.id||null,primaryIndex:main?.i??null,session:main?.s.load??null,target:main?.target??null,targetMinutes:main?.minutes??null,sessionShare:main&&total>0?100*main.s.load/total:null,targetShare:main&&total>0?100*main.target/total:null,ranges,notes,progression:null};
+  if(mode==='charge'){
+   if(partial)notes.push('partial_week');
+   if(capacity)notes.push('capacity_adjusted');
+   if(!main&&phase!=='aero')notes.push('missing_primary');
+   if(!ranges)notes.push('uncalibrated');
+   else if(row.sessionShare<ranges.session[0]||row.sessionShare>ranges.session[1]||row.targetShare<ranges.target[0]||row.targetShare>ranges.target[1])notes.push('outside_observed_band');
+   const reset=Number.isFinite(w.segK)&&w.segK===0;
+   if(previous&&!reset&&previous.phase===phase&&previous.dist===dist&&!partial&&!capacity&&main&&previous.target>0){
+    row.progression={totalPct:100*(total/previous.total-1),volumePct:100*(w.vol/previous.volume-1),targetPct:100*(main.target/previous.target-1)};
+    if(main.target<previous.target*(1-R.progressionTolerance))notes.push('target_decrease');
+   }
+   previous=partial||capacity?null:row;
+  }else{
+   if(mode==='assimilation'&&previous&&previous.phase===phase){
+    row.progression={totalPct:100*(total/previous.total-1),volumePct:100*(w.vol/previous.volume-1),targetPct:main&&previous.target>0?100*(main.target/previous.target-1):null};
+    if(total>=previous.total)notes.push('assimilation_not_lighter');
+   }
+   previous=null;
+  }
+  return row;
+ });
+ return {version:R.version,kind:R.kind,weeks};
+}
 function withLoad(s,st){const out=withSafetyLoad(s,st);accountSession(out,st,programLoadModel(st));return out;}
 function buildWeek(B,st,o){return recalculatePlanLoads({weeks:[buildSafetyWeek(B,st,o)]},st).weeks[0];}
 function buildPlan(st,pred){return recalculatePlanLoads(buildSafetyPlan(st,pred),st);}
@@ -1650,7 +1708,7 @@ const PURPOSE={
 };
 const sessionPurpose=x=>PURPOSE[x.fam];
 
-return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
+return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
 }
 return {...createEngine(),createEngine};
 });
