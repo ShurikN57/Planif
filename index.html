@@ -319,7 +319,9 @@ details.info p{margin:.2rem 0 .5rem;color:var(--muted);font-size:.93rem}
 .calDragging{opacity:.4}
 .dayRow.calDropTarget{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .calDragGhost{position:fixed;z-index:10000;pointer-events:none;margin:0;box-sizing:border-box;box-shadow:0 8px 24px #0003;opacity:.95;background:var(--surface)}
-.cwFoot{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;padding:.3rem 0 .2rem}
+.cwFoot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;color:var(--muted);font-size:.85rem;padding:.3rem 0 .2rem}
+.cwFoot .weekLoad{flex-basis:100%;color:var(--ink)}
+.tile .sessionLoad{display:block;font-size:.8rem;color:var(--muted);font-weight:400;margin-top:.25rem}
 .phaseList{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.4rem .8rem;font-size:.9rem}
 .phaseList b{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
 .phaseList span{display:flex;align-items:center;gap:.45rem}
@@ -909,17 +911,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.21.05"></script>
+<script src="./planif-coros.js?v=2026.10.21.06"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.21.05"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.21.06"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.21.05"></script>
-<script src="./planif-rules.js?v=2026.10.21.05"></script>
-<script src="./planif-engine.js?v=2026.10.21.05"></script>
-<script src="./planif-evidence.js?v=2026.10.21.05"></script>
-<script src="./planif-ui.js?v=2026.10.21.05"></script>
+<script src="./planif-version.js?v=2026.10.21.06"></script>
+<script src="./planif-rules.js?v=2026.10.21.06"></script>
+<script src="./planif-engine.js?v=2026.10.21.06"></script>
+<script src="./planif-evidence.js?v=2026.10.21.06"></script>
+<script src="./planif-ui.js?v=2026.10.21.06"></script>
 </body>
 </html>
 

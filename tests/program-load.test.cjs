@@ -19,18 +19,40 @@ for(const w of plan.weeks){
  assert.equal(w.heavy,w.safetyLoad.heavy);assert.deepEqual(w.costly,w.safetyLoad.costly);
 }
 const once=clone(plan);E.recalculatePlanLoads(plan,st);assert.deepEqual(clone(plan),once,'re-accounting is idempotent');
+// Screenshot regression: a restored distance-based S2 session is absent from the
+// stale sessions list/quality counter, but is present in the visible calendar.
+const s1=session([[35,E.lt1Ref(st)]],5),s2=session([[4.5*257/60,st.s2]],5);
+s1.total=74;s2.total=60;
+s2.variants.forEach(v=>{v.structure={type:'intervals',reps:15,distanceM:300,repDurationMin:300/1000*257/60};});
+const screenshot={weeks:[{sessions:[clone(s1)],foot:[],sl:65,slS1:0,vol:250,qualityMinutes:35,pct:14,load:999,targetVolume:250,days:[
+ {date:'2026-10-06',items:[{kind:'q',planifId:'done-s1',s:s1}]},
+ {date:'2026-10-08',items:[{kind:'q',planifId:'done-s2',s:s2}]},
+ {date:'2026-10-10',items:[{kind:'foot',planifId:'done-jogg',f:{min:35,type:'std'}}]},
+ {date:'2026-10-11',items:[{kind:'sl',planifId:'done-sl'}]}]}]};
+const reconciled=E.recalculatePlanSummary(clone(screenshot),st),rw=reconciled.weeks[0];
+close(rw.qualityMinutes,35+4.5*257/60);close(rw.vol,74+60+35+65);close(rw.pct,rw.qualityMinutes/rw.vol*100);
+close(rw.load,rw.days.flatMap(d=>d.items).reduce((n,it)=>n+(it.s?.load??it.f?.load??it.load),0));
+assert.equal(rw.sessions.length,1,'reconciliation does not regenerate or replace workout lists');
+assert.deepEqual(clone(E.recalculatePlanSummary(clone(reconciled),st)),clone(reconciled),'saved summary reconciliation is idempotent');
+const mixedWeek={weeks:[{sessions:[mixed],foot:[],sl:0}]};
+close(E.recalculatePlanSummary(clone(mixedWeek),st).weeks[0].qualityMinutes,17);
 const legacy=clone(plan);delete legacy.loadModel;legacy.weeks.forEach(w=>{delete w.loadModel;w.load=w.safetyLoad.load;});
 const done=legacy.weeks[3].days.flatMap(d=>d.items).find(it=>it.kind==='q').planifId;
 const protectedPlan=E.recalculatePlanLoads(clone(legacy),st,{preserve:true,today:new Date(2026,9,21),completedIds:[done]});
 assert.deepEqual(protectedPlan.weeks[0],legacy.weeks[0],'entire started week remains byte-equivalent');assert.deepEqual(protectedPlan.weeks[3],legacy.weeks[3],'future completed session protects its full week');assert.equal(protectedPlan.weeks[2].loadModel,'personal-v1');
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),data=new Map(),record={id:'test-load-plan',structure:{},plan:legacy},saved=JSON.stringify(record);data.set('active',saved);data.set('planif-strava-records-v1:athlete:test-load-plan',JSON.stringify({[done]:{status:'realized'}}));
+assert(source.includes('Charge estimée : ${pts(w.load)}</strong>'),'weekly footer exposes points');
+assert(source.includes('class="sessionLoad"'),'workout tiles expose points');
 let failActive=false,alerts=0;
 const context={...E,activePlan:clone(record),planHistory:[],STORE:{active:'active',history:'history'},recoveryState:null,refPlanPending:false,structureEditing:false,globalThis:null,readState:()=>st,validSavedPlan:p=>!!p?.plan?.weeks,getJson:(k,f)=>JSON.parse(data.get(k)||'null')||f,inputErrors:()=>[],console:{error(){}},alert:()=>alerts++,localStorage:{get length(){return data.size;},key:i=>[...data.keys()][i],setItem:(k,v)=>{if(k==='active'&&failActive)throw Error('quota');data.set(k,v);}}};delete context.globalThis;
 // Use the real date revival and migration code with an explicit fixed date for repeatability.
 vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function reviveSavedPlan('),source.indexOf('function recoveryHtml()')),context);
 const migration=source.slice(source.indexOf('function loadProtectedIds()'),source.indexOf('function render(){',source.indexOf('function loadProtectedIds()'))).replace('preserve:true,completedIds:loadProtectedIds()','preserve:true,today:new Date(2026,9,21),completedIds:loadProtectedIds()');
 vm.runInContext(migration,context);vm.runInContext('migrateProgramLoads(readState())',context);
-assert.equal(context.activePlan.plan.loadModel,'personal-v1');assert.equal(context.planHistory.length,1);assert.deepEqual(clone(context.planHistory[0].plan),legacy,'backup contains unmodified old plan');assert.deepEqual(clone(context.activePlan.plan.weeks[3]),legacy.weeks[3],'cached validation protects session before Strava initializes');
+assert.equal(context.activePlan.plan.loadModel,'personal-v1');assert.equal(context.activePlan.plan.summaryVersion,2);assert.equal(context.planHistory.length,1);assert.deepEqual(clone(context.planHistory[0].plan),legacy,'backup contains unmodified old plan');
+// Reconcile reporting for past/completed weeks too, without editing the workouts.
+const withoutAccounting=x=>{if(Array.isArray(x))return x.map(withoutAccounting);if(!x||typeof x!=='object')return x;return Object.fromEntries(Object.entries(x).filter(([k])=>!['load','loadMin','loadMax','loadBreakdown','bd','density','workLoad','slLoad','slLoadMin','slLoadMax','loadModel','loadNotices','safetyLoad','vol','volume','qualityMinutes','pct','qualityPct','summaryVersion'].includes(k)).map(([k,v])=>[k,withoutAccounting(v)]));};
+assert.deepEqual(withoutAccounting(clone(context.activePlan.plan)),withoutAccounting(legacy),'migration retains every workout, date, pace, identifier and format including completed days');
 vm.runInContext('migrateProgramLoads(readState())',context);assert.equal(context.planHistory.length,1,'migration does not repeat');
 context.activePlan=clone(record);context.planHistory=[];data.set('active',saved);failActive=true;vm.runInContext('migrateProgramLoads(readState())',context);assert.equal(data.get('active'),saved);assert.deepEqual(context.activePlan,record);assert.equal(alerts,1,'storage failure leaves active plan intact and visible');
 console.log('OK: shared personalized coefficients; exact block sums; recoveries without density multipliers; all calendar totals; safety decisions; idempotence; protected weeks; archive-before-migration; cached completion and quota failure.');

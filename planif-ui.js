@@ -1,9 +1,9 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.05').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.06').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
 const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
@@ -256,9 +256,9 @@ function loadProtectedIds(){
  return [...ids];
 }
 function migrateProgramLoads(st){
- if(st.mode!=='cal'||!validSavedPlan(activePlan)||activePlan.plan.loadModel==='personal-v1'||recoveryState||refPlanPending||structureEditing||inputErrors(st).length)return;
- const previous=activePlan,plan=recalculatePlanLoads(reviveSavedPlan(previous.plan),st,{preserve:true,completedIds:loadProtectedIds()});
- const archive={...snapshotPlan(previous),archivedAt:new Date().toISOString(),archiveReason:'avant passage aux charges personnalisées'},history=[archive,...planHistory],next={...previous,plan:snapshotPlan(plan)};
+ if(st.mode!=='cal'||!validSavedPlan(activePlan)||activePlan.plan.summaryVersion===2||recoveryState||refPlanPending||structureEditing||inputErrors(st).length)return;
+ const previous=activePlan,plan=recalculatePlanSummary(reviveSavedPlan(previous.plan),st);
+ const archive={...snapshotPlan(previous),archivedAt:new Date().toISOString(),archiveReason:'avant réconciliation des statistiques hebdomadaires'},history=[archive,...planHistory],next={...previous,plan:snapshotPlan(plan)};
  try{localStorage.setItem(STORE.history,JSON.stringify(history));localStorage.setItem(STORE.active,JSON.stringify(next));activePlan=next;planHistory=history;}
  catch(error){console.error('Migration des charges non enregistrée',error);alert('Les nouvelles charges n’ont pas pu être enregistrées. Ton programme précédent est conservé.');}
 }
@@ -303,6 +303,7 @@ function render(){
       ensurePlanifSessionIds(C);C=preservePastSessions(C);C=applyPlanifMoves(C,activePlan.moves,activePlan.plan,st);
       C=recalculatePlanLoads(C,st,{preserve:true,previous:activePlan.plan,completedIds:loadProtectedIds()});
     }
+    if(!C.error)recalculatePlanSummary(C,st);
     lastCalError=C.error||null;
     if(C.error){$('overview').innerHTML=`<h2>Calendrier à compléter</h2><p>${warnText(C.error)}</p>`;$('weeksSec').innerHTML='';lastPlan=null;return;}
     lastPlan=C;lastPred=pred;lastSt=st;
@@ -314,7 +315,7 @@ function render(){
     if(calSel){const w=C.weeks[calSel.w],dd=w&&w.days[calSel.d];if(!dd||!dd.items[calSel.i])calSel=null;}
     renderCalHeader(st,C);renderCalBody(st,C);return;}
   if(st.block==='spec'&&!pred&&!st.specGoal){$('overview').innerHTML='<h2>Allure spécifique à définir</h2><p>Saisis une perf de référence ou un chrono objectif pour la distance visée.</p>';$('weeksSec').innerHTML='';return;}
-  const plan=buildPlan(st,pred);
+  const plan=recalculatePlanSummary(buildPlan(st,pred),st);
   renderOverview(st,plan);renderWeeks(st,plan);
   lastPlan=plan;lastPred=pred;lastSt=st;
 }
@@ -356,7 +357,7 @@ function renderSession(s,role){
   if(s.gap)h+=`<div class="warn">Les deux options diffèrent de ${Math.round(s.gap)}' de travail : choisis plutôt l'option 1 pour respecter la cible.</div>`;
   return h+'</div>';
 }
-function loadAccountingNote(w){return `<p class="lbl">${w.loadModel==='personal-v1'?'Charge personnalisée · mêmes coefficients que le calculateur.':'Semaine conservée : charge enregistrée avec son calcul d’origine (passé ou séance réalisée).'}${(w.loadNotices||[]).length?' '+w.loadNotices.join(' '):''}</p>`;}
+function loadAccountingNote(w){return `<p class="lbl">Charge estimée du programme · mêmes coefficients que le calculateur. Les validations ne remplacent pas les durées et intensités prévues par les valeurs réellement courues.${(w.loadNotices||[]).length?' '+w.loadNotices.join(' '):''}</p>`;}
 const activeRangeText=x=>x&&x.activeRange?`${activeBlockLabel(x)} EA`:'';
 const footLabel=x=>`${joggTitle(x)} ${fmtFootDur(x.min)}${x.type==='active'?` (${activeRangeText(x)})`:''}${x.shortHills?' + côtes courtes':''}`;
 function renderWeeks(st,plan){
@@ -611,7 +612,7 @@ let appTab='today';
 let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
-function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}`;
+function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,load=it.kind==='sl'?w.slLoad:it.s?.load??it.f?.load??it.load,inner=`${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}<span class="k">${c.k}</span><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}${Number.isFinite(load)?`<span class="sessionLoad">Charge estimée : ${pts(load)}</span>`:''}`;
   const grip=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?`<span class="moveGrip" data-move-grip="${it.planifId}" aria-hidden="true" title="Glisser vers un autre jour de cette semaine">⠿</span>`:'';
   return ref?`<button type="button" class="${cls}" style="${st}" data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${grip}<span class="go" aria-hidden="true">›</span>${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
@@ -692,7 +693,7 @@ function appCalendarWeeks(C,st){
     }else{
       h+='<div class="cwBody">'+loadAccountingNote(w)+w.days.map((x,di)=>`<div class="dayRow" data-move-week="${i}" data-move-date="${planDateKey(x.date)}"><div class="dl"><b>${x.date.toLocaleDateString('fr-FR',{weekday:'short'})}</b>${x.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div><div>`+
         (x.items.length?x.items.map((it,ii)=>tileHtml(it,w,{w:i,d:di,i:ii},{calendar:true})).join(''):'<div class="rest3">Repos</div>')+'</div></div>').join('');
-      h+=`<div class="cwFoot"><span>Qualité ${Math.round(w.qualityMinutes)}' (${Math.round(w.pct)} %)</span><span>Cible ${fmtDur(w.targetVolume)}</span></div></div>`;
+      h+=`<div class="cwFoot"><span>Qualité ${Math.round(w.qualityMinutes)}' (${Math.round(w.pct)} %)</span><span>Cible ${fmtDur(w.targetVolume)}</span><strong class="weekLoad">Charge estimée : ${pts(w.load)}</strong></div><p class="lbl">Qualité : travail cumulé, hors échauffements et récupérations. Option A utilisée pour les séances à choix.</p></div>`;
     }
     h+='</div>';});
   return h;
@@ -1515,6 +1516,7 @@ function updateInputErrorBanner(){
   }
 }
 function renderApp(){
+  if(lastPlan?.weeks&&lastSt&&!recoveryState&&!inputErrors(lastSt).length)lastPlan=recalculatePlanSummary(reviveSavedPlan(lastPlan),lastSt);
   updateInputErrorBanner();
   if(appSession){
     $('appBar').hidden=false;$('appTitle').textContent='Séance';$('appBack').hidden=false;
