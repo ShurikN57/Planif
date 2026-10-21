@@ -605,6 +605,19 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc [data-load-tool] .loadComparison .conversionResult{margin:.5rem 0 0}
 #scr-calc [data-load-tool] .loadMethod{border-top:1px solid var(--line);padding-top:.6rem;margin-top:.75rem}
 #scr-calc [data-load-tool] .loadMethod summary{cursor:pointer;color:var(--accent);padding:.45rem 0}
+#scr-calc .loadCurveSvg{display:block;width:100%;height:auto;overflow:visible;margin:.5rem 0;color:var(--ink)}
+#scr-calc .loadCurveSvg text{font:12px sans-serif;fill:var(--ink)}
+#scr-calc .loadChartGrid path{stroke:var(--line);stroke-width:1;fill:none}
+#scr-calc .loadChartLine{stroke:var(--accent);stroke-width:2;fill:none}
+#scr-calc .loadAnchorMark{fill:var(--accent)}
+#scr-calc .loadRaceMark{fill:var(--ink);stroke:var(--surface);stroke-width:1}
+#scr-calc .loadSelectedMark{fill:none;stroke:var(--accent);stroke-width:2}
+#scr-calc .loadCurveChoices{display:flex;flex-wrap:wrap;gap:.35rem}
+#scr-calc .loadCurveChoices button{min-height:44px;padding:.45rem .65rem}
+#scr-calc .loadCurveChoices [aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+#scr-calc .loadCurveTable{overflow-x:auto}
+#scr-calc .loadCurveTable table{width:100%;font-size:.8rem;border-collapse:collapse}
+#scr-calc .loadCurveTable th,#scr-calc .loadCurveTable td{padding:.4rem .2rem;text-align:left;border-bottom:1px solid var(--line)}
 /* Illustrations des cinq outils Calcul */
 #scr-calc .calcTitle{gap:.85rem;align-items:center;min-height:72px}#scr-calc .calcIcon{display:flex;align-items:center;justify-content:center;flex:0 0 74px;width:74px;min-width:74px;height:78px;background:transparent;border-radius:0;font-size:inherit}#scr-calc .calcIcon svg{display:block;width:100%;height:100%;overflow:visible}#scr-calc .calcIcon-sim{width:80px;flex-basis:80px}#scr-calc .calcIcon-endurance{width:70px;flex-basis:70px}#scr-calc .calcIcon-critical{width:76px;flex-basis:76px}@media(max-width:420px){#scr-calc .calcTitle{min-height:54px;gap:.65rem}#scr-calc .calcIcon,#scr-calc .calcIcon-sim,#scr-calc .calcIcon-endurance,#scr-calc .calcIcon-critical{width:52px;min-width:52px;flex-basis:52px;height:58px}}
 
@@ -898,17 +911,17 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
   </div>
 </div>
 
-<script src="./planif-coros.js?v=2026.10.21.02"></script>
+<script src="./planif-coros.js?v=2026.10.21.03"></script>
 
-<script src="./planif-calendar-drag.js?v=2026.10.21.02"></script>
+<script src="./planif-calendar-drag.js?v=2026.10.21.03"></script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script src="./planif-version.js?v=2026.10.21.02"></script>
-<script src="./planif-rules.js?v=2026.10.21.02"></script>
-<script src="./planif-engine.js?v=2026.10.21.02"></script>
-<script src="./planif-evidence.js?v=2026.10.21.02"></script>
-<script src="./planif-ui.js?v=2026.10.21.02"></script>
+<script src="./planif-version.js?v=2026.10.21.03"></script>
+<script src="./planif-rules.js?v=2026.10.21.03"></script>
+<script src="./planif-engine.js?v=2026.10.21.03"></script>
+<script src="./planif-evidence.js?v=2026.10.21.03"></script>
+<script src="./planif-ui.js?v=2026.10.21.03"></script>
 </body>
 </html>
 

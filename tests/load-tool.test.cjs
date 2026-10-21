@@ -2,9 +2,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const engine=require('../planif-engine.js').createEngine();
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8');
 let state={vma:18,s1lo:12,s1hi:12.5,s2:14.5,refDist:1,refTime:2400,profile:2,penalty:false};
-const listeners={},total={},danielsTotal={},duration={},message={},rows=[{dataset:{loadResult:'0'}}],danielsRows=[{dataset:{loadDanielsResult:'0'}}];let renders=0;
-const tool={querySelector:s=>s==='[data-load-total]'?total:s==='[data-load-daniels-total]'?danielsTotal:s==='[data-load-duration]'?duration:message,querySelectorAll:s=>s==='[data-load-daniels-result]'?danielsRows:rows};
-const root={querySelector:()=>tool,addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)};
+const listeners={},total={},danielsTotal={},personalTotal={},personalMessage={},duration={},message={},rows=[{dataset:{loadResult:'0'}}],danielsRows=[{dataset:{loadDanielsResult:'0'}}],personalRows=[{dataset:{loadPersonalResult:'0'}}],chart={clientWidth:320};let renders=0;
+const tool={querySelector:s=>({'[data-load-total]':total,'[data-load-daniels-total]':danielsTotal,'[data-load-personal-total]':personalTotal,'[data-load-personal-message]':personalMessage,'[data-load-duration]':duration}[s]||message),querySelectorAll:s=>s==='[data-load-daniels-result]'?danielsRows:s==='[data-load-personal-result]'?personalRows:rows};
+const root={querySelector:s=>s==='[data-load-curve]'?chart:tool,addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)};
 const ctx={...engine,$:()=>root,readState:()=>state,renderApp:()=>renders++,toolAttr:x=>String(x).replaceAll('"','&quot;')};vm.createContext(ctx);
 vm.runInContext(source.slice(source.indexOf('// Independent scratch calculator:'),source.indexOf('function syncedHrZonesHtml()')),ctx);
 const run=s=>vm.runInContext(s,ctx);
@@ -75,4 +75,36 @@ run('updateLoadToolUi()');assert.equal(danielsTotal.textContent,'6,0 pts');
 edit('input',0,'minutes','');assert.equal(danielsTotal.textContent,'—','never display a partial total for invalid durations');
 const html=run('loadToolHtml()');assert(html.includes('Total Planif'));assert(html.includes('Total Daniels'));assert(html.includes('Suggestions de correspondance propres à Planif'));assert(html.includes('Daniels’ Running Formula'));
 assert.equal(JSON.stringify(state),snapshot,'comparison never changes athlete references');
+// Personalized model: agreed anchors, logarithmic durations, continuous speed interpolation.
+for(const [time,factor] of [[6,1],[60,.6],[240,.3]])close(run(`loadDurationFactor(${time})`),factor);
+close(run('loadDurationFactor(Math.sqrt(6*60))'),.8);close(run('loadDurationFactor(120)'),.45);
+for(const invalid of ['NaN','Infinity','0','5.9','240.1'])assert.equal(run(`loadDurationFactor(${invalid})`),null);
+edit('input',0,'minutes','10');edit('change',0,'pace','vma100');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'10,0 pts');
+for(const [pct,factor] of [[100,1],[102.5,1.1],[105,1.2],[107.5,1.35],[110,1.5]]){
+ close(run(`loadPersonalFactor(${pct}/100*18,loadPersonalModel(loadToolReferences()))`),factor);
+}
+assert.equal(run('loadPersonalFactor(18*1.101,loadPersonalModel(loadToolReferences()))'),null);
+for(const [pace,factor] of [['jogg',.2],['s1',.3],['s2',.6],['vma105',1.2],['vma110',1.5]]){
+ edit('change',0,'pace',pace);run('updateLoadToolUi()');close(run('loadToolResults().personal[0].factor'),factor);
+}
+for(const [pace,index] of [['as5',0],['as10',1],['as21',2],['as42',3]]){
+ edit('change',0,'pace',pace);run('updateLoadToolUi()');
+ close(run('loadToolResults().personal[0].factor'),run(`loadDurationFactor(predict(readState())[${index}].t/60)`));
+ // Entering precisely the same speed manually must give precisely the same score.
+ const speed=engine.predict(state)[index].v;edit('change',0,'pace','manual');edit('change',0,'unit','speed');edit('input',0,'manual',String(speed));
+ close(run('loadToolResults().personal[0].factor'),run(`loadDurationFactor(predict(readState())[${index}].t/60)`));
+}
+edit('change',0,'pace','s2');edit('input',0,'minutes','25');click('[data-load-add]');edit('input',1,'minutes','30');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'21,0 pts','25 S2 + 30 jog = 21 personalized points');
+edit('input',1,'minutes','');assert.equal(personalTotal.textContent,'—','no partial personalized sum');click('[data-load-remove]',{loadRemove:'1'});
+const baseState={...state};state={...baseState,s2:16.5};run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'—','contradictory race/threshold refs cannot silently create decreasing coefficients');assert(personalMessage.textContent.includes('incohérentes'));
+state={...baseState,refTime:0};edit('change',0,'pace','s2');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'15,0 pts','fixed anchors remain usable without estimated races');
+state={...baseState,vma:14,s1lo:8,s1hi:8.5,s2:10.5,refTime:3600};edit('change',0,'pace','as42');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'—','a marathon beyond four hours is plotted but not extrapolated');assert(run('loadPersonalModel(loadToolReferences()).issues.some(x=>x.includes("hors de la plage"))'));
+state={...baseState};
+for(const width of [280,320,390,560,900])for(const kind of ['duration','factor']){
+ const svg=run(`loadCurveChart(loadPersonalModel(loadToolReferences()),'${kind}',${width})`);assert(!/NaN|Infinity/.test(svg));assert(svg.includes('role="img"'));assert(svg.includes(`viewBox="0 0 ${width} 260"`));
+}
+click('[data-load-point]',{loadPoint:'as10'});assert.equal(run('loadCurveState.selected'),'as10');assert(chart.innerHTML.includes('AS10 ·'));assert(chart.innerHTML.includes('40,0 min de maintien'));assert(chart.innerHTML.includes('aria-pressed="true">AS10'));
+state={...baseState,refTime:2300};run('updateLoadCurveUi()');assert(!chart.innerHTML.includes('40,0 min de maintien'),'curve refreshes with changed performance');state=baseState;
+assert.equal(JSON.stringify(state),snapshot);
 console.log('OK: Planif engine coefficients; all seven Daniels weights; explicit suggested/manual zones; separate complete totals; invalid values; multi-block edits; unchanged athlete references.');
+console.log('OK: personalized anchors, log-duration interpolation, exact 100/105/110% and intermediate factors, race/manual agreement, conflicts, bounds, complete sums, responsive SVG and interactive point selection.');
