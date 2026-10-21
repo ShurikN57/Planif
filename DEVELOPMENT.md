@@ -41,3 +41,5 @@ The CSP permits a SHA-256 hash for the inline theme bootstrap; any change to tha
 Engine tests import the actual module. UI persistence integration is isolated in `tests/helpers/runtime.cjs`.
 
 For a release, update `planif-version.js`, versioned script URLs in `index.html`, the scientific JSON URL in `planif-ui.js`, and the service-worker shell/version. Verify that all public files match the commit after deployment. Changes affecting future sessions must preserve the existing plan and archive it before recalculation. Organizational thresholds remain identified as Planif heuristics in rule metadata.
+
+Since 2026.10.21.04, public program loads use the shared personalized calculator model. Historical accounting remains internal to scheduling safety; do not replace its thresholds with the lower public scores. See `AUDIT-PERSONAL-LOAD.md` and run `TZ=Europe/Paris node scripts/audit-personal-load.cjs` before changing the reviewed `plans-after-personal-load.json` fixture. Stored plans archive before migration, and started/completed weeks retain their recorded scale.

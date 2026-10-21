@@ -420,7 +420,7 @@ function makeAlternatingSession(target,st,ctx){
   if(!pool.length)return null;
   const c=pool.sort((a,b)=>b.work-a.work)[0];c.ruleRefs=variantRuleRefs(c,'spec10k');
   const [wu,cd]=RULES.organization.warmup.spec;
-  return withLoad({fam:'alternating',dist:1,zone:zoneForSpeed(ctx.v,st),variants:[c,{...c}],work:c.work,total:r5(wu+c.total+cd),wu,cd,libSector:'spec10k'},st);
+  return withSafetyLoad({fam:'alternating',dist:1,zone:zoneForSpeed(ctx.v,st),variants:[c,{...c}],work:c.work,total:r5(wu+c.total+cd),wu,cd,libSector:'spec10k'},st);
 }
 /* Durée maximale réelle d'une fraction, y compris les options B et les pyramides. */
 function maxFractionMinutes(c){
@@ -713,6 +713,31 @@ const capFor=fam=>({s1:RULES.safeguards.caps.s1,s2:RULES.safeguards.caps.s2,vo2:
 /* AS10 : zone principale 20–30', 30–35' en fin de bloc, 35' au maximum */
 /* Le spécifique a son propre plafond de travail : les plafonds S2 / VO₂ ne s'appliquent pas à l'allure de course elle-même */
 function capsFor(sector,c,st){if(sector==='spec10k'){const f=checkCaps(c,st,['s1','s2','vo2']);if((c.raceWork??c.work)>RULES.spec10k.workCap+RULES.safeguards.capTolerance)f.push('spec10k');return f;}return checkCaps(c,st,[]);}
+// Shared personalized accounting; scheduling safeguards use the historical scale.
+function loadDurationFactor(minutes){
+ if(!Number.isFinite(minutes)||minutes<6||minutes>240)return null;
+ const [a,b,fa,fb]=minutes<=60?[6,60,1,.6]:[60,240,.6,.3];
+ return fa+(fb-fa)*Math.log(minutes/a)/Math.log(b/a);
+}
+function loadPersonalModel(refs){
+ if(!refs)return null;
+ const {st,p}=refs,jogg=st.s1lo*RULES.load.anchors.easyOfS1Low;
+ const anchors=[{key:'jogg',label:'Jogg’',speed:jogg,factor:.2,time:null},{key:'s1',label:'S1',speed:lt1Ref(st),factor:.3,time:240},{key:'s2',label:'S2',speed:st.s2,factor:.6,time:60},{key:'vma100',label:'100 % VMA',speed:st.vma,factor:1,time:6},{key:'vma105',label:'105 % VMA',speed:st.vma*1.05,factor:1.2,time:null},{key:'vma110',label:'110 % VMA',speed:st.vma*1.1,factor:1.5,time:null}];
+ const races=(p||[]).map((r,i)=>({key:['as5','as10','as21','as42'][i],label:['AS5','AS10','AS21','AS42'][i],speed:r.v,time:r.t/60,factor:loadDurationFactor(r.t/60),race:true})).filter(r=>Number.isFinite(r.speed)&&r.speed>0&&Number.isFinite(r.time)&&r.time>0);
+ const issues=[];
+ races.forEach(r=>{if(r.factor===null)issues.push(`${r.label} : chrono hors de la plage 6 min–4 h ; coefficient non extrapolé.`);});
+ const points=[...anchors,...races],curve=points.filter(r=>r.factor!==null).sort((a,b)=>a.speed-b.speed);
+ const conflicts=[];
+ for(let i=1;i<curve.length;i++){const a=curve[i-1],b=curve[i];if(b.factor<a.factor-1e-8||Math.abs(b.speed-a.speed)<1e-8&&Math.abs(b.factor-a.factor)>1e-8)conflicts.push(`${a.label} / ${b.label} : allures et durées de maintien incohérentes. Vérifie les repères et les chronos.`);}
+ return{points,curve,issues:[...issues,...conflicts],conflicts,vma:st.vma,referenceState:st};
+}
+function loadPersonalFactor(speed,model){
+ if(!model||model.conflicts.length||!Number.isFinite(speed)||speed<=0)return null;
+ const P=model.curve;if(speed>P.at(-1).speed+1e-8)return null;
+ if(speed<=P[0].speed)return P[0].factor;
+ for(let i=1;i<P.length;i++)if(speed<=P[i].speed){const a=P[i-1],b=P[i];return a.factor+(b.factor-a.factor)*(speed-a.speed)/(b.speed-a.speed);}
+ return P.at(-1).factor;
+}
 function loadPoints(st){
   const K=RULES.load.intensity,A=RULES.load.anchors,M=A.insertMargin;
   const P=[[st.s1lo*A.recoveryOfS1Low,K.recovery],[st.s1lo*A.easyOfS1Low,K.easy],[st.s1lo*A.easyHighOfS1Low,K.easyHigh],[(st.s1lo+st.s1hi)/2,K.s1],[(st.s1hi+st.s2)/2,K.between],[st.s2,K.s2]];
@@ -756,7 +781,7 @@ function prepareSession(s,weeklyMinutes=s.weeklyMinutes??Infinity){
   s.total=s.wu+Math.max(...s.variants.map(v=>v.total))+s.cd;
   return s;
 }
-function variantLoad(x,s,st){
+function variantSafetyLoad(x,s,st){
   const bd=emptyBd(),d=densityFactor(x);
   (x.parts||[]).forEach(([m,v])=>{bd[loadZone(v,st)]+=m*loadFactorForSpeed(v,st)*d;});
   bd.z1+=(s.wu+s.cd)*RULES.load.intensity.easy+(x.rec||0)*RULES.load.intensity.activeRec+(x.easy||0)*RULES.load.intensity.easy;
@@ -767,11 +792,11 @@ function checkCaps(x,st,exempt){
   (x.parts||[]).forEach(([min,v])=>{const z=loadZone(v,st);if(z==='z2')m.s1+=min;if(z==='z3')m.s2+=min;if(z==='z4')m.vo2+=min;if(v>=RULES.safeguards.above105OfVma*st.vma)m.above105+=min;});
   return Object.keys(RULES.safeguards.caps).filter(k=>!exempt.includes(k)&&m[k]>RULES.safeguards.caps[k]+RULES.safeguards.capTolerance);
 }
-function withLoad(s,st){
+function withSafetyLoad(s,st){
   prepareSession(s,st.vol);
   s.variants.forEach(x=>{if(!x.ruleRefs)x.ruleRefs=variantRuleRefs(x,null);});
   s.ruleRefs=[...new Set(s.variants.flatMap(x=>x.ruleRefs).concat(['organization.warmup','organization.preparationByVolume'],s.wu===RULES.organization.vo2MinimumWarmup?['organization.vo2MinimumWarmup']:[]))];
-  s.variants.forEach(x=>{Object.assign(x,variantLoad(x,s,st));x.capFail=s.libSector?capsFor(s.libSector,x,st):checkCaps(x,st,s.isLong?['s1']:[]);});
+  s.variants.forEach(x=>{Object.assign(x,variantSafetyLoad(x,s,st));x.capFail=s.libSector?capsFor(s.libSector,x,st):checkCaps(x,st,s.isLong?['s1']:[]);});
   const L=s.variants.map(x=>x.load);s.loadMin=Math.min(...L);s.loadMax=Math.max(...L);
   s.load=(s.loadMin+s.loadMax)/2; /* valeur centrale, utilisée seulement pour la répartition */
   s.loadBreakdown=emptyBd();['z1','z2','z3','z4'].forEach(z=>{s.loadBreakdown[z]=(s.variants[0].bd[z]+s.variants[1].bd[z])/2;});
@@ -781,7 +806,7 @@ function withLoad(s,st){
 }
 /* identité d'une séance, sérialisable (utilisée pour les références croisées : footing du lendemain, alertes) */
 const sessionKey=x=>({fam:x.fam,dist:x.dist,isLong:!!x.isLong});
-function makeSession(fam,W,k,t,st,ctx){return withLoad(makeSessionCore(fam,W,k,t,st,ctx),st);}
+function makeSession(fam,W,k,t,st,ctx){return withSafetyLoad(makeSessionCore(fam,W,k,t,st,ctx),st);}
 
 /* ---------- séances mixtes : uniquement transition / rappel / assimilation ---------- */
 const mixedSector=fam=>fam==='vma'||fam==='vmaShort'?'vo2':fam;
@@ -825,7 +850,7 @@ function makeMixedSession(primaryFam,secondaryFam,primaryW,secondaryW,role,k,t,s
   });
   const [wu,cd]=RULES.organization.warmup.mixed,core=Math.max(...variants.map(x=>x.total));
   const hi=mixedSector(secondaryFam)==='vo2'?'z4':mixedSector(secondaryFam)==='s2'?'z3':'z2';
-  return withLoad({fam:'mixed',mixedRole:role,mixedFrom:mixedSector(primaryFam),mixedTo:mixedSector(secondaryFam),zone:hi,variants,
+  return withSafetyLoad({fam:'mixed',mixedRole:role,mixedFrom:mixedSector(primaryFam),mixedTo:mixedSector(secondaryFam),zone:hi,variants,
     mixedTargets:{primaryW,secondaryW},work:variants[0].work,gap:Math.abs(variants[1].work-variants[0].work),total:r5(wu+core+cd),wu,cd},st);
 }
 
@@ -959,7 +984,7 @@ function qualityDurationExceeded(sessions,minutes){
 
 /* Construction d'UNE semaine d'un bloc : partagée par le mode Bloc et par le calendrier.
    o = {k, N, t, assim, vol, memory, block, specDist} ; k et N sont locaux au bloc. */
-function buildWeek(B,st,o){
+function buildSafetyWeek(B,st,o){
   // Retain one fewer quality in assimilation, with a minimum of one when requested.
   const{k,N,t,assim,vol,memory}=o,warns=[];
   if(assim)st={...st,vol:Math.min(st.vol,vol)};
@@ -1045,7 +1070,7 @@ function buildWeek(B,st,o){
       if(Math.max(...mix.variants.map(v=>v.work))<=remaining+1e-9)continue;
       const reduced=makeMixedSession(mix.mixedFrom,mix.mixedTo,mix.mixedTargets.primaryW,mix.mixedTargets.secondaryW,mix.mixedRole,k,t,st,{...ctx,maxMixedWork:remaining});
       if(reduced)sessions[i]=reduced;
-      else{const choices=mixedCandidates(mix.mixedFrom,Math.max(0,remaining),st,ctx,false);if(choices.length){const replacement={fam:mix.mixedFrom==='vo2'?'vmaShort':mix.mixedFrom,zone:zoneForSpeed(choices[0].parts[0][1],st),variants:choices,work:choices[0].work,wu:24,cd:10};sessions[i]=withLoad(replacement,st);}else{sessions.splice(i--,1);warns.push({code:'budget_too_small'});}}
+      else{const choices=mixedCandidates(mix.mixedFrom,Math.max(0,remaining),st,ctx,false);if(choices.length){const replacement={fam:mix.mixedFrom==='vo2'?'vmaShort':mix.mixedFrom,zone:zoneForSpeed(choices[0].parts[0][1],st),variants:choices,work:choices[0].work,wu:24,cd:10};sessions[i]=withSafetyLoad(replacement,st);}else{sessions.splice(i--,1);warns.push({code:'budget_too_small'});}}
     }
     /* règles de bloc et de volume qui ont fixé le volume de travail de chaque séance */
     const addRefs=(x,refs)=>{x.ruleRefs=[...new Set(x.ruleRefs.concat(refs.filter(Boolean)))];};
@@ -1065,7 +1090,7 @@ function buildWeek(B,st,o){
       let retry=null;
       if(attempt<F.maxAttempts&&workScale>F.minimumWorkScale+1e-9)retry={...o,durationBudget,fitAttempt:attempt+1,workScale:Math.max(F.minimumWorkScale,workScale-F.scaleStep)};
       else if(qN>1||qN>0&&allowZero)retry={...o,durationBudget,qualityLimit:qN-1,fitAttempt:0,workScale:1};
-      if(retry){if(memory){for(const key of Object.keys(memory))delete memory[key];Object.assign(memory,initialMemory);}return buildWeek(B,st,retry);}
+      if(retry){if(memory){for(const key of Object.keys(memory))delete memory[key];Object.assign(memory,initialMemory);}return buildSafetyWeek(B,st,retry);}
       return null;
     };
     if(qTot+reservedEasy>vol+RULES.volume.weekTolerance*vol||qualityDurationExceeded(sessions,Math.min(vol,o.durationBudget??Infinity))){
@@ -1129,12 +1154,12 @@ function buildWeek(B,st,o){
 }
 // Compatibility entry point; assimilation uses the same guards as every other week.
 function buildAssimilationWeek(B,st,o){return buildWeek(B,st,{...o,assim:true});}
-function buildPlan(st,pred){
+function buildSafetyPlan(st,pred){
   const B=getBlock(st,pred),N=st.N;
   const BR=RULES.volume.blockRamp,ramp=Math.min(BR.base+BR.perWeek*(N-2),BR.max)+(B.ramp||0);
   const vols=volumes(st.vol,N,ramp);
   const weeks=[],memory={};
-  for(let k=0;k<=N;k++){const w=buildWeek(B,st,{k,N,t:N>1?k/(N-1):1,assim:k===N,vol:vols[k],memory,block:st.block,specDist:st.specDist,nextBlock:null});
+  for(let k=0;k<=N;k++){const w=buildSafetyWeek(B,st,{k,N,t:N>1?k/(N-1):1,assim:k===N,vol:vols[k],memory,block:st.block,specDist:st.specDist,nextBlock:null});
     w.ruleRefs=w.ruleRefs.concat(['volume.blockRamp','volume.assimilationFactor']);weeks.push(w);}
   return{B,weeks,vols};
 }
@@ -1142,7 +1167,7 @@ function buildPlan(st,pred){
 /* ===================== Calendrier course (v7) =====================
    CALENDRIER choisit QUAND et QUOI travailler ; BLOC définit la progression du stimulus ;
    BIBLIOTHÈQUE choisit COMMENT. Le calendrier ne génère jamais lui-même une séance de qualité :
-   il appelle buildWeek() avec le bloc, la position dans le bloc (t) et l'enveloppe de volume. */
+   il appelle buildSafetyWeek() avec le bloc, la position dans le bloc (t) et l'enveloppe de volume. */
 const DAY=864e5;
 const parseDate=x=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(x||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
 const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
@@ -1229,7 +1254,7 @@ function calendarVolumes(plan,V,wins){
 function raceSpeed(st,pred){const d=st.calDist;return st.calGoal?DIST[d].km/(st.calGoal/3600):(pred?pred[d].v:null);}
 
 /* Semaine de course : volume fortement réduit, un rappel d'allure, la veille légère, la course. */
-function buildTaperWeek(st,pred,vol){
+function buildSafetyTaperWeek(st,pred,vol){
   const d=st.calDist,v=raceSpeed(st,pred),km=DIST[d].km,raceMin=km/v*60,warns=[];
   const rm=1/v*60;
   const TP=RULES.calendar.taper,RA=TP.reminderA,RB=TP.reminderB;
@@ -1238,7 +1263,7 @@ function buildTaperWeek(st,pred,vol){
   const bMeters=Math.max(stepM,Math.floor(reminderMinutes/RB.reps*v/60*1000/stepM)*stepM),rmB=bMeters/1000/v*60;
   const A=cand({sector:'race',fam:'taper',kind:'time',key:'taper:2min',size:'t2',structure:{type:'intervals',reps:RA.reps,durationMin:aMinutes,recoveryMin:RA.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[reminderMinutes,v]],rec:(RA.reps-1)*RA.recovery,recEach:RA.recovery,work:reminderMinutes});
   const Bv=cand({sector:'race',fam:'taper',kind:'dist',key:'taper:distance',size:'d'+bMeters,structure:{type:'intervals',reps:RB.reps,distanceM:bMeters,repDurationMin:rmB,recoveryMin:RB.recovery,recoveryType:'trot'},intensity:{type:'race_pace',race:DIST[d].lab,refKmh:v},parts:[[RB.reps*rmB,v]],rec:(RB.reps-1)*RB.recovery,recEach:RB.recovery,work:RB.reps*rmB});
-  const rappel=withLoad({fam:'taper',dist:d,zone:zoneForSpeed(v,st),variants:[A,Bv],work:A.work,gap:0,wu:TP.warmup,cd:TP.cooldown,total:r5(TP.warmup+Math.max(A.total,Bv.total)+TP.cooldown)},st);
+  const rappel=withSafetyLoad({fam:'taper',dist:d,zone:zoneForSpeed(v,st),variants:[A,Bv],work:A.work,gap:0,wu:TP.warmup,cd:TP.cooldown,total:r5(TP.warmup+Math.max(A.total,Bv.total)+TP.cooldown)},st);
   const rbd=emptyBd();rbd.z1=(TP.raceWarmup+TP.raceCooldown)*RULES.load.intensity.easy;rbd[loadZone(v,st)]+=raceMin*loadFactorForSpeed(v,st)*RULES.load.density[0][1];
   const race={type:'race',fam:'race',dist:d,distance:km,targetPace:v,targetTime:raceMin*60,goal:!!st.calGoal,zone:zoneForSpeed(v,st),
     wu:TP.raceWarmup,cd:TP.raceCooldown,work:raceMin,duration:r5(raceMin+TP.raceWarmup+TP.raceCooldown),total:r5(raceMin+TP.raceWarmup+TP.raceCooldown),load:sumBd(rbd),loadMin:sumBd(rbd),loadMax:sumBd(rbd),loadBreakdown:rbd};
@@ -1256,7 +1281,7 @@ function buildTaperWeek(st,pred,vol){
     reminders:[{code:'taper_jminus2'},{code:'taper_eve',params:{minutes:TP.eveMinutes,strides:TP.eveStrides,seconds:TP.eveStrideSeconds}},{code:'taper_no_long_run'}],budget:[0,100]};
 }
 /* Semaine d'entrée partielle (moins de 4 jours) : footings faciles uniquement. */
-function buildIntroWeek(st,vol,win){
+function buildSafetyIntroWeek(st,vol,win){
   const days=dayDiff(win.start,win.end)+1,n=Math.max(1,Math.min(st.runs,days-1));
   const foot=[];for(let i=0;i<n;i++)foot.push({type:'std',min:clamp(r5(vol/n),RULES.calendar.introFooting[0],RULES.calendar.introFooting[1])});foot.forEach(x=>{x.load=x.min*RULES.load.intensity.easy;});
   const volume=foot.reduce((a,x)=>a+x.min,0),bd=emptyBd();bd.z1=volume*RULES.load.intensity.easy;
@@ -1368,7 +1393,7 @@ function placeWeek(wk,win,st){
   return{list:dates.map(d=>({date:d,items:slot.get(+d)||[]})),warns};
 }
 
-function buildCalendar(st,pred){
+function buildSafetyCalendar(st,pred){
   const activePlan=context.getActivePlan?.();
   const start=parseDate(st.calStart),race=parseDate(st.calRace);
   if(!start||!race)return{error:{code:'dates_missing'}};
@@ -1389,10 +1414,10 @@ function buildCalendar(st,pred){
       const lrDate=(st.slDay!==''?Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).find(d=>wd(d)===+st.slDay&&st.avail[wd(d)]):null)||Array.from({length:dayDiff(win.start,win.end)+1},(_,d)=>addDays(win.start,d)).filter(d=>st.avail[wd(d)]).pop();
       const longRunCap=st.calDist===1&&lrDate&&dayDiff(lrDate,race)<=RULES.calendar.longRun10k.preRaceDays?RULES.calendar.longRun10k.preRaceCapMinutes:undefined;
       const options={longRunCap,k:p.kind==='assim'?p.segLen:p.k,N:p.segLen,t:p.kind==='assim'?1:p.t,assim:p.kind==='assim',vol,memory,block:p.block,specDist:st.calDist,calendar:true,nextBlock};
-      rebuild=extra=>buildWeek(B,bst,{...options,...extra});wk=rebuild({});
+      rebuild=extra=>buildSafetyWeek(B,bst,{...options,...extra});wk=rebuild({});
       if(p.kind==='assim')wk.reminders=[{code:'strides_optional_week'}];
-    }else if(p.kind==='taper')wk=buildTaperWeek(st,pred,vol);
-    else wk=buildIntroWeek(st,vol,win);
+    }else if(p.kind==='taper')wk=buildSafetyTaperWeek(st,pred,vol);
+    else wk=buildSafetyIntroWeek(st,vol,win);
     Object.assign(wk,{index:i,k:i,startDate:win.start,endDate:win.end,phase:p.kind==='charge'?p.block:p.kind,block:p.block,assimilation:p.kind==='assim',
       taper:p.kind==='taper',raceWeek:i===plan.length-1,targetVolume:vol,segK:p.k,segLen:p.segLen});
     wk.ruleRefs=(wk.ruleRefs||[]).concat(['calendar.phaseSequence','calendar.segment','calendar.assimilationAfterLoadWeeks','calendar.maxConsecutiveLoadWeeks','calendar.minSpecificWeeks',...(st.calDist===1?['calendar.specific10k']:[]),'calendar.envelope','calendar.placement','recovery.calendarContext'],
@@ -1420,6 +1445,88 @@ function buildCalendar(st,pred){
     weeks.push(wk);});
   return{race:{date:race,distance:st.calDist,goal:st.calGoal,speed:raceSpeed(st,pred)},start,weeks,plan};
 }
+
+/* Public accounting uses personalized points. Assembly above deliberately retains
+   the historical safety scale for format choice, heavy-week detection and recovery
+   placement. No lower displayed score can relax these established guards. */
+const PROGRAM_LOAD_MODEL='personal-v1';
+function programLoadModel(st){
+ const p=st.refTime&&Number.isInteger(st.refDist)&&Number.isInteger(st.profile)?predict(st):null;
+ return loadPersonalModel({st,p});
+}
+function programLoadFactor(speed,st,model=programLoadModel(st)){
+ const factor=loadPersonalFactor(speed,model);if(factor!==null)return factor;
+ // Explicit fallback to fixed physiological anchors, never to a mixed scale.
+ // Above 110% the unvalidated region retains the higher historical safety factor.
+ if(speed>st.vma*1.1+1e-8)return Math.max(1.5,loadFactorForSpeed(speed,{...st}));
+ const P=model.points.filter(p=>!p.race).sort((a,b)=>a.speed-b.speed);
+ if(speed<=P[0].speed)return .2;
+ for(let i=1;i<P.length;i++)if(speed<=P[i].speed){const a=P[i-1],b=P[i];return a.factor+(b.factor-a.factor)*(speed-a.speed)/(b.speed-a.speed);}
+ return 1.5;
+}
+function variantLoad(v,s,st,model=programLoadModel(st)){
+ const bd=emptyBd();
+ for(const [minutes,speed] of v.parts||[])bd[loadZone(speed,st)]+=minutes*programLoadFactor(speed,st,model);
+ bd.z1+=((s.wu||0)+(s.cd||0)+(v.rec||0)+(v.easy||0))*.2;
+ return{load:sumBd(bd),bd,density:1};
+}
+function accountSession(s,st,model){
+ if(!s)return;
+ if(!s.safetyLoad)s.safetyLoad={load:s.load,loadMin:s.loadMin,loadMax:s.loadMax};
+ if(s.variants?.length){
+  s.variants.forEach(v=>Object.assign(v,variantLoad(v,s,st,model)));
+  const sorted=s.variants.slice().sort((a,b)=>a.load-b.load),a=sorted[0],b=sorted.at(-1);
+  s.loadMin=a.load;s.loadMax=b.load;s.load=(a.load+b.load)/2;s.loadBreakdown=emptyBd();
+  for(const z of Object.keys(s.loadBreakdown))s.loadBreakdown[z]=(a.bd[z]+b.bd[z])/2;
+ }else if(s.fam==='race'||s.type==='race'){
+  const bd=emptyBd();bd.z1=((s.wu||0)+(s.cd||0))*.2;bd[loadZone(s.targetPace,st)]+=(s.work||s.targetTime/60)*programLoadFactor(s.targetPace,st,model);
+  s.load=s.loadMin=s.loadMax=sumBd(bd);s.loadBreakdown=bd;
+ }
+ s.loadModel=PROGRAM_LOAD_MODEL;
+}
+function accountEasy(f,st,model){
+ const active=f.activeRange||f.range||[0,0],speed=efBand('active',st).reduce((a,b)=>a+b,0)/2,extra=programLoadFactor(speed,st,model)-.2;
+ const a=f.min*.2+active[0]*extra,b=f.min*.2+active[1]*extra;
+ f.loadMin=Math.min(a,b);f.loadMax=Math.max(a,b);f.load=(a+b)/2;f.loadModel=PROGRAM_LOAD_MODEL;
+}
+function recalculatePlanLoads(plan,st,options={}){
+ if(!plan?.weeks)return plan;
+ const model=programLoadModel(st),protectedIds=new Set(options.completedIds||[]),today=options.today||new Date(),cut=planDateKey(today);
+ for(const [wi,w] of plan.weeks.entries()){
+  const days=w.days||[],protectedWeek=options.preserve&&days.some(d=>planDateKey(d.date)<=cut||(d.items||[]).some(it=>protectedIds.has(it.planifId)));
+  if(protectedWeek){
+   const previous=options.previous?.weeks?.find(p=>p.startDate&&w.startDate&&planDateKey(p.startDate)===planDateKey(w.startDate));
+   if(previous)plan.weeks[wi]=JSON.parse(JSON.stringify(previous),(key,value)=>['date','startDate','endDate'].includes(key)&&typeof value==='string'?new Date(value):value);
+   continue;
+  }
+  const safety=w.safetyLoad||{load:w.load,loadMin:w.loadMin,loadMax:w.loadMax,workLoad:w.workLoad,heavy:w.heavy,costly:w.costly};w.safetyLoad=safety;
+  for(const s of w.sessions||[])accountSession(s,st,model);
+  for(const f of w.foot||[])accountEasy(f,st,model);
+  accountSession(w.race,st,model);
+  const sl={min:w.sl||0,activeRange:w.slEA?.range};accountEasy(sl,st,model);
+  if(w.slS1){const extra=w.slS1*(programLoadFactor(lt1Ref(st),st,model)-.2);sl.load+=extra;sl.loadMin+=extra;sl.loadMax+=extra;}
+  sl.loadBreakdown=emptyBd();sl.loadBreakdown.z2=(w.slS1||0)*programLoadFactor(lt1Ref(st),st,model);sl.loadBreakdown.z1=sl.load-sl.loadBreakdown.z2;
+  w.slLoad=sl.load;w.slLoadMin=sl.loadMin;w.slLoadMax=sl.loadMax;
+  let entries=[];
+  if(days.length){for(const d of days)for(const it of d.items||[]){
+   if(it.kind==='q'||it.kind==='race'){accountSession(it.s,st,model);entries.push(it.s);}
+   else if(it.kind==='foot'){accountEasy(it.f,st,model);entries.push(it.f);}
+   else if(it.kind==='sl'){Object.assign(it,{load:sl.load,loadMin:sl.loadMin,loadMax:sl.loadMax,loadModel:PROGRAM_LOAD_MODEL});entries.push(sl);}
+   else if(it.kind==='veille'){it.load=it.loadMin=it.loadMax=it.min*.2;it.loadModel=PROGRAM_LOAD_MODEL;entries.push(it);}
+  }}else entries=[...(w.sessions||[]),...(w.foot||[]),sl,...(w.race?[w.race]:[]),...(w.veille?[{load:w.veille*.2,loadMin:w.veille*.2,loadMax:w.veille*.2}]:[])];
+  const bd=emptyBd();for(const e of entries){if(e.loadBreakdown)for(const z of Object.keys(bd))bd[z]+=e.loadBreakdown[z];else bd.z1+=e.load;}
+  w.loadBreakdown=bd;w.load=sumBd(bd);w.loadMin=entries.reduce((n,e)=>n+(e.loadMin??e.load),0);w.loadMax=entries.reduce((n,e)=>n+(e.loadMax??e.load),0);
+  w.workLoad=bd.z2+bd.z3+bd.z4;w.loadModel=PROGRAM_LOAD_MODEL;
+  w.loadNotices=[...model.issues.map(s=>s+' Si nécessaire, coefficient recalculé sur les ancrages S1/S2/VMA.'),...(entries.some(e=>(e.variants||[]).some(v=>(v.parts||[]).some(([,v])=>v>st.vma*1.1+1e-8)))?['Au-delà de 110 % VMA : coefficient historique de prudence, hors modèle personnalisé.']:[])];
+ }
+ plan.loadModel=PROGRAM_LOAD_MODEL;return plan;
+}
+function withLoad(s,st){const out=withSafetyLoad(s,st);accountSession(out,st,programLoadModel(st));return out;}
+function buildWeek(B,st,o){return recalculatePlanLoads({weeks:[buildSafetyWeek(B,st,o)]},st).weeks[0];}
+function buildPlan(st,pred){return recalculatePlanLoads(buildSafetyPlan(st,pred),st);}
+function buildCalendar(st,pred){return recalculatePlanLoads(buildSafetyCalendar(st,pred),st);}
+function buildTaperWeek(st,pred,vol){return recalculatePlanLoads({weeks:[buildSafetyTaperWeek(st,pred,vol)]},st).weeks[0];}
+function buildIntroWeek(st,vol,win){return recalculatePlanLoads({weeks:[buildSafetyIntroWeek(st,vol,win)]},st).weeks[0];}
 
 /* ===================== Présentateurs (v8.1) =====================
    Le moteur décrit les séances en données (structure, intensity, cues) ; le texte est construit ici. */
@@ -1519,7 +1626,7 @@ const PURPOSE={
 };
 const sessionPurpose=x=>PURPOSE[x.fam];
 
-return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
+return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
 }
 return {...createEngine(),createEngine};
 });

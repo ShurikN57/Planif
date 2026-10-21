@@ -1,7 +1,9 @@
 const assert=require('node:assert/strict'),crypto=require('node:crypto');
 const engine=require('../planif-engine.js');
 const baseline=require('./fixtures/plans-before-modules.json');
-const updated=require('./fixtures/plans-after-assimilation.json').plans;
+// Reviewed by scripts/audit-personal-load.cjs against every prior hash and
+// every non-accounting field; previous fixtures remain available.
+const updated=require('./fixtures/plans-after-personal-load.json').plans;
 assert.equal(updated.length,baseline.length,'every historical scenario remains covered');
 const hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
 for(const [i,row] of baseline.entries()){

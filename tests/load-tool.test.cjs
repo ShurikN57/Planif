@@ -73,7 +73,7 @@ click('[data-load-remove]',{loadRemove:'0'});run('updateLoadToolUi()');assert.eq
 edit('change',0,'danielsZone','FR');edit('change',0,'pace','s2');assert.equal(run('loadToolState.blocks[0].danielsZone'),'auto','a new pace clears a stale manual zone');
 run('updateLoadToolUi()');assert.equal(danielsTotal.textContent,'6,0 pts');
 edit('input',0,'minutes','');assert.equal(danielsTotal.textContent,'—','never display a partial total for invalid durations');
-const html=run('loadToolHtml()');assert(html.includes('Total Planif'));assert(html.includes('Total Daniels'));assert(html.includes('Suggestions de correspondance propres à Planif'));assert(html.includes('Daniels’ Running Formula'));
+const html=run('loadToolHtml()');assert(html.includes('Total ancien Planif'));assert(html.includes('Total Daniels'));assert(html.includes('Suggestions de correspondance propres à Planif'));assert(html.includes('Daniels’ Running Formula'));
 assert.equal(JSON.stringify(state),snapshot,'comparison never changes athlete references');
 // Personalized model: agreed anchors, logarithmic durations, continuous speed interpolation.
 for(const [time,factor] of [[6,1],[60,.6],[240,.3]])close(run(`loadDurationFactor(${time})`),factor);
@@ -96,9 +96,9 @@ for(const [pace,index] of [['as5',0],['as10',1],['as21',2],['as42',3]]){
 }
 edit('change',0,'pace','s2');edit('input',0,'minutes','25');click('[data-load-add]');edit('input',1,'minutes','30');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'21,0 pts','25 S2 + 30 jog = 21 personalized points');
 edit('input',1,'minutes','');assert.equal(personalTotal.textContent,'—','no partial personalized sum');click('[data-load-remove]',{loadRemove:'1'});
-const baseState={...state};state={...baseState,s2:16.5};run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'—','contradictory race/threshold refs cannot silently create decreasing coefficients');assert(personalMessage.textContent.includes('incohérentes'));
+const baseState={...state};state={...baseState,s2:16.5};run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'15,0 pts','contradictory race refs use the fixed S2 anchor');assert(personalMessage.textContent.includes('repli'));
 state={...baseState,refTime:0};edit('change',0,'pace','s2');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'15,0 pts','fixed anchors remain usable without estimated races');
-state={...baseState,vma:14,s1lo:8,s1hi:8.5,s2:10.5,refTime:3600};edit('change',0,'pace','as42');run('updateLoadToolUi()');assert.equal(personalTotal.textContent,'—','a marathon beyond four hours is plotted but not extrapolated');assert(run('loadPersonalModel(loadToolReferences()).issues.some(x=>x.includes("hors de la plage"))'));
+state={...baseState,vma:14,s1lo:8,s1hi:8.5,s2:10.5,refTime:3600};edit('change',0,'pace','as42');run('updateLoadToolUi()');assert.notEqual(personalTotal.textContent,'—','out-of-duration race uses explicit speed-anchor fallback');assert(personalMessage.textContent.includes('repli'));assert(run('loadPersonalModel(loadToolReferences()).issues.some(x=>x.includes("hors de la plage"))'));
 state={...baseState};
 for(const width of [280,320,390,560,900])for(const kind of ['duration','factor']){
  const svg=run(`loadCurveChart(loadPersonalModel(loadToolReferences()),'${kind}',${width})`);assert(!/NaN|Infinity/.test(svg));assert(svg.includes('role="img"'));assert(svg.includes(`viewBox="0 0 ${width} 260"`));

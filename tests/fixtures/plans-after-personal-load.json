@@ -1,0 +1,518 @@
+{
+  "version": "2026.10.21.04",
+  "review": {
+    "historicalCommit": "2f8765ed85a0582112f86fa3643ba6a78f2c5cb1",
+    "plans": 252,
+    "weeks": 2142,
+    "fallbackWeeks": 1071,
+    "minLoadRatio": 0.4611740317893664,
+    "maxLoadRatio": 0.5765185135546748,
+    "unchanged": "formats, minutes, paces, recovery, days, warnings, heavy-week classification and most-costly-session selection"
+  },
+  "plans": [
+    {
+      "block": "f37a44d7e3610793f23eddb7b5f8f697ee14224321705dd8575aec637d8e6d4c",
+      "calendar": "e86a28aa97be9aadb17c6f335f82b1a03f8c82e46f4049f242cdbca83cb5ad48"
+    },
+    {
+      "block": "0f8a28770d264c827337176d3ff3f16b92ae401d4d69168878fda6368d6b3648",
+      "calendar": "e86a28aa97be9aadb17c6f335f82b1a03f8c82e46f4049f242cdbca83cb5ad48"
+    },
+    {
+      "block": "e237598cb5b704d06077e2424b3760b09bac9c33966a9dffcd4de52f873722ea",
+      "calendar": "e86a28aa97be9aadb17c6f335f82b1a03f8c82e46f4049f242cdbca83cb5ad48"
+    },
+    {
+      "block": "097c28ca334fc887def140364edf701fafdc11091637d0425a272e0672725bcb",
+      "calendar": "0ffc009c29acaf90c9733b64f0ce1bd4389070fea053562fb10d0c67907bf500"
+    },
+    {
+      "block": "42986d1e45ad54a3f3b1071aaa94280df3b4347c44841f6f59bdfb48fcf7366e",
+      "calendar": "e86a28aa97be9aadb17c6f335f82b1a03f8c82e46f4049f242cdbca83cb5ad48"
+    },
+    {
+      "block": "3e8f5c675c72e470ca098a243ea64f64e745414904c22c5eba43ad397ca147d8",
+      "calendar": "2b684accb771d9730c4dbcabe4c3ae198fe171e449ac608937d3f23524445938"
+    },
+    {
+      "block": "b757867cb36865ecbfad4dfaaf5828d5f214f850039951fb7d8c4dadbbb4fb88",
+      "calendar": "15001d112faf2f4c44dd6f5ef644afbf0ef42644103d0861bb7e78c315ecd65d"
+    },
+    {
+      "block": "6d79b05672281a851b92116a566fac58cca4e6f972a2ca5f66dfce62b2eadb44",
+      "calendar": "48d6e07ecb6e72e5e6b647220d23dccc505b9c370640f820dfeadcfadf5c8321"
+    },
+    {
+      "block": "018b429157191bffbfa392f7ad326a697fb132f78c4e9a1c84a1b39835bd02a4",
+      "calendar": "48d6e07ecb6e72e5e6b647220d23dccc505b9c370640f820dfeadcfadf5c8321"
+    },
+    {
+      "block": "8ee1dfa886834f20a770a1b8a100c3e35b887a55a1fc7a5dd8f0ed42fc62b474",
+      "calendar": "48d6e07ecb6e72e5e6b647220d23dccc505b9c370640f820dfeadcfadf5c8321"
+    },
+    {
+      "block": "3bb1253c1446adb9dcadd5f58ced1b69580a6b2b07dec2754a7cde016ad3cd39",
+      "calendar": "4ed061ed561db875ea40e88c5bf5bff29c38016ed1aa06964129a008fb300da8"
+    },
+    {
+      "block": "75670a7caf28707a0e542fc65e9f7ef08c2a6f5fc9783db18494827361cbb038",
+      "calendar": "48d6e07ecb6e72e5e6b647220d23dccc505b9c370640f820dfeadcfadf5c8321"
+    },
+    {
+      "block": "9e458bbf2823bbfe6f6ecaec1de2d40fba5064cafe85c5d2ff42d1bb8a7e2d86",
+      "calendar": "72191148a3064963cd6ed15d79681122572ed04bb323dfc46a49b4fb287dc2d7"
+    },
+    {
+      "block": "0624fb0ff5f1d804a2d8ac3a89f605c393eebff53bd44ac0267d4a4e94ee35b5",
+      "calendar": "d451720dbb23309283e5d235d8043718b4950d7b02c30d594901adeace90cfb2"
+    },
+    {
+      "block": "9a6d675a6eee13ab1610f74dd7e70c03e70797d713a4fe8c3640fcd1eb021930",
+      "calendar": "2a3a57cfd02cd955def898dccc0b485a4bac8335c5ac95a62bbaa0354cc016e8"
+    },
+    {
+      "block": "ec4482a22723c078f8a82b9b34f5c8fa5993c37cd3f8facc2d4cb5b3fe984554",
+      "calendar": "2a3a57cfd02cd955def898dccc0b485a4bac8335c5ac95a62bbaa0354cc016e8"
+    },
+    {
+      "block": "8d9f523e3e6ae27d23e0462ae48953aba39ae33de96c7805427d7e750d86d830",
+      "calendar": "2a3a57cfd02cd955def898dccc0b485a4bac8335c5ac95a62bbaa0354cc016e8"
+    },
+    {
+      "block": "5f969a635f85606917f86d0d212f0558abd1b241f72c993e09ae29520f3e7f87",
+      "calendar": "aac168c29b238bb4bc85b5fe2ffc13d70c9150dee9c167a2ee437cbbcf059bf5"
+    },
+    {
+      "block": "e8a1f08445624e3c1c2b21cd24e6d0be7b16f736135e9e0f4d17036fc137d24c",
+      "calendar": "2a3a57cfd02cd955def898dccc0b485a4bac8335c5ac95a62bbaa0354cc016e8"
+    },
+    {
+      "block": "d61965d8c1e15e29399b390f949fcb139c0f0801593772019c37144d815d3260",
+      "calendar": "f8742513803c9e0dd79ccc23312323b1e785edf3c8fcf58d8cfca515819ea0e7"
+    },
+    {
+      "block": "5ea444fb6d88863980f1e162737d7f2cdf0f95f88eefe5566900d392a530d05e",
+      "calendar": "b4f547c1b9cc8550d764d5fad4c62e874cb9f226de69de8eee5c7ef5c1dbc637"
+    },
+    {
+      "block": "1a23695ae42a4fb4ab0b9838d3ef844119748b6f92f805b54083a349bfb04384",
+      "calendar": "42273f26326da385ae1b9441d279dc7408f67b4a8a81e9fa2593ced2a23b0ce6"
+    },
+    {
+      "block": "65cb51b46c483c4016e959ea526f22b8a34fe76b0690538a01d5f2caefe7f62b",
+      "calendar": "42273f26326da385ae1b9441d279dc7408f67b4a8a81e9fa2593ced2a23b0ce6"
+    },
+    {
+      "block": "34fb85983a9f5c615d5087061b605987a78794e43b48e20514a5ef2cb8e26707",
+      "calendar": "42273f26326da385ae1b9441d279dc7408f67b4a8a81e9fa2593ced2a23b0ce6"
+    },
+    {
+      "block": "f073aa706a7e5dd3f3a1f12e53089a7929e02a99e28542d02beb4e30208ddf54",
+      "calendar": "65f6dfefdb02c3a581ec79c6bd2a7d5684250aadac7a7e331b242d93f50f8c17"
+    },
+    {
+      "block": "2604a0b7e0294a9df16f5875ef7ab60a8c1e780b6d3e8610ef9ea5aa6f6877e7",
+      "calendar": "42273f26326da385ae1b9441d279dc7408f67b4a8a81e9fa2593ced2a23b0ce6"
+    },
+    {
+      "block": "cc0c472c3d5ed67e1389f3659807e7720a18c1d6f4d3df485cae54ffc2a6d054",
+      "calendar": "768330450b052385b44cd54a9586520a3e52794f238153c5632772bba57a6d8e"
+    },
+    {
+      "block": "433d74ce181493543a0607185fb9d7705547a0ccd34c2cfc2f24fecc749defdd",
+      "calendar": "8e9e5d9d022c001685a8e0fa5e971f84d30d508d7fe456f77b9fb2a9990d96c0"
+    },
+    {
+      "block": "ea510d0e9d016c8df5f01beddfdfb190b5ac66fb9839edbc41039deb73bf6d9a",
+      "calendar": "89ea6734ad1c25155652d73de3464e75db3ec069c924fcc7d4e6ee80eba52909"
+    },
+    {
+      "block": "3668bdc3cb919345f7bdfa4b6503350623304a44210a916649a297d14c67f63e",
+      "calendar": "89ea6734ad1c25155652d73de3464e75db3ec069c924fcc7d4e6ee80eba52909"
+    },
+    {
+      "block": "75a2613207f1b749a7afa839eede2dd1927ffdfa49a61d205701e1d455cded91",
+      "calendar": "89ea6734ad1c25155652d73de3464e75db3ec069c924fcc7d4e6ee80eba52909"
+    },
+    {
+      "block": "3e1d93992ed0a8759ba5d6d7c1e4e4cf9f0c9bf8566b9abf6f6b4cde0c02ebe7",
+      "calendar": "b9a83848023baf3eb06b65ba868950134c5a8b5b10e7e2d6f840befbe1c0364b"
+    },
+    {
+      "block": "529939e18b124df750f96dda9fe3e06733695b8c2d79592910d8afc740b08a05",
+      "calendar": "89ea6734ad1c25155652d73de3464e75db3ec069c924fcc7d4e6ee80eba52909"
+    },
+    {
+      "block": "c07a10d66d54f3e6fd84bf5ff514645ae9555fea977b5d4f6e4a347be3f17476",
+      "calendar": "8e144480c7f2170d8065df885b365b2bcb63072247f1f412504870ce7508ea35"
+    },
+    {
+      "block": "4f465b4c9deb8a44c1d4e3bbaf4b302c35cf0fdbbc86a4e2ed989cfa6f143cd7",
+      "calendar": "b3b8b9d8670a3e4f4c67cc576f8beb1487ca5ceda8b264aa881fb68d04633059"
+    },
+    {
+      "block": "be808013ce34e9df0c0902dbb761e507756c0f854e768669de88f11435e90280",
+      "calendar": "901a1cb1c14b3a92b6447e70d83c179107f479adf57fba2d20f6855adaaa48b4"
+    },
+    {
+      "block": "ec6497bdbf778a13fd5d22f3c0d0e0ba7089fa867469fd653ac7143dc7a4a619",
+      "calendar": "901a1cb1c14b3a92b6447e70d83c179107f479adf57fba2d20f6855adaaa48b4"
+    },
+    {
+      "block": "8e12c58ed2a7c9f76be10507cb0b94f79e98713294902a37131a5aa0490c5a26",
+      "calendar": "901a1cb1c14b3a92b6447e70d83c179107f479adf57fba2d20f6855adaaa48b4"
+    },
+    {
+      "block": "fa217e4af30af2dd0805a0f2b2c2a2cd5cb9530f0bdb9c3f9f4a2746ac1e34fd",
+      "calendar": "9d7002ca3ed567d04aa65c1fb5ae8615f23a8091f972afed779e91b3cda8e1da"
+    },
+    {
+      "block": "211f6f6a616817046f619f306ed4a03c4c69713790e895c35a4dfb0c0ed4a2ef",
+      "calendar": "901a1cb1c14b3a92b6447e70d83c179107f479adf57fba2d20f6855adaaa48b4"
+    },
+    {
+      "block": "de2515d4fc803592e66c349455a4a503b8672867cbe986ec9cb9cbc5ed25cbd1",
+      "calendar": "88a2bdb7236a89181dedb0f8579670e718bbf252f1f781bae7cc5e2398696655"
+    },
+    {
+      "block": "678629a36dd161f02a30e29efd0d05e76148baf0699835f32c0872c26ff84679",
+      "calendar": "9ec5a50e1c9fa0f38171f14058afbc4670e97f008f90dc7d82eaa24e7a9556f3"
+    },
+    {
+      "block": "5524e65e8fdc9239a379e6a2d2d47ff668b652469a4bab15f8d0072ccb24ee7a",
+      "calendar": "3b5d2c9677c8537a5a825678841952f97d013c0ac1f1d85e5a46bd9e6b82901a"
+    },
+    {
+      "block": "d5e3ed49ad8355218a37898b0fc296fd55c73937032701c4f1c94b5c39a45fbf",
+      "calendar": "3b5d2c9677c8537a5a825678841952f97d013c0ac1f1d85e5a46bd9e6b82901a"
+    },
+    {
+      "block": "830d87aa3c34525b83a6e3d7ad4987b1c9d764d733dfefccccc58bab1db52654",
+      "calendar": "3b5d2c9677c8537a5a825678841952f97d013c0ac1f1d85e5a46bd9e6b82901a"
+    },
+    {
+      "block": "03f9dfb0d9d7438f9826143d3a7b75e157bd388b63001a6d9b678fb986af10fd",
+      "calendar": "5fec00413d7da7fb5445d92ffdfc832404692f5c40d864291f32df90b376d68d"
+    },
+    {
+      "block": "78d502f2140609a882f418d3415057be25eb7a305a908865b2c808729318a45b",
+      "calendar": "3b5d2c9677c8537a5a825678841952f97d013c0ac1f1d85e5a46bd9e6b82901a"
+    },
+    {
+      "block": "e6e26ae583b69a9ed8546dde78cb6f3636a3b020d474761a4dacd38db8526971",
+      "calendar": "a78bf487b6dcbe6a7f6002cf58a2715425bc32e82400f0173790fbd6cd2e049e"
+    },
+    {
+      "block": "36dc8bb8b5a747cf924a34e4ec575cf90a988bfcbec893fc0de3702f6e5f6e01",
+      "calendar": "66a8190ada7f52d8e7bb5ab0121b01bedb416b012b9e614abb51dd25e6c22e42"
+    },
+    {
+      "block": "116a96bad2c8c076d26f90f44bf6f723939c358e061ced9498788d62ee84b619",
+      "calendar": "f2b9dc3b722ef22b101aac01f829186267d0224003541e25ac57f7bd90be2077"
+    },
+    {
+      "block": "d88c2f4d4c9b4db1588ec828eff61b600bae2084afe3427668de3b070e5be3d0",
+      "calendar": "f2b9dc3b722ef22b101aac01f829186267d0224003541e25ac57f7bd90be2077"
+    },
+    {
+      "block": "baa0dfa06c0eedf18724c1239a348ca031c56d0f5a2d227320e74bc447f107fd",
+      "calendar": "f2b9dc3b722ef22b101aac01f829186267d0224003541e25ac57f7bd90be2077"
+    },
+    {
+      "block": "6a631cd456770809eb222bfe46b5703013f112c8923cb30323667b4f50da7354",
+      "calendar": "01f7fbb20a31824db68db422a00e32109280b2992d0d9cf9e67d5c97d806986e"
+    },
+    {
+      "block": "91a38e978b982435892aec0693aa7f2d12cb636587b8284c9a0e0929f14a9ead",
+      "calendar": "f2b9dc3b722ef22b101aac01f829186267d0224003541e25ac57f7bd90be2077"
+    },
+    {
+      "block": "241a160cc7032b9006e9a2e89482211f51b1d0502947fb297798ee41c2437f66",
+      "calendar": "461226d68588686026c1071c7cc9221d9476dfeaa3e052599e09aff84c7bfd7d"
+    },
+    {
+      "block": "6085765f74c437f772ae05e57b03ac3f97d43fda5e7f425e4aad0b2090ba540f",
+      "calendar": "9de1c83a80f297f49e732eacdb4cc222592b05da938dabe704ece718e42ae456"
+    },
+    {
+      "block": "2fc66f470cb38ed1875653a175a9520b9e187b7a97916048e1839b493126e5cf",
+      "calendar": "086eef33f4bdd6185c4c7916594196c806e5dc8e14eb879b5b5859e4fd52166f"
+    },
+    {
+      "block": "9b76990c4a4f3bec0574653d7b60728a64ace98236c477343a8b49f86d8a5b36",
+      "calendar": "086eef33f4bdd6185c4c7916594196c806e5dc8e14eb879b5b5859e4fd52166f"
+    },
+    {
+      "block": "2a84ebacc3e178678a19dc2f5f9d3c02c89428721cd147486238c47757de7236",
+      "calendar": "086eef33f4bdd6185c4c7916594196c806e5dc8e14eb879b5b5859e4fd52166f"
+    },
+    {
+      "block": "e33cbe42ccade5efeaba72e27c5a6cb70f44be3ec169338be7386ec68c098d5b",
+      "calendar": "cab5b100021cc929606664fd7eb467d2935846cc32afdf9ee9c07ed295c0386f"
+    },
+    {
+      "block": "183f52154f6ea7175f86fb63533cc0e8e0d5d0be56888d5f3df14f70e531cb56",
+      "calendar": "086eef33f4bdd6185c4c7916594196c806e5dc8e14eb879b5b5859e4fd52166f"
+    },
+    {
+      "block": "6254147c3667a428dd98e7c35f0598e13d208c64155e20af569e079f18bdd610",
+      "calendar": "0de5bc4b0b69913aa02581d1d0855316776568d6b50692b56f3c2f1df8197fee"
+    },
+    {
+      "block": "20cf006124bf5f1fad9122aa679e89844ab5c3afb8a7965cba5d7abc5bea320f",
+      "calendar": "74e05c7dfc560075580c84c22895515dc581e70306f48c31c9b60cc76b1cafb5"
+    },
+    {
+      "block": "c7aaee4d86645c2139e96564153de98c08e22de059d2eb54d7cbe757fba4b37f",
+      "calendar": "7c2201890056ad59a466c4719ae1b764a1c98e0eccb2fc5a6738cffae5e06673"
+    },
+    {
+      "block": "412b34368827be84423d6fbaadeb8443530ccf2e59cba3196a03ed3cac272cc9",
+      "calendar": "7c2201890056ad59a466c4719ae1b764a1c98e0eccb2fc5a6738cffae5e06673"
+    },
+    {
+      "block": "4dcf7fb5a21ac524e27e076ff4dfb58729b1151138fa225877a579a3075b9a4d",
+      "calendar": "7c2201890056ad59a466c4719ae1b764a1c98e0eccb2fc5a6738cffae5e06673"
+    },
+    {
+      "block": "61b25e997b14f3b201d24a4edf8b257b3d6001912f30c8eb6048acd0ae097798",
+      "calendar": "e5ab8d153fe53b2d67a05b475d8f79605c66f69d1f3c3a4e6c85657ff7e1c42e"
+    },
+    {
+      "block": "fe9c333df0cca4c1a007b00813f0e60a6755dc55315a2b68896d836f240bd467",
+      "calendar": "7c2201890056ad59a466c4719ae1b764a1c98e0eccb2fc5a6738cffae5e06673"
+    },
+    {
+      "block": "ef260faf53dc41e4525b6c1d0400eed357b71f882fb09fc88eaad06a69327712",
+      "calendar": "67c92ef13caef21e8f68d50a9434dc09f927e6e5edf1c9abe0b0933f93896166"
+    },
+    {
+      "block": "75f0a9e22f968f3d2f394f9e195bcfbc909e77a088c42009dc675f8efaff0297",
+      "calendar": "c89ec37ace3411a13f897ba7c040a319ce7c572d882da8cadbfb28e23c383cdf"
+    },
+    {
+      "block": "158e24e529ccccb2680321308d266147f5491597d8c89fbf638dc1a80ae82229",
+      "calendar": "9d909a2f15c7f162792598dc5190c6e8e598babfd6d746f44008d7c346718bd3"
+    },
+    {
+      "block": "f32418032ccb0e993ca5930d8ec89d75cdbf1c43ee4033651684ea957b081472",
+      "calendar": "9d909a2f15c7f162792598dc5190c6e8e598babfd6d746f44008d7c346718bd3"
+    },
+    {
+      "block": "f982118d2b8b536ba0a6c28ce5aa58969b5ed8ed4c9cef6473e29f7ed541e2f7",
+      "calendar": "9d909a2f15c7f162792598dc5190c6e8e598babfd6d746f44008d7c346718bd3"
+    },
+    {
+      "block": "5981078b593254bd4b5279bad17375b482b179b78beaf031a01b3fd726c88084",
+      "calendar": "9288ad94d63fc8b146b06207179bd03a2e9aab768f51007d62b065c93fad7a6b"
+    },
+    {
+      "block": "d6ad77dd3540e287eee6dcebd31dc51337d517ab51741cdab935b51291ea34c5",
+      "calendar": "9d909a2f15c7f162792598dc5190c6e8e598babfd6d746f44008d7c346718bd3"
+    },
+    {
+      "block": "335ae3cfb2791048e8cd55755514584f180c88bb41974433343742c7971d0376",
+      "calendar": "0573fddc838aeb47eea88e52b6a68e77b6ac7de0cfbbed237c9645fbb5d500f9"
+    },
+    {
+      "block": "ca529b15498ffae45761f32ab97fa8dc94f35b66d03e7b7d736dd35c732e66f3",
+      "calendar": "e7e4627492c13164cea381eb47db09a6cf26f4abaebfa0733a1590f88ff238b7"
+    },
+    {
+      "block": "08a4d17307db4416eb2cdd3eaece02457bbbf88477acf5ee8791f3f2a831c417",
+      "calendar": "554c47d795b724d55cfa6082f0518cb86b00bb22cfc5da25df7345bb2ca08f68"
+    },
+    {
+      "block": "c8f990c7256e4072d8479acbfe9fb0357e4f1978533daa0c530d44515da46325",
+      "calendar": "554c47d795b724d55cfa6082f0518cb86b00bb22cfc5da25df7345bb2ca08f68"
+    },
+    {
+      "block": "b5efc213d98f6d28ca57c508ee6b51ec0ba2541380baa3006e2b8d5759114659",
+      "calendar": "554c47d795b724d55cfa6082f0518cb86b00bb22cfc5da25df7345bb2ca08f68"
+    },
+    {
+      "block": "fd919dad67375006517e5ff08bf4f0c64548ba05cbad0e2074b39a70025b9162",
+      "calendar": "0ff3ca6328b4acd140dbfc82fb0c26a75d38d1afe2c4e9cd5a9be6dcdb0b5f48"
+    },
+    {
+      "block": "caeb220cb579b966dd32571d8c2848b9d0478c7ac7f633040b00a74d111e8346",
+      "calendar": "554c47d795b724d55cfa6082f0518cb86b00bb22cfc5da25df7345bb2ca08f68"
+    },
+    {
+      "block": "95c88cdf9ab8ff581e2bc515356fe76498ffc344a32808a27788687f20bfc794",
+      "calendar": "18728b706777cf4ec0f06bc8fafa649b5fcbcffa117f8b21c0dcc4ad8a5a2f4a"
+    },
+    {
+      "block": "917c7b23a5cc65690642a722010cf2395a78c61ca0cfe279106c3fbe9778ace7",
+      "calendar": "d82803c931d8c4ef53056fbc66c96d4e631fdf455aef283f07e7119b27c4cd2f"
+    },
+    {
+      "block": "62d6c64f59f52b636f83bed33bf839a09edd0ad4685feeee2490676b536576ca",
+      "calendar": "f4a9220b01af8bc0849452470880c19562cdd495f966673d6915c31e3353561f"
+    },
+    {
+      "block": "63d0fbc6d4a8f8180e49d2670970f1a08d1c9fac765a852e756ae504f66b163f",
+      "calendar": "f4a9220b01af8bc0849452470880c19562cdd495f966673d6915c31e3353561f"
+    },
+    {
+      "block": "4da80b087863b54d8fcb8bc7f89cc15baae099beefc2f7f01476a949fdca6596",
+      "calendar": "f4a9220b01af8bc0849452470880c19562cdd495f966673d6915c31e3353561f"
+    },
+    {
+      "block": "921fb2dee74fc4acf676fada980e9af25fb96e6d40aacd7b3eaef51af7dc03d3",
+      "calendar": "5efb748a88d749b2cc3e1903a5dc77c17e338976628548e06b7c794bba164ed0"
+    },
+    {
+      "block": "99329cc8d27ffc4bd84ab3fa1f108316409d387b24a0a4641d852c57076b57fb",
+      "calendar": "f4a9220b01af8bc0849452470880c19562cdd495f966673d6915c31e3353561f"
+    },
+    {
+      "block": "99cba45cf417da6c48d2ada7af2ca536b78ffcd1b216ab748fe0ef770d9d2e56",
+      "calendar": "da9ff6b5961b52fac04ff05ea09245ff2bf10cbacdd21f9f87a7d5257c7bf3e7"
+    },
+    {
+      "block": "0ffa59f9950dccfe5ab35bfb180904c5146e78f1994b5b28be0978a1c7b3252f",
+      "calendar": "a929d340a20c7c844c81f1fae5dd2e893c754405c2944e25fa6d37c2cc8cb366"
+    },
+    {
+      "block": "f0aa7a9613d900eb79c7815c917c65339f08815aa1a5e293e341c985044a33fd",
+      "calendar": "8bcd49ce37a34a251002fb9a595476c556d34eeb1aa4c05b458438346970b2a3"
+    },
+    {
+      "block": "283cf6aa837d706596006d63119e39e79d27380d658c50d93f198d3af5f21366",
+      "calendar": "8bcd49ce37a34a251002fb9a595476c556d34eeb1aa4c05b458438346970b2a3"
+    },
+    {
+      "block": "273f8442bed187dde5b7ebe59833caeb2ff6f0c37c5ae2677a3e03392d33ec46",
+      "calendar": "8bcd49ce37a34a251002fb9a595476c556d34eeb1aa4c05b458438346970b2a3"
+    },
+    {
+      "block": "8bf4a979e2298e6de9fc6ac1c2ce44d962af835eea5513b3af1abab4640d2f8b",
+      "calendar": "f23d69fdfcc830ab702dd7e673beced8e80cbbc78483be550be0c607e94e094f"
+    },
+    {
+      "block": "3e59af8c83f8d143f634bb6ba3f61efea1558d5304f16a56743e1770773ea6b4",
+      "calendar": "8bcd49ce37a34a251002fb9a595476c556d34eeb1aa4c05b458438346970b2a3"
+    },
+    {
+      "block": "2749d8ef0db0aa70f87622a99e4022debca77505754b0fa26e298e4be2783c04",
+      "calendar": "a14a6c7828b5ed57d6c625946691b39fce57f5adb95c1f08341e4124b5017d75"
+    },
+    {
+      "block": "cf5609a3da68c531456f61e348ad064e2147cb571ad74b4ce39ee4c1b3ee590b",
+      "calendar": "0483f69d284fa76fa0c8c7298b331cb038eeb3922d0f83315e4cafa46c9b2476"
+    },
+    {
+      "block": "a29705e5e51c18ef2bbefe1e46b5030bbc903795044ce4d77f1cafd51be537ba",
+      "calendar": "325fd016eefddddc2ef2e7d76cc55c6611c2c6e6fe4615ac94e436176a107b97"
+    },
+    {
+      "block": "0705551bb8f5f41b1a4fc37ae940c6afc0ee21b8891d278f3d929e3793edc4a4",
+      "calendar": "325fd016eefddddc2ef2e7d76cc55c6611c2c6e6fe4615ac94e436176a107b97"
+    },
+    {
+      "block": "4cb2e7e0e3a5c1d6e7f7ce4b3e7cadc4684e37309f98290c0ab37c7d238242ac",
+      "calendar": "325fd016eefddddc2ef2e7d76cc55c6611c2c6e6fe4615ac94e436176a107b97"
+    },
+    {
+      "block": "d919edb223a2a1d60ecf583dc1a3d88acc9fc9ef0790572214355b70e6349abc",
+      "calendar": "5d910df573f48b31f662286db1e4c0227e0b49ea63bf5d62ed2c412445a2a85e"
+    },
+    {
+      "block": "e82b1b6100ad7b05dc56689b855957b6230eb76e076b766511dc2234ec3c1724",
+      "calendar": "325fd016eefddddc2ef2e7d76cc55c6611c2c6e6fe4615ac94e436176a107b97"
+    },
+    {
+      "block": "0f671e07382eb1f37fd34cf3bf7d6eee90278397971a9461c18cc162917d642c",
+      "calendar": "438f3cfe88c96fc562a7867bec316fae1b51f30affa6ea9a17ad15911e42a39a"
+    },
+    {
+      "block": "5f08dacaddf3f86607e9a4d68c85a3b97531cf21525413bb3a8b7f3a596dc325",
+      "calendar": "db2ea44333eb23ce726955f21a9a9acb69d915a5e68bacb6abc2f18f69b826b5"
+    },
+    {
+      "block": "fc9603994db28d2c3dfe608d6611bedca6dfbf85faa1b9ded0768b1988b812b6",
+      "calendar": "ea28905fdd42eadb3b53f536d01b6dc0d5367524165be401a373622da29574d2"
+    },
+    {
+      "block": "3db368989c535016618827bc879caaf3158c96bf368830b7f9f0df8a71416b95",
+      "calendar": "ea28905fdd42eadb3b53f536d01b6dc0d5367524165be401a373622da29574d2"
+    },
+    {
+      "block": "1007d995f55961a4207e7bcd827d8f8a7bc50cbf291fca1173b8833d7c1a4feb",
+      "calendar": "ea28905fdd42eadb3b53f536d01b6dc0d5367524165be401a373622da29574d2"
+    },
+    {
+      "block": "25f7f6226fda50847c5f90fd8d71f33282bb73d41c1fd32ce95417e2f7eec33a",
+      "calendar": "7452ee5c324602349b4b1cb9cbb834bf7f27d7d507c2572911b86bf0b52985e8"
+    },
+    {
+      "block": "6f1932cdaa15de2572b69cc12a59f342ff3f62e55411a3f2d144ca1075b0bd72",
+      "calendar": "ea28905fdd42eadb3b53f536d01b6dc0d5367524165be401a373622da29574d2"
+    },
+    {
+      "block": "4766ca75eaf69b17f01ca8e218f104e58eda5c8f77e070c52cb7be66a343650b",
+      "calendar": "917057539a6649d813383165c4d1d61f933adfd4adc0388275f6f85d8e3a5a67"
+    },
+    {
+      "block": "53562e0d1113dcff1832fcfe1a6e7b375eea82271623be2f0577b45f4f1313c0",
+      "calendar": "a16a2b6217fd22b7fd4d2b657201f0b95c9b8e9d8cb5d624dcb6d20c584acf18"
+    },
+    {
+      "block": "4403ff59eae007aa219012b204ab11c0fcedbdd9abc3e6a39bb4fd950ae008d7",
+      "calendar": "0edb50cdec915e83ef809105999a0cb1024e110b9e4703d3d03f20de25d4cf3e"
+    },
+    {
+      "block": "6252ac5cfe4ab8fb40c77d2c454f465c9751e4c4f643ca813f0e3b9cbd746401",
+      "calendar": "0edb50cdec915e83ef809105999a0cb1024e110b9e4703d3d03f20de25d4cf3e"
+    },
+    {
+      "block": "2498da899fa243a8e6b49f623df630310aa2f1fd069f2936d5d23b15260b085f",
+      "calendar": "0edb50cdec915e83ef809105999a0cb1024e110b9e4703d3d03f20de25d4cf3e"
+    },
+    {
+      "block": "89efa45abb34245de960eb09011db20dfca9830b3dcab506926468b09f70d1f7",
+      "calendar": "ece48f1be2e8dc956def2a01fda704b368b47f03da211b2eac2eba5c86dc4e1c"
+    },
+    {
+      "block": "f07df6c8b2a464e4839f50bc8b1283d2718743ab15692896b01da54869d7fed5",
+      "calendar": "0edb50cdec915e83ef809105999a0cb1024e110b9e4703d3d03f20de25d4cf3e"
+    },
+    {
+      "block": "64cb60d4186a825bc60d46460d365aec2706ecc0cfa942c737c7eab79e2e5db7",
+      "calendar": "23403ef0f1759ac04913f411546401cc1c64b8275a37bcd69f68600ca507c901"
+    },
+    {
+      "block": "9c204128c02e3573a0bbda95791e23d78d6143693b3db7ee6cb36b0df0b4d42c",
+      "calendar": "52a25ebd50bebddbd6411f6a32bacd65a4cb8514f57ab03cbe7cb40e43e26b9a"
+    },
+    {
+      "block": "3f8a3292db345b349ea89dd67d77508bd05ce88fc18b24b25146433b75eedf3c",
+      "calendar": "4292d6c0c7e3aea7073fbffb7cfc2aaf7e48a5742a92997577349241be071b60"
+    },
+    {
+      "block": "64a291ffb093bb779703c55bafa75f64d41afe3cef02e36034f47e69b555b585",
+      "calendar": "4292d6c0c7e3aea7073fbffb7cfc2aaf7e48a5742a92997577349241be071b60"
+    },
+    {
+      "block": "ffcf8105eef4eb4ef9070e9539545e26de82fa92d13a5e6dd2fb5e1b5d0c0db2",
+      "calendar": "4292d6c0c7e3aea7073fbffb7cfc2aaf7e48a5742a92997577349241be071b60"
+    },
+    {
+      "block": "75ae591fa8162bfa00f870bcc14cb2dae474929c2a9297316b5bd5edae41dcf3",
+      "calendar": "2f623607558f042ea8060f32fec4462c5334051978fb7f62a09feb1cccef9b12"
+    },
+    {
+      "block": "bf7dc4c753876b5577295b31ccdc6d213400dd0cfc3029a5b2343506e94bfe74",
+      "calendar": "4292d6c0c7e3aea7073fbffb7cfc2aaf7e48a5742a92997577349241be071b60"
+    },
+    {
+      "block": "fc67e9cfbe3eb7e73576c6e128d0852e13a7093a890a3a64158b28ace6825f11",
+      "calendar": "31549a59da12728ef04fc37d64db44a2c467ee0c602b006a43f6e2e88d61cf22"
+    },
+    {
+      "block": "abb9caf9a7e1f0738d36be4708b553108ce7a760a21c99d82b46fd1aec6b135c",
+      "calendar": "088be80c90bdf7b51b19f1418b324616fa89d540f7c9b9d55fa3cb787cf75509"
+    }
+  ]
+}

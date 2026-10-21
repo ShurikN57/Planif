@@ -14,8 +14,8 @@ function check(w,st){
  for(const f of active){
   assert(f.activeRange[0]>=10&&f.activeRange[1]<=30);
   assert(f.wu>=10&&f.cd>=10&&f.wu+f.activeRange[1]+f.cd<=f.min+1e-9);
-  const speed=E.lt1Ref(st)*.95,extra=E.loadFactorForSpeed(speed,st)-E.RULES.load.intensity.easy;
-  assert(Math.abs(f.load-(f.min*E.RULES.load.intensity.easy+(f.activeRange[0]+f.activeRange[1])/2*extra))<1e-7,'active work contributes to load');
+  const speed=E.lt1Ref(st)*.95,extra=E.programLoadFactor(speed,st)-.2;
+  assert(Math.abs(f.load-(f.min*.2+(f.activeRange[0]+f.activeRange[1])/2*extra))<1e-7,'active work contributes to personalized load');
  }
  const total=w.sl+w.sessions.reduce((n,s)=>n+s.total,0)+w.foot.reduce((n,f)=>n+f.min,0);
  assert(Math.abs(total-w.vol)<1e-7);
