@@ -41,7 +41,16 @@ const done=legacy.weeks[3].days.flatMap(d=>d.items).find(it=>it.kind==='q').plan
 const protectedPlan=E.recalculatePlanLoads(clone(legacy),st,{preserve:true,today:new Date(2026,9,21),completedIds:[done]});
 assert.deepEqual(protectedPlan.weeks[0],legacy.weeks[0],'entire started week remains byte-equivalent');assert.deepEqual(protectedPlan.weeks[3],legacy.weeks[3],'future completed session protects its full week');assert.equal(protectedPlan.weeks[2].loadModel,'personal-v1');
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),data=new Map(),record={id:'test-load-plan',structure:{},plan:legacy},saved=JSON.stringify(record);data.set('active',saved);data.set('planif-strava-records-v1:athlete:test-load-plan',JSON.stringify({[done]:{status:'realized'}}));
-assert(source.includes('Charge estimée : ${pts(w.load)}</strong>'),'weekly footer exposes points');
+const calendarSource=source.slice(source.indexOf('function appCalendarWeeks('),source.indexOf('function appBlockWeeks('));
+assert(calendarSource.includes('${fmtDur(w.vol)}<small>${pts(w.load)}</small>'),'weekly header retains volume and points');
+assert(!calendarSource.includes('Charge estimée :'),'weekly footer does not duplicate header points');
+assert(!calendarSource.includes('Qualité : travail cumulé'),'weekly footer stays concise');
+assert(calendarSource.includes('Qualité ${Math.round(w.qualityMinutes)}')&&calendarSource.includes('Cible ${fmtDur(w.targetVolume)}'),'quality and target remain visible');
+const noteContext={};vm.createContext(noteContext);
+vm.runInContext(source.slice(source.indexOf('function loadAccountingNote('),source.indexOf('const activeRangeText=')),noteContext);
+assert.equal(noteContext.loadAccountingNote({}), '','no empty explanatory paragraph');
+assert.equal(noteContext.loadAccountingNote({loadNotices:['Références incohérentes.']}),'<p class="lbl">Références incohérentes.</p>','model warnings remain visible');
+assert(!source.includes('Charge estimée du programme · mêmes coefficients'),'generic accounting explanation removed');
 assert(source.includes('class="sessionCharge"'),'workout detail exposes points without opening an info panel');
 assert(!source.slice(source.indexOf('function tileHtml('),source.indexOf('const refOf=')).includes('Charge estimée'),'calendar tiles stay concise');
 let failActive=false,alerts=0;

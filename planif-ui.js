@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.21.10').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.22.01').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -357,7 +357,7 @@ function renderSession(s,role){
   if(s.gap)h+=`<div class="warn">Les deux options diffèrent de ${Math.round(s.gap)}' de travail : choisis plutôt l'option 1 pour respecter la cible.</div>`;
   return h+'</div>';
 }
-function loadAccountingNote(w){return `<p class="lbl">Charge estimée du programme · mêmes coefficients que le calculateur. Les validations ne remplacent pas les durées et intensités prévues par les valeurs réellement courues.${(w.loadNotices||[]).length?' '+w.loadNotices.join(' '):''}</p>`;}
+function loadAccountingNote(w){return (w.loadNotices||[]).length?`<p class="lbl">${w.loadNotices.join(' ')}</p>`:'';}
 const activeRangeText=x=>x&&x.activeRange?`${activeBlockLabel(x)} EA`:'';
 const footLabel=x=>`${joggTitle(x)} ${fmtFootDur(x.min)}${x.type==='active'?` (${activeRangeText(x)})`:''}${x.shortHills?' + côtes courtes':''}`;
 function renderWeeks(st,plan){
@@ -694,7 +694,7 @@ function appCalendarWeeks(C,st){
     }else{
       h+='<div class="cwBody">'+loadAccountingNote(w)+w.days.map((x,di)=>`<div class="dayRow" data-move-week="${i}" data-move-date="${planDateKey(x.date)}"><div class="dl"><b>${x.date.toLocaleDateString('fr-FR',{weekday:'short'})}</b>${x.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div><div>`+
         (x.items.length?x.items.map((it,ii)=>tileHtml(it,w,{w:i,d:di,i:ii},{calendar:true})).join(''):'<div class="rest3">Repos</div>')+'</div></div>').join('');
-      h+=`<div class="cwFoot"><span>Qualité ${Math.round(w.qualityMinutes)}' (${Math.round(w.pct)} %)</span><span>Cible ${fmtDur(w.targetVolume)}</span><strong class="weekLoad">Charge estimée : ${pts(w.load)}</strong></div><p class="lbl">Qualité : travail cumulé, hors échauffements et récupérations. Option A utilisée pour les séances à choix.</p></div>`;
+      h+=`<div class="cwFoot"><span>Qualité ${Math.round(w.qualityMinutes)}' (${Math.round(w.pct)} %)</span><span>Cible ${fmtDur(w.targetVolume)}</span></div></div>`;
     }
     h+='</div>';});
   return h;
