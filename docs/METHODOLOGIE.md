@@ -21,7 +21,8 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
 1. **Issue GitHub** : décrire le problème ou le besoin, le critère de réussite, et la gravité (P1/P2/P3). Une issue par constat d'audit ou par lot.
 2. **Branche** depuis `main` à jour :
    - `fix/<sujet>` pour une correction, `feat/<sujet>` pour une fonctionnalité, `refactor/<sujet>`, `docs/<sujet>`, `test/<sujet>`.
-3. **Commits** au format Conventional Commits : `fix: keep calendar dates timezone-independent`.
+3. **Commits** au format Conventional Commits : `type: résumé à l'impératif`, par exemple `fix: keep calendar dates timezone-independent`.
+   Types : `feat` (fonctionnalité visible), `fix` (correction), `refactor` (sans changement de comportement), `test`, `docs`, `ci`, `chore` (version, outillage), `style` (formatage seul). Le titre de la PR suit le même format, car il devient le message du commit *squash* sur `main`.
    Petits commits ; le premier commit d'une correction de bug peut être le **test qui échoue**.
 4. **Vérifications locales avant push :**
    ```sh
@@ -35,7 +36,7 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
 5. **Pull request** : description courte avec *Pourquoi*, *Quoi*, *Effet sur les plans sauvegardés*, *Empreintes modifiées (oui/non + justification)*, *Comment tester sur téléphone*.
 6. **Relecture** : relire le diff soi-même le lendemain ou faire relire (Claude Code `/code-review` peut aider). Tester sur l'iPhone via l'aperçu si l'UI change.
 7. **Fusion** : *Squash and merge* pour garder un historique de `main` lisible.
-8. **Release** : regrouper plusieurs PR fusionnées, monter la version **une fois** (script `bump-version`, cf. audit lot L2), tag `vAAAA.MM.JJ.NN`, note dans `CHANGELOG.md`.
+8. **Release** : regrouper plusieurs PR fusionnées, puis une PR `chore: release AAAA.MM.JJ.NN` qui monte la version **une fois** avec `npm run version:bump` (cf. `DEVELOPMENT.md`). Après sa fusion, le workflow *Release Planif* crée le tag `vAAAA.MM.JJ.NN` et la release GitHub avec la liste des PR. Une PR qui ne touche que la documentation, les tests ou la CI ne change pas la version.
 9. **Vérification en ligne** : la CI exécute `verify-live.cjs` sur `main` ; ouvrir l'application sur le téléphone et faire « MAJ ».
 
 ## 3. Rythme conseillé
