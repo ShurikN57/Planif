@@ -1,0 +1,18 @@
+{
+  "name": "planif",
+  "private": true,
+  "description": "Planification d'entraînement course à pied et calcul des allures (PWA statique, sans dépendance).",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node scripts/check-syntax.cjs",
+    "test": "TZ=Europe/Paris node --test tests/*.test.cjs",
+    "test:tz": "for tz in Europe/Paris America/Los_Angeles Pacific/Auckland; do echo \"== $tz\"; TZ=$tz node --test tests/*.test.cjs || exit 1; done",
+    "audit:planning": "TZ=Europe/Paris node scripts/audit-planning-baseline.cjs",
+    "audit:personal-load": "TZ=Europe/Paris node scripts/audit-personal-load.cjs",
+    "audit:block-load": "TZ=Europe/Paris node scripts/audit-block-load.cjs",
+    "verify-live": "node scripts/verify-live.cjs",
+    "serve": "python3 -m http.server 8080"
+  }
+}
