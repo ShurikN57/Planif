@@ -11,13 +11,20 @@
 const fs=require('node:fs'),path=require('node:path');
 
 const VERSION_RE=/^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
-const ANY_VERSION=/\b20\d{2}\.\d{2}\.\d{2}\.\d{2}\b/g;
+const ANY_VERSION=/\b\d{4}\.\d{2}\.\d{2}\.\d{2}\b/g;
 const FILES=['planif-version.js','index.html','planif-ui.js','sw.js'];
 const CACHE_RE=/const CACHE = 'planif-v(\d+)-([a-z0-9-]+?)-(\d{8})-(\d{2})';/;
 
+function validVersion(value){
+ if(!VERSION_RE.test(value)||value.endsWith('.00'))return false;
+ const iso=value.slice(0,10).replaceAll('.','-');
+ const date=new Date(iso+'T00:00:00Z');
+ return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===iso;
+}
+
 function readVersion(root){
  const match=fs.readFileSync(path.join(root,'planif-version.js'),'utf8').match(/APP_VERSION='([^']+)'/);
- if(!match||!VERSION_RE.test(match[1]))throw Error('planif-version.js: APP_VERSION introuvable ou mal formée.');
+ if(!match||!validVersion(match[1]))throw Error('planif-version.js: APP_VERSION introuvable ou mal formée.');
  return match[1];
 }
 const compact=version=>{const [y,m,d,n]=version.split('.');return {date:y+m+d,n};};
@@ -58,7 +65,7 @@ function bump(root,{version,label}={}){
  const before=check(root);
  if(before.problems.length)throw Error('Versions incohérentes avant la montée :\n- '+before.problems.join('\n- '));
  const current=before.version,next=version||nextVersion(current);
- if(!VERSION_RE.test(next))throw Error(`Version invalide : ${next} (attendu AAAA.MM.JJ.NN).`);
+ if(!validVersion(next))throw Error(`Version invalide : ${next} (date valide et numéro de 01 à 99 attendus).`);
  if(next<=current)throw Error(`La nouvelle version ${next} doit être postérieure à ${current}.`);
  if(label!==undefined&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(label))throw Error('Le label du cache doit contenir des minuscules, chiffres et tirets.');
  const updates=new Map();
@@ -83,14 +90,18 @@ module.exports={check,bump,nextVersion,readVersion};
 if(require.main===module){
  const args=process.argv.slice(2),root=path.join(__dirname,'..');
  try{
-  if(args.includes('--check')){
+  if(args.length===1&&args[0]==='--check'){
    const {version,problems}=check(root);
    if(problems.length){console.error('Versions incohérentes :\n- '+problems.join('\n- '));process.exitCode=1;}
    else console.log(`Version ${version} cohérente dans ${FILES.join(', ')}.`);
   }else{
-   const li=args.indexOf('--label');
-   const label=li>=0?args[li+1]:undefined;
-   const version=args.find((a,i)=>!a.startsWith('--')&&(li<0||i!==li+1));
+   let version,label;
+   for(let i=0;i<args.length;i++){
+    const arg=args[i];
+    if(arg==='--label'&&label===undefined&&args[i+1]&&!args[i+1].startsWith('-'))label=args[++i];
+    else if(!arg.startsWith('-')&&version===undefined)version=arg;
+    else throw Error(`Argument invalide ou incomplet : ${arg}.`);
+   }
    const {from,to}=bump(root,{version,label});
    console.log(`Version ${from} → ${to} (${FILES.join(', ')}).`);
    console.log('Ensuite : npm test, commit "chore: release '+to+'", PR vers main. Le tag v'+to+' et la release GitHub sont créés automatiquement après la fusion.');

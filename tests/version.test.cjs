@@ -50,6 +50,8 @@ test('bump refuses invalid, older or equal versions and inconsistent sources wit
   const current=check(dir).version,snapshot=()=>FILES.map(n=>fs.readFileSync(path.join(dir,n),'utf8'));
   const before=snapshot();
   assert.throws(()=>bump(dir,{version:'2026-11-08'}),/invalide/);
+  assert.throws(()=>bump(dir,{version:'2099.02.29.01'}),/invalide/);
+  assert.throws(()=>bump(dir,{version:'2099.01.01.00'}),/invalide/);
   assert.throws(()=>bump(dir,{version:current}),/postérieure/);
   assert.throws(()=>bump(dir,{version:'2000.01.01.01'}),/postérieure/);
   assert.throws(()=>bump(dir,{version:'2099.01.01.01',label:'Bad Label'}),/label/);
