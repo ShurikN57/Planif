@@ -8,7 +8,7 @@
   "scripts": {
     "check": "node scripts/check-syntax.cjs",
     "test": "TZ=Europe/Paris node --test tests/*.test.cjs",
-    "test:tz": "for tz in Europe/Paris America/Los_Angeles Pacific/Auckland; do echo \"== $tz\"; TZ=$tz node --test tests/*.test.cjs || exit 1; done",
+    "test:tz": "node scripts/test-tz.cjs",
     "audit:planning": "TZ=Europe/Paris node scripts/audit-planning-baseline.cjs",
     "audit:personal-load": "TZ=Europe/Paris node scripts/audit-personal-load.cjs",
     "audit:block-load": "TZ=Europe/Paris node scripts/audit-block-load.cjs",
