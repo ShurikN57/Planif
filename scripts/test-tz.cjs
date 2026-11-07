@@ -12,7 +12,7 @@ const zones=[
 ];
 const results=zones.map(({tz,blocking})=>{
  console.log(`\n== ${tz} (${blocking?'bloquant':'informatif'})`);
- const run=spawnSync(process.execPath,['--test',...tests],{cwd:root,env:{...process.env,TZ:tz},encoding:'utf8'});
+ const run=spawnSync(process.execPath,['--test','--test-reporter=tap',...tests],{cwd:root,env:{...process.env,TZ:tz},encoding:'utf8'});
  const output=(run.stdout||'')+(run.stderr||'');
  const failed=[...output.matchAll(/^not ok \d+ - (.+)$/gm)].map(m=>m[1]);
  const count=key=>Number(output.match(new RegExp('^# '+key+' (\\d+)$','m'))?.[1]??NaN);
