@@ -1,20 +1,41 @@
 name: Test Planif
 on:
   push:
-    branches: [main, 'fix/**']
+    branches: ['**']
+  pull_request:
   workflow_dispatch:
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
+    name: Tests (${{ matrix.tz }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [Europe/Paris, America/Los_Angeles, Pacific/Auckland]
+    # Only Europe/Paris is blocking until audit lot L3 (timezone-independent dates, issue #3).
+    continue-on-error: ${{ matrix.tz != 'Europe/Paris' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Check JavaScript syntax
+        run: npm run check
+      - name: Run tests
+        run: node --test tests/*.test.cjs
+        env:
+          TZ: ${{ matrix.tz }}
+  verify-live:
+    name: Verify live files
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Check JavaScript syntax
-        run: node scripts/check-syntax.cjs
-      - name: Run tests
-        run: TZ=Europe/Paris node --test tests/*.test.cjs
-      - name: Verify live files
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: node scripts/verify-live.cjs
+          node-version-file: .nvmrc
+      - run: npm run verify-live
