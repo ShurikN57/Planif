@@ -9,6 +9,8 @@
     "check": "node scripts/check-syntax.cjs",
     "test": "TZ=Europe/Paris node --test tests/*.test.cjs",
     "test:tz": "node scripts/test-tz.cjs",
+    "version:check": "node scripts/bump-version.cjs --check",
+    "version:bump": "node scripts/bump-version.cjs",
     "audit:planning": "TZ=Europe/Paris node scripts/audit-planning-baseline.cjs",
     "audit:personal-load": "TZ=Europe/Paris node scripts/audit-personal-load.cjs",
     "audit:block-load": "TZ=Europe/Paris node scripts/audit-block-load.cjs",

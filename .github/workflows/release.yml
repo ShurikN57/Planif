@@ -1,0 +1,37 @@
+name: Release Planif
+# Creates tag v<version> and a GitHub Release once a new version reaches main.
+on:
+  push:
+    branches: [main]
+    paths: [planif-version.js]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Check version consistency
+        run: npm run version:check
+      - name: Run tests
+        run: npm test
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./planif-version.js')")
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists; nothing to do."
+            exit 0
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "Planif $version" --generate-notes
