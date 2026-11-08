@@ -1,9 +1,9 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.10.22.01').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.01').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES,localizeSavedPlan,serializeSavedPlans}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
 const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
@@ -30,7 +30,8 @@ const STRUCT_IDS=['calDist','calRace','calStart','runs','vol','qualityCount','q1
 const DEFAULTS={};
 IDS.forEach(id=>{const el=$(id);DEFAULTS[id]=isCheck(el)?el.checked:el.value;});
 const getJson=(k,f=null)=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??f;}catch(_){return f;}};
-const putJson=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(error){
+// Saved plans record the time zone of their calendar dates (see localizeSavedPlan).
+const putJson=(k,v)=>{try{localStorage.setItem(k,k===STORE.active||k===STORE.history?serializeSavedPlans(v):JSON.stringify(v));return true;}catch(error){
   console.warn('Planif : enregistrement local impossible.',error?.name||'Erreur');
   let notice=$('storageIssue');if(!notice&&document.body?.append){notice=document.createElement('p');notice.id='storageIssue';notice.className='card';notice.setAttribute('role','alert');document.body.prepend(notice);}
   if(notice)notice.textContent='Enregistrement local indisponible. Garde cette page ouverte et copie ton plan avant de la fermer.';
@@ -104,13 +105,13 @@ function load(){
   CURRENT_MODE=localStorage.getItem(STORE.mode)||'bloc';
   $('modeCal').checked=CURRENT_MODE==='cal';$('modeBloc').checked=CURRENT_MODE==='bloc';
   loadModeState(CURRENT_MODE);
-  activePlan=getJson(STORE.active,null);
+  activePlan=localizeSavedPlan(getJson(STORE.active,null));
   refPlanPending=refPendingLoad();
-  planHistory=getJson(STORE.history,[])||[];
+  planHistory=(getJson(STORE.history,[])||[]).map(record=>localizeSavedPlan(record));
   const migrationKey='planif-weekly-balance-v2';
   if(validSavedPlan(activePlan)&&!localStorage.getItem(migrationKey)){
     const archived={...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'avant ajustement du volume hebdomadaire'};
-    localStorage.setItem(STORE.history,JSON.stringify([archived,...planHistory]));
+    localStorage.setItem(STORE.history,serializeSavedPlans([archived,...planHistory]));
     planHistory=[archived,...planHistory];localStorage.setItem(migrationKey,'saved');
   }
 }
@@ -259,7 +260,7 @@ function migrateProgramLoads(st){
  if(st.mode!=='cal'||!validSavedPlan(activePlan)||activePlan.plan.summaryVersion===2||recoveryState||refPlanPending||structureEditing||inputErrors(st).length)return;
  const previous=activePlan,plan=recalculatePlanSummary(reviveSavedPlan(previous.plan),st);
  const archive={...snapshotPlan(previous),archivedAt:new Date().toISOString(),archiveReason:'avant réconciliation des statistiques hebdomadaires'},history=[archive,...planHistory],next={...previous,plan:snapshotPlan(plan)};
- try{localStorage.setItem(STORE.history,JSON.stringify(history));localStorage.setItem(STORE.active,JSON.stringify(next));activePlan=next;planHistory=history;}
+ try{localStorage.setItem(STORE.history,serializeSavedPlans(history));localStorage.setItem(STORE.active,serializeSavedPlans(next));activePlan=next;planHistory=history;}
  catch(error){console.error('Migration des charges non enregistrée',error);alert('Les nouvelles charges n’ont pas pu être enregistrées. Ton programme précédent est conservé.');}
 }
 function render(){
@@ -1085,7 +1086,7 @@ function savedPlanEntries(){
   if(validSavedPlan(activePlan))entries.push({kind:'active',label:'Plan actif',record:snapshotPlan(activePlan)});
   for(const p of planHistory)if(validSavedPlan(p))entries.push({kind:'archive',label:'Plan archivé',record:snapshotPlan(p)});
   const backup=getJson(RECOVERY_BACKUP);
-  try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label:'Copie de sécurité',record:p});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
+  try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label:'Copie de sécurité',record:localizeSavedPlan(p)});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
   return entries;
 }
 const savedPlanEscape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1125,10 +1126,10 @@ function restoreSavedPlanRecord(record){
   if(validSavedPlan(activePlan))history.unshift({...snapshotPlan(activePlan),archivedAt:new Date().toISOString(),archiveReason:'restauration d’un autre plan'});
   const state={id:restored.id,status:'restored'};
   try{
-    localStorage.setItem(STORE.history,JSON.stringify(history));
+    localStorage.setItem(STORE.history,serializeSavedPlans(history));
     localStorage.setItem(RECOVERY_STATE,JSON.stringify(state));
     localStorage.setItem(STORE.mode,'cal');
-    localStorage.setItem(STORE.active,JSON.stringify(restored));
+    localStorage.setItem(STORE.active,serializeSavedPlans(restored));
   }catch(error){
     for(const [key,value] of Object.entries(before)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');} }
     throw Error('Restauration interrompue : impossible d’enregistrer le plan. La copie de sécurité est conservée.');

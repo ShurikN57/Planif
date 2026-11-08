@@ -1,4 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
+// The app validates calendar dates in the device's local day; toISOString() would use the UTC day.
+const localToday=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const issuer='https://mcpeu.coros.com';
@@ -27,7 +29,7 @@ function fakeDialog(context){
  const form={elements:{namedItem:k=>fields[k]},reportValidity:()=>true,querySelector:()=>nodes.submit};
  const handlers={};
  const dialog={id:'',className:'',addEventListener:(n,f)=>handlers[n]=f,showModal:()=>{},close:()=>{},querySelector:s=>s==='form'?form:s==='#corosSendStatus'?nodes.status:s==='#corosStepList'?nodes.steps:s==='#corosDateField'?nodes.date:nodes.close};
- Object.defineProperty(dialog,'innerHTML',{get:()=>content,set:s=>{content=s;for(const k of Object.keys(fields))delete fields[k];for(const m of s.matchAll(/<input name="([^"]+)"[^>]*value="([^"]+)"/g))fields[m[1]]={value:m[2]};for(const m of s.matchAll(/<select name="([^"]+)"[^>]*>([\s\S]*?)<\/select>/g)){const opts=[...m[2].matchAll(/<option value="([^"]+)"([^>]*)>/g)];fields[m[1]]={value:(opts.find(o=>/\bselected\b/.test(o[2]))||opts[0])[1]};}fields.destination={value:'calendar'};fields.scheduledDate={value:new Date().toISOString().slice(0,10)};for(const m of s.matchAll(/<input type="checkbox" name="([^"]+)"([^>]*)>/g))fields[m[1]]={checked:/\bchecked\b/.test(m[2])};}});
+ Object.defineProperty(dialog,'innerHTML',{get:()=>content,set:s=>{content=s;for(const k of Object.keys(fields))delete fields[k];for(const m of s.matchAll(/<input name="([^"]+)"[^>]*value="([^"]+)"/g))fields[m[1]]={value:m[2]};for(const m of s.matchAll(/<select name="([^"]+)"[^>]*>([\s\S]*?)<\/select>/g)){const opts=[...m[2].matchAll(/<option value="([^"]+)"([^>]*)>/g)];fields[m[1]]={value:(opts.find(o=>/\bselected\b/.test(o[2]))||opts[0])[1]};}fields.destination={value:'calendar'};fields.scheduledDate={value:localToday()};for(const m of s.matchAll(/<input type="checkbox" name="([^"]+)"([^>]*)>/g))fields[m[1]]={checked:/\bchecked\b/.test(m[2])};}});
  const document=context.document;document.createElement=()=>dialog;document.body={append:()=>{}};document.getElementById=id=>id==='corosPreview'?(dialog.id?dialog:null):{value:'eu'};
  return{dialog,nodes,fields,submit:()=>handlers.submit({preventDefault:()=>{}})};
 }
@@ -40,7 +42,7 @@ async function sendCase(outcome,changedSchema=false,destination='library',invali
   const p=JSON.parse(opts.body);
   if(p.method==='initialize')return{body:{result:{protocolVersion:'2025-06-18'}}};
   if(p.method==='tools/list')return{body:{result:{tools:[fixture]}}};
-  assert.equal(p.method,'tools/call');assert.equal(p.params.name,destination==='calendar'?'createScheduledWorkout':'createSingleWorkout');if(destination==='calendar')assert.equal(p.params.arguments.date,new Date().toISOString().slice(0,10).replace(/-/g,''));else assert.equal(p.params.arguments.date,undefined);
+  assert.equal(p.method,'tools/call');assert.equal(p.params.name,destination==='calendar'?'createScheduledWorkout':'createSingleWorkout');if(destination==='calendar')assert.equal(p.params.arguments.date,localToday().replace(/-/g,''));else assert.equal(p.params.arguments.date,undefined);
   assert.equal(p.params.arguments.course.sections[0].targetValue,1200);if(prepared){const rows=p.params.arguments.course.sections.flatMap(s=>s.intervalGroup?Array.from({length:s.repeats},()=>s.sets).flat():[s]);assert.equal(rows.filter(s=>s.targetValue===12&&s.sectionType===2).length,3);assert.equal(rows.filter(s=>s.targetValue===105&&s.sectionType===2).length,1);if(manual){assert(rows.every(s=>!('intensityType'in s)));assert(rows.filter(s=>s.sectionType===3).every(s=>s.targetType===4));assert.equal(rows.at(-1).targetType,4);}else{assert.equal(rows[8].intensityValueStart,257);assert.equal(rows.filter(s=>s.targetValue===48&&s.sectionType===3).length,3);assert.equal(rows.at(-1).targetValue,600);}}
   if(outcome==='timeout')throw new TypeError('network unavailable PRIVATE_ACCESS');
   if(outcome==='401')return{status:401};

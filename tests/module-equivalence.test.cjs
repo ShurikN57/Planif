@@ -5,7 +5,8 @@ const baseline=require('./fixtures/plans-before-modules.json');
 // every non-accounting field; previous fixtures remain available.
 const updated=require('./fixtures/plans-after-personal-load.json').plans;
 assert.equal(updated.length,baseline.length,'every historical scenario remains covered');
-const hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
+// Dates are serialized as under Europe/Paris, where the fingerprints were recorded.
+const hash=require('./helpers/paris-dates.cjs').parisHash;
 for(const [i,row] of baseline.entries()){
  const e=engine.createEngine(),st={...row.st},pred=e.predict(st);
  assert.equal(hash(pred),row.prediction,`prediction ${i}`);
