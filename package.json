@@ -12,6 +12,8 @@
     "format:check": "prettier --check .",
     "test": "TZ=Europe/Paris node --test tests/*.test.cjs",
     "test:tz": "node scripts/test-tz.cjs",
+    "test:e2e": "node --test --test-concurrency=1 tests/e2e/*.e2e.cjs",
+    "test:coverage": "TZ=Europe/Paris node --test --experimental-test-coverage --test-coverage-exclude='tests/**' --test-coverage-exclude='scripts/**' tests/*.test.cjs",
     "version:check": "node scripts/bump-version.cjs --check",
     "version:bump": "node scripts/bump-version.cjs",
     "audit": "npm run -s audit:planning && npm run -s audit:personal-load && npm run -s audit:block-load",
@@ -26,6 +28,7 @@
     "@eslint/js": "10.0.1",
     "eslint": "10.13.0",
     "globals": "17.13.0",
+    "playwright": "1.63.0",
     "prettier": "3.9.10"
   }
 }

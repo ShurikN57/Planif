@@ -63,6 +63,21 @@ Engine calendars use `Date` objects at local midnight. Saved plans store them as
 
 `module-equivalence.test.cjs` retains the original prediction fingerprints from version 2026.10.18.01. Planning fingerprints in `plans-after-balance.json` reflect the intentional 2026.10.18.03 corrections: contextual jog durations, whole-quality duration limits, minimum VO₂ preparation, equivalent mixed options and explicit placement context. The pre-extraction fixture remains available. `plans-after-assimilation.json` records the reviewed 2026.10.19.44 assimilation rules; both earlier fixtures are retained. Run `TZ=Europe/Paris node scripts/audit-planning-baseline.cjs` from a full Git checkout to reconstruct the historical engine, verify all old hashes, compare structures and prove that other-week differences originate only from assimilation history. See `AUDIT-2026-10-19.md`. Fixtures should change only for an intentional planning-rule change, with its expected differences reviewed.
 
+Historical audits read **both** compared engines from Git (`audit-planning-baseline.cjs`: `c3013c5` → `922af38`; `audit-personal-load.cjs`: `2f8765e` → `5681e48`) and check the recomputed hashes against their reviewed fixtures, so later intentional changes cannot invalidate them. `npm run audit` runs the three audits (full Git history required); CI runs it in the *Planning audits* job. A new intentional planning change gets its own audit script comparing its two commits.
+
+`tests/fixtures/plans-week-signatures.json` stores 16-hex signatures of every reviewed plan without its weeks and of each week. When a fingerprint differs, `module-equivalence` names the scenario, plan kind and changed weeks. After a reviewed rule change has updated `plans-after-personal-load.json` (or its successor), run `npm run fixtures:signatures`: it refuses to write unless every reviewed full fingerprint is reproduced.
+
+### Test suites
+
+| Command | Content |
+| --- | --- |
+| `npm test`, `npm run test:tz` | Unit and integration tests (`tests/*.test.cjs`), Europe/Paris or all three zones |
+| `npm run test:e2e` | Chromium scenarios through Playwright (`tests/e2e/*.e2e.cjs`): every tab with a saved plan, Paris plan read in Los Angeles/Auckland, Calcul load calculator, backup export → import on another device and trapped file, offline reopening from the service worker |
+| `npm run test:coverage` | Informational coverage of the modules loaded with `require()` (engine, rules, evidence, backup, HTML). Files executed through `vm` in tests (interface, COROS, Strava, Calcul, calendar drag) are not measured: the browser scenarios cover them |
+| `npm run audit` | Historical planning audits |
+
+New tests use named `node:test` cases (`test('…', () => …)`), so that a failure names the case and the other cases still run; older single-script files are converted when they are modified. Playwright is pinned to the version whose Chromium build is installed (`npx playwright install --with-deps chromium` in CI).
+
 Whole quality sessions (including preparation, recovery and cooldown) are limited to 35% individually and 50% combined, against both the target and actual charge-week volume. Marathon long runs and race/taper weeks retain their own rules. An isolated normal jog may absorb missing volume after calendar placement, up to 90 minutes, with at most two prolonged jogs. The settings screen displays a live capacity estimate for the current sessions and days, not a universal maximum by outing count.
 
 The CSP permits a SHA-256 hash for the inline theme bootstrap; any change to that script requires updating its hash in the HTML policy. Firebase SDK tags pin version 10.14.1 with SHA-384 integrity hashes (verified against the published SDK bytes). Preserve COROS regional endpoints and Firebase Auth endpoints when adjusting the policy. Storage preference failures are logged; failed plan writes also show a visible warning.

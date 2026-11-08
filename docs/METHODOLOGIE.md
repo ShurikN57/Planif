@@ -30,10 +30,11 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
    npm run lint
    npm run check
    npm run test:tz       # les trois fuseaux
+   npm run test:e2e      # scénarios navigateur, si l'interface change
    # si les règles de planification changent :
-   TZ=Europe/Paris node scripts/audit-planning-baseline.cjs
-   TZ=Europe/Paris node scripts/audit-personal-load.cjs
-   TZ=Europe/Paris node scripts/audit-block-load.cjs
+   npm run audit         # audits historiques (clone Git complet)
+   # puis, après revue d'un changement voulu des empreintes :
+   npm run fixtures:signatures
    ```
 5. **Pull request** : description courte avec *Pourquoi*, *Quoi*, *Effet sur les plans sauvegardés*, *Empreintes modifiées (oui/non + justification)*, *Comment tester sur téléphone*.
 6. **Relecture** : relire le diff soi-même le lendemain ou faire relire (Claude Code `/code-review` peut aider). Tester sur l'iPhone via l'aperçu si l'UI change.
