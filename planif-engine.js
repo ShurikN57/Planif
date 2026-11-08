@@ -4285,6 +4285,79 @@
       return plan;
     }
     /* Read-only block review: descriptive bands never change scheduling or safety. */
+    /* Weekly capacity of a placed calendar (decision 0008). A charge week the engine left under its
+       target (beyond the weekly tolerance) is already at the most it builds with these days and
+       sessions: its capacity is its built volume. Otherwise the capacity adds what post-placement
+       absorption could still give: up to absoluteMax for maxProlonged normal jogs and normalMax for
+       the others; jogs on protected days, recovery jogs and active endurance are not extended. */
+    function weeklyCapacity(week) {
+      const AF = RULES.recovery.adaptiveFootings,
+        target = week.targetVolume ?? week.target;
+      if (!Number.isFinite(week.vol)) return null;
+      if (Number.isFinite(target) && week.vol < target * (1 - RULES.volume.weekTolerance)) return week.vol;
+      const extendable = (week.foot || [])
+        .filter(f => !f.unplaced && !f.contextProtected && f.type !== 'rec' && f.type !== 'active')
+        .map(f => f.min)
+        .sort((a, b) => b - a);
+      return (
+        week.vol +
+        extendable.reduce(
+          (sum, min, i) => sum + Math.max(0, (i < AF.maxProlonged ? AF.absoluteMax : AF.normalMax) - min),
+          0
+        )
+      );
+    }
+    const isChargeWeek = w =>
+      Array.isArray(w.days) &&
+      !w.assim &&
+      !w.assimilation &&
+      !w.raceWeek &&
+      w.phase !== 'intro' &&
+      w.phase !== 'taper';
+    const outingsPlaced = w => w.days.reduce((n, d) => n + (d.items || []).length, 0);
+    // Averages over the same charge weeks; null without placed charge weeks (block plans).
+    function capacitySummary(plan) {
+      const weeks = (plan?.weeks || []).filter(isChargeWeek);
+      const capacities = weeks.map(weeklyCapacity),
+        targets = weeks.map(w => w.targetVolume ?? w.target);
+      if (!weeks.length || ![...capacities, ...targets].every(Number.isFinite)) return null;
+      const mean = values => values.reduce((a, b) => a + b, 0) / values.length;
+      return {weeks: weeks.length, capacity: mean(capacities), target: mean(targets)};
+    }
+    /* Advice for Volume et charge: shown when the mean target of the charge weeks exceeds their mean
+       estimated capacity beyond the weekly tolerance. One more outing is suggested only if the inputs
+       accept it, every charge week of the regenerated calendar places all its outings (recovery
+       rules included) and the estimated capacity increases. Saved plans and targets are untouched. */
+    function capacityAdvice(st, plan) {
+      const summary = capacitySummary(plan);
+      if (!summary || summary.target - summary.capacity <= RULES.volume.weekTolerance * summary.target)
+        return null;
+      let extraRun = false;
+      const runs = Number(st?.runs);
+      if (st?.mode === 'cal' && Number.isInteger(runs) && runs < 7) {
+        const next = {...st, runs: runs + 1};
+        if (!inputErrors(next).length) {
+          try {
+            const C = buildCalendar(next, predict(next));
+            const weeks = (C?.weeks || []).filter(isChargeWeek);
+            const placed =
+              !C?.error &&
+              weeks.length > 0 &&
+              weeks.every(
+                w =>
+                  outingsPlaced(w) === next.runs &&
+                  !(w.foot || []).some(f => f.unplaced) &&
+                  !(w.warns || []).some(x => x.code === 'no_day_footing_reduce')
+              );
+            const after = placed ? capacitySummary(C) : null;
+            extraRun = !!after && after.capacity > summary.capacity;
+          } catch (_) {
+            extraRun = false;
+          }
+        }
+      }
+      return {...summary, extraRun};
+    }
     function reviewBlockLoads(plan, st) {
       const C = recalculatePlanSummary(snapshotPlan(plan), st),
         R = RULES.load.blockReview,
@@ -4866,6 +4939,9 @@
       recalculatePlanLoads,
       recalculatePlanSummary,
       reviewBlockLoads,
+      weeklyCapacity,
+      capacitySummary,
+      capacityAdvice,
       loadPoints,
       loadFactorForSpeed,
       densityFactor,
