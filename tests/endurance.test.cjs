@@ -170,7 +170,8 @@ assert.equal(run("wheelSaved.critical['0']"), 210, 'invalid unit value is ignore
 assert.equal(run('enduranceState.references.filter(r=>r.active).length'), 3);
 // A free-distance edit must replace both the displayed units and the timer key.
 chronoVisible = true;
-click('[data-chrono-mode]', {chronoMode: 'time'});
+// The mode is named after what it computes: here the required pace.
+click('[data-chrono-mode]', {chronoMode: 'pace'});
 change({chronoCategory: ''}, 'free');
 input({chronoFree: ''}, '0,1');
 assert(target.innerHTML.includes('data-wheel-meters="100"'));

@@ -214,3 +214,39 @@ test('Volume et charge shows the capacity estimate only when the target is out o
     await context.close();
   }
 });
+
+test('Chrono names each button after its result, computes a distance and shows no select arrows', async () => {
+  const {context, page, errors} = await openApp(browser, url);
+  await seedPlan(page);
+  await reload(page);
+  await page.click('[data-tab="calc"]');
+  const labels = await page.locator('[data-chrono-tool] [data-chrono-mode]').allTextContents();
+  assert.deepEqual(labels, ['Temps', 'Allure', 'Distance']);
+  const rows = await page
+    .locator('[data-chrono-tool] [data-chrono-mode]')
+    .evaluateAll(buttons => new Set(buttons.map(b => Math.round(b.getBoundingClientRect().top))).size);
+  assert.equal(rows, 1, 'the three buttons share one line');
+  assert.match(await page.textContent('[data-chrono-tool] .conversionResult'), /Temps estimé/);
+  await page.click('[data-chrono-mode="pace"]');
+  assert.match(await page.textContent('[data-chrono-tool] .conversionResult'), /Allure nécessaire/);
+  await page.click('[data-chrono-mode="distance"]');
+  assert.equal((await page.textContent('[data-chrono-output]')).trim(), '10,00 km');
+  await page.fill('[data-chrono-pace]', '5:00');
+  await page.selectOption('[data-wheel-scope="chronoDuration"] [data-wheel-unit-input="h"]', '1');
+  await page.selectOption('[data-wheel-scope="chronoDuration"] [data-wheel-unit-input="m"]', '0');
+  assert.equal((await page.textContent('[data-chrono-output]')).trim(), '12,00 km');
+  // Hour/minute/second selectors have no native arrows anywhere in Calcul and Repères.
+  for (const tab of ['calc', 'ref']) {
+    await page.click(`[data-tab="${tab}"]`);
+    const appearances = await page
+      .locator('.timeWheel select')
+      .evaluateAll(selects => [...new Set(selects.map(s => getComputedStyle(s).appearance))]);
+    assert.deepEqual(
+      appearances.filter(a => a !== 'none'),
+      [],
+      tab
+    );
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+});

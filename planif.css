@@ -574,7 +574,7 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 #scr-calc input,#scr-calc select{box-sizing:border-box}
 #scr-calc .sf input,#scr-calc .sf select,#scr-calc .simWheel select{height:44px;min-height:44px}
 #scr-calc [data-endurance-tool] .simWheel{gap:.25rem}
-#scr-calc [data-endurance-tool] .simWheel select{appearance:none;-webkit-appearance:none;padding:.45rem .1rem;text-align:center;font-size:16px;font-variant-numeric:tabular-nums}
+
 #scr-calc [data-endurance-tool] .addRef,#scr-calc [data-load-tool] .addRef{background:transparent}
 #scr-calc .loadToolBlock{border-top:1px solid var(--line);padding-top:.75rem;margin-top:.75rem}
 #scr-calc [data-load-tool] .settingsTitle{margin-bottom:.5rem;gap:.5rem}
@@ -752,3 +752,9 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
 .u-fs135{font-size:1.35rem!important}
 .u-fs165{font-size:1.65rem!important}
 .u-separator{border-top:1px solid var(--line)!important;padding-top:.8rem!important;margin-top:.4rem!important}
+/* Hour/minute/second selectors: no native arrows anywhere, so that two digits always fit; the native
+   picker still opens on tap. */
+.timeWheel select,#scr-calc .timeWheel select{appearance:none;-webkit-appearance:none;padding:.45rem .1rem;text-align:center;text-align-last:center;font-size:16px;font-variant-numeric:tabular-nums}
+/* Chrono: Temps, Allure and Distance on one line, same size as the other segmented controls. */
+[data-chrono-tool] .optSeg{grid-template-columns:repeat(3,minmax(0,1fr))}
+

@@ -90,7 +90,10 @@
       free: '7,5',
       pace: '4:00',
       time: '40:00',
-      mode: 'pace'
+      duration: '40:00',
+      // What the tool computes: 'time' (from distance and pace), 'pace' (from distance and time) or
+      // 'distance' (from pace and duration).
+      mode: 'time'
     };
     const enduranceState = {
       distance: '10000',
@@ -116,10 +119,21 @@
         sec = n % 60;
       return (h ? h + 'h ' : '') + (h ? String(m).padStart(2, '0') : m) + '’' + String(sec).padStart(2, '0');
     }
+    // Any distance above 5 km gives the duration wheel hours, minutes and seconds.
+    const CHRONO_DURATION_METERS = 100000;
     function chronoMeters() {
       return chronoState.category === 'free'
         ? Number(chronoState.free.replace(',', '.')) * 1000
         : Number(chronoState.distance);
+    }
+    // Duration over `meters`: entered on the time wheel (mode 'pace') or derived from the pace (mode 'time').
+    function chronoSecondsFor(mode, meters) {
+      return mode === 'pace'
+        ? wheelSeconds('chrono', String(meters), meters)
+        : (meters * chronoSeconds(chronoState.pace)) / 1000;
+    }
+    function chronoKm(km) {
+      return km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(2).replace('.', ',') + ' km';
     }
     function chronoTargetHtml() {
       const meters = chronoMeters();
@@ -137,6 +151,7 @@
 
     const wheelSaved = {
       chrono: {},
+      chronoDuration: {},
       endurance: {},
       endurance2: {},
       endurance3: {},
@@ -225,8 +240,24 @@
     function chronoToolHtml() {
       const c = chronoState;
       const options = CHRONO_DISTANCES[c.category] || [];
-      const reverse = c.mode === 'time';
-      return `<div class="card chronoPanel" data-chrono-tool><h2 class="calcTitle"><span class="calcIcon calcIcon-chrono" aria-hidden="true"><svg viewBox="0 0 90 90" aria-hidden="true"><path d="M9 38h13M5 48h15M10 58h12" stroke="#a398d9" stroke-width="4" stroke-linecap="round"/><path d="M39 9h20M49 9v11" stroke="#7167ba" stroke-width="5" stroke-linecap="round"/><circle cx="49" cy="51" r="30" fill="none" stroke="#766bc1" stroke-width="4"/><path d="M49 51V31m0 20 12 8" stroke="#8176c8" stroke-width="4" fill="none" stroke-linecap="round"/></svg></span>Chrono</h2><div class="optSeg" role="group" aria-label="Sens du calcul"><button type="button" data-chrono-mode="pace" aria-pressed="${!reverse}">Allure</button><button type="button" data-chrono-mode="time" aria-pressed="${reverse}">Temps</button></div><div class="sf2"><label class="sf"><span>Distance</span><select data-chrono-category><option value="fractions"${c.category === 'fractions' ? ' selected' : ''}>Fractions</option><option value="official"${c.category === 'official' ? ' selected' : ''}>Officielles</option><option value="free"${c.category === 'free' ? ' selected' : ''}>Libre</option></select></label><label class="sf"><span>${c.category === 'free' ? 'Distance (km)' : 'Distance'}</span>${c.category === 'free' ? `<input data-chrono-free inputmode="decimal" value="${toolAttr(c.free)}">` : `<select data-chrono-distance>${options.map(([v, l]) => `<option value="${v}"${v === c.distance ? ' selected' : ''}>${l}</option>`).join('')}</select>`}</label></div><div class="sf2 calcResultRow">${reverse ? `<div class="sf"><div data-chrono-target>${chronoTargetHtml()}</div></div>` : `<label class="sf"><span>Allure (min/km)</span><input data-chrono-pace inputmode="text" placeholder="4:00" value="${toolAttr(c.pace)}"></label>`}<div class="conversionResult"><span>${reverse ? 'Allure nécessaire' : 'Temps estimé'}</span><strong data-chrono-output role="status">—</strong><span class="lbl" data-chrono-speed></span></div></div><button type="button" class="cta ghost" data-chrono-to-endurance>Utiliser ce chrono pour l’indice d’endurance</button></div>`;
+      const mode = c.mode;
+      const paceInput = `<label class="sf"><span>Allure (min/km)</span><input data-chrono-pace inputmode="text" placeholder="4:00" value="${toolAttr(c.pace)}"></label>`;
+      const result = label =>
+        `<div class="conversionResult"><span>${label}</span><strong data-chrono-output role="status">—</strong><span class="lbl" data-chrono-speed></span></div>`;
+      return `<div class="card chronoPanel" data-chrono-tool><h2 class="calcTitle"><span class="calcIcon calcIcon-chrono" aria-hidden="true"><svg viewBox="0 0 90 90" aria-hidden="true"><path d="M9 38h13M5 48h15M10 58h12" stroke="#a398d9" stroke-width="4" stroke-linecap="round"/><path d="M39 9h20M49 9v11" stroke="#7167ba" stroke-width="5" stroke-linecap="round"/><circle cx="49" cy="51" r="30" fill="none" stroke="#766bc1" stroke-width="4"/><path d="M49 51V31m0 20 12 8" stroke="#8176c8" stroke-width="4" fill="none" stroke-linecap="round"/></svg></span>Chrono</h2><div class="optSeg" role="group" aria-label="Valeur à calculer">${[
+        ['time', 'Temps'],
+        ['pace', 'Allure'],
+        ['distance', 'Distance']
+      ]
+        .map(
+          ([value, label]) =>
+            `<button type="button" data-chrono-mode="${value}" aria-pressed="${mode === value}">${label}</button>`
+        )
+        .join('')}</div>${
+        mode === 'distance'
+          ? `${paceInput}<div class="sf2 calcResultRow"><div class="sf"><span>Durée</span>${wheelPicker('chronoDuration', 'duration', CHRONO_DURATION_METERS, c.duration)}</div>${result('Distance estimée')}</div></div>`
+          : `<div class="sf2"><label class="sf"><span>Distance</span><select data-chrono-category><option value="fractions"${c.category === 'fractions' ? ' selected' : ''}>Fractions</option><option value="official"${c.category === 'official' ? ' selected' : ''}>Officielles</option><option value="free"${c.category === 'free' ? ' selected' : ''}>Libre</option></select></label><label class="sf"><span>${c.category === 'free' ? 'Distance (km)' : 'Distance'}</span>${c.category === 'free' ? `<input data-chrono-free inputmode="decimal" value="${toolAttr(c.free)}">` : `<select data-chrono-distance>${options.map(([v, l]) => `<option value="${v}"${v === c.distance ? ' selected' : ''}>${l}</option>`).join('')}</select>`}</label></div><div class="sf2 calcResultRow">${mode === 'pace' ? `<div class="sf"><div data-chrono-target>${chronoTargetHtml()}</div></div>` : paceInput}${result(mode === 'pace' ? 'Allure nécessaire' : 'Temps estimé')}</div><button type="button" class="cta ghost" data-chrono-to-endurance>Utiliser ce chrono pour l’indice d’endurance</button></div>`
+      }`;
     }
     const ENDURANCE_DISTANCES = [
       ['5000', '5 km'],
@@ -369,22 +400,33 @@
       const root = $('scr-calc');
       const t = root.querySelector('[data-chrono-tool]');
       if (t) {
-        const meters = chronoMeters(),
-          reverse = chronoState.mode === 'time',
-          pace = reverse ? NaN : chronoSeconds(chronoState.pace),
-          secs = reverse ? wheelSeconds('chrono', String(meters), meters) : (meters * pace) / 1000;
-        const valid =
-          Number.isFinite(meters) && meters > 0 && meters <= 1000000 && Number.isFinite(secs) && secs > 0;
-        const paceSeconds = valid ? (secs * 1000) / meters : NaN;
-        t.querySelector('[data-chrono-output]').textContent = valid
-          ? reverse
-            ? chronoTime(paceSeconds) + ' /km'
-            : chronoTime(secs, true)
-          : '—';
-        t.querySelector('[data-chrono-speed]').textContent =
-          valid && reverse ? (3600 / paceSeconds).toFixed(2).replace('.', ',') + ' km/h' : '';
-        t.querySelector('[data-chrono-to-endurance]').disabled =
-          !valid || !['5000', '10000', '21097.5', '42195'].includes(String(meters));
+        const {mode} = chronoState,
+          output = t.querySelector('[data-chrono-output]'),
+          speed = t.querySelector('[data-chrono-speed]'),
+          toEndurance = t.querySelector('[data-chrono-to-endurance]');
+        if (mode === 'distance') {
+          const pace = chronoSeconds(chronoState.pace),
+            secs = wheelSeconds('chronoDuration', 'duration', CHRONO_DURATION_METERS, chronoState.duration),
+            km = secs / pace,
+            valid = Number.isFinite(km) && km > 0 && km <= 1000;
+          output.textContent = valid ? chronoKm(km) : '—';
+          speed.textContent = valid ? (3600 / pace).toFixed(2).replace('.', ',') + ' km/h' : '';
+          if (toEndurance) toEndurance.disabled = true;
+        } else {
+          const meters = chronoMeters(),
+            secs = chronoSecondsFor(mode, meters);
+          const valid =
+            Number.isFinite(meters) && meters > 0 && meters <= 1000000 && Number.isFinite(secs) && secs > 0;
+          const paceSeconds = valid ? (secs * 1000) / meters : NaN;
+          output.textContent = valid
+            ? mode === 'pace'
+              ? chronoTime(paceSeconds) + ' /km'
+              : chronoTime(secs, true)
+            : '—';
+          speed.textContent =
+            valid && mode === 'pace' ? (3600 / paceSeconds).toFixed(2).replace('.', ',') + ' km/h' : '';
+          toEndurance.disabled = !valid || !['5000', '10000', '21097.5', '42195'].includes(String(meters));
+        }
       }
       updateEnduranceUi(root);
     }
@@ -467,12 +509,9 @@
         renderApp();
         return;
       }
-      if (!e.target.closest('[data-chrono-to-endurance]')) return;
+      if (!e.target.closest('[data-chrono-to-endurance]') || chronoState.mode === 'distance') return;
       const meters = chronoMeters(),
-        secs =
-          chronoState.mode === 'time'
-            ? wheelSeconds('chrono', String(meters), meters)
-            : (meters * chronoSeconds(chronoState.pace)) / 1000;
+        secs = chronoSecondsFor(chronoState.mode, meters);
       if (!['5000', '10000', '21097.5', '42195'].includes(String(meters)) || !Number.isFinite(secs)) return;
       enduranceState.distance = String(meters);
       {
