@@ -2,6 +2,7 @@ const CACHE = 'planif-v19-prettier-20261108-03';
 const APP_SHELL = [
   './',
   './index.html',
+  './planif.css?v=2026.11.08.03',
   './planif-html.js?v=2026.11.08.03',
   './planif-version.js?v=2026.11.08.03',
   './planif-rules.js?v=2026.11.08.03',

@@ -49,7 +49,8 @@ function check(root) {
     ui = read('planif-ui.js');
   const scripts = [...html.matchAll(/<script\b[^>]*src="\.\/([^"?]+)(?:\?v=([^"]*))?"/g)];
   if (!scripts.length) problems.push('index.html : aucun script local trouvé');
-  for (const [, name, v] of scripts) {
+  const styles = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="\.\/([^"?]+)(?:\?v=([^"]*))?"/g)];
+  for (const [, name, v] of [...scripts, ...styles]) {
     if (v !== version) problems.push(`index.html : ${name} sans ?v=${version}`);
     if (!sw.includes(`./${name}?v=${version}`))
       problems.push(`sw.js : ${name}?v=${version} absent du shell hors ligne`);

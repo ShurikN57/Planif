@@ -239,10 +239,11 @@ assert(menu.prevented);
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8'),
   sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8'),
   version = require('../planif-version.js'),
-  ui = fs.readFileSync(path.join(__dirname, '../planif-ui.js'), 'utf8');
+  ui = fs.readFileSync(path.join(__dirname, '../planif-ui.js'), 'utf8'),
+  css = fs.readFileSync(path.join(__dirname, '../planif.css'), 'utf8');
 assert(html.includes('src="./planif-calendar-drag.js?v=' + version + '"'));
 assert(sw.includes("'./planif-calendar-drag.js?v=" + version + "'"));
-assert(html.includes('touch-action:pan-y pinch-zoom'));
+assert(css.includes('touch-action:pan-y pinch-zoom'));
 assert(ui.includes('data-move-week='));
 assert(ui.includes('data-move-session='));
 assert(!ui.includes('data-move-grip='));
