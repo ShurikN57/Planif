@@ -2,7 +2,8 @@ const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   vm = require('node:vm');
 const engine = require('../planif-engine.js').createEngine();
-const source = fs.readFileSync(require.resolve('../planif-ui.js'), 'utf8');
+const source = fs.readFileSync(require.resolve('../planif-calcul.js'), 'utf8');
+const ui = fs.readFileSync(require.resolve('../planif-ui.js'), 'utf8');
 let state = {vma: 18, s1lo: 12, s1hi: 12.5, s2: 14.5, refDist: 1, refTime: 2400, profile: 2, penalty: false};
 const listeners = {},
   total = {},
@@ -23,15 +24,19 @@ const ctx = {
   ...engine,
   $: () => root,
   readState: () => state,
-  renderApp: () => renders++,
-  toolAttr: x => String(x).replaceAll('"', '&quot;')
+  renderApp: () => renders++
 };
 vm.createContext(ctx);
-const {between, hasCode} = require('./helpers/source.cjs');
-vm.runInContext(between(source, 'LOAD_PRESETS', 'syncedHrZonesHtml'), ctx);
+// planif-html.js provides escapeHtml before the Calcul tools in the browser.
+ctx.escapeHtml = require('../planif-html.js').escapeHtml;
+const {factoryBody, hasCode} = require('./helpers/source.cjs');
+// Calcul tools are created by planif-calcul.js; its factory body runs here with the context as deps.
+vm.runInContext(factoryBody(source, 'create'), ctx);
 const run = s => vm.runInContext(s, ctx);
 const edit = (type, index, field, value) =>
-  listeners[type].forEach(fn => fn({target: {dataset: {loadIndex: String(index), loadField: field}, value}}));
+  listeners[type].forEach(fn =>
+    fn({target: {dataset: {loadIndex: String(index), loadField: field}, value, matches: () => false}})
+  );
 const click = (selector, dataset = {}) =>
   listeners.click.forEach(fn => fn({target: {closest: s => (s === selector ? {dataset} : null)}}));
 const close = (a, b) => assert(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
@@ -118,7 +123,7 @@ assert(!('_lp' in state), 'engine cache never mutates athlete state');
 assert.equal(run('LOAD_PRESETS.length'), 12);
 assert(run('loadToolHtml()').includes('data-load-add'));
 assert(renders > 0);
-assert(hasCode(source, '+criticalToolHtml()+loadToolHtml()'), 'calculator is in Calcul');
+assert(hasCode(ui, '+criticalToolHtml()+loadToolHtml()'), 'calculator is in Calcul');
 const html = run('loadToolHtml()');
 assert(html.includes('Charge totale'));
 assert(!html.includes('Zone Daniels'));

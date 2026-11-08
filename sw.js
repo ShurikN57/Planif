@@ -8,6 +8,7 @@ const APP_SHELL = [
   './planif-engine.js?v=2026.11.08.03',
   './planif-evidence.js?v=2026.11.08.03',
   './planif-backup.js?v=2026.11.08.03',
+  './planif-calcul.js?v=2026.11.08.03',
   './planif-studies.json?v=2026.11.08.03',
   './planif-coros.js?v=2026.11.08.03',
   './planif-ui.js?v=2026.11.08.03',

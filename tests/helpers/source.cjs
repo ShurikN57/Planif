@@ -145,4 +145,14 @@ const compact = s =>
     .replace(/;(?=[})\]])/g, '')
     .replace(/,(?=[}\])])/g, '');
 const hasCode = (source, snippet) => compact(source).includes(compact(snippet));
-module.exports = {root, read, declaration, between, blockEnd, functionSource, compact, hasCode};
+// Body of a module factory function, run as a script so that tests can reach its internals.
+// The factory's destructuring reads `deps`, provided here as the test context itself; the final
+// `return {...}` is dropped.
+function factoryBody(source, name) {
+  const fn = functionSource(source, name),
+    body = fn.slice(fn.indexOf('{') + 1, fn.lastIndexOf('}'));
+  const ret = /\n\s*return\s*\{[^{}]*\};?\s*$/;
+  if (!ret.test(body)) throw Error(`Factory ${name} must end with return {...}`);
+  return 'var deps = globalThis;\n' + body.replace(ret, '\n');
+}
+module.exports = {root, read, declaration, between, blockEnd, functionSource, factoryBody, compact, hasCode};
