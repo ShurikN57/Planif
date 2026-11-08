@@ -33,6 +33,14 @@ test('a saved plan opens on every tab without page errors', async () => {
     await page.click(`[data-tab="${tab}"]`);
     const text = (await page.textContent(`#scr-${tab}`)).trim();
     assert(text.length > 50, `${tab} renders content`);
+    if (tab === 'cal') {
+      await page.click('#scr-cal [data-timeline]');
+      const phase = page.locator('#scr-cal .phaseList [data-css-c]').first();
+      const segment = page.locator('#scr-cal .calVolume .bar [data-css-bg]').first();
+      assert(await phase.evaluate(el => el.style.getPropertyValue('--c').trim() === el.dataset.cssC));
+      assert(await segment.evaluate(el => el.style.width.endsWith('%')));
+      assert.notEqual(await segment.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
+    }
   }
   assert.match(await page.textContent('#scr-set'), /10 km · 2027-01-31/);
   assert.deepEqual(errors, []);

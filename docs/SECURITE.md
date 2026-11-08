@@ -6,7 +6,7 @@ Planif est une page statique : aucun serveur Planif, aucune base de données Pla
 
 | Service | Rôle | Authentification | Où sont les secrets |
 | --- | --- | --- | --- |
-| COROS (MCP régional) | Envoi de séances vers la montre | OAuth public avec PKCE S256 et `state` aléatoire ; aucun secret client | Jetons dans `sessionStorage` uniquement |
+| COROS (MCP régional) | Envoi de séances vers la montre | OAuth public avec PKCE S256 et `state` aléatoire ; aucun secret client | Jetons dans `localStorage`, exclus des sauvegardes |
 | Flow Strava (`strava-mobile-2f93f`, Firebase) | Activités Strava et zones FC de l'athlète | Compte Firebase (e-mail et mot de passe) du service Flow Strava ; jeton d'identité Firebase envoyé à `/api/*` | Session Firebase gérée par le SDK |
 
 Le compte demandé dans Réglages est celui de **Flow Strava**, le service qui relie Strava : ce ne sont **pas** les identifiants du compte Strava. Planif ne voit jamais le mot de passe Strava.
@@ -14,7 +14,7 @@ Le compte demandé dans Réglages est celui de **Flow Strava**, le service qui r
 ## Protections dans le code
 
 - **Politique de sécurité du contenu (CSP)** : aucun script ni style inline (le script de thème est autorisé par son empreinte SHA-256), `object-src 'none'`, `base-uri 'self'`, `form-action 'none'`, liste fermée des domaines de connexion (COROS, Firebase, Flow Strava).
-- **Intégrité** : SDK Firebase figé en 10.14.1 avec empreintes SHA-384 ; aucune autre dépendance chargée.
+- **Intégrité** : les scripts Firebase App et Auth sont figés en 10.14.1 avec empreintes SHA-384.
 - **Échappement** : une seule fonction `escapeHtml` pour toute donnée non littérale insérée dans du HTML.
 - **Import de sauvegarde** : validation stricte, refus de tout `<` et des clés de prototype, copie de sécurité avant écriture.
 - **COROS** : aucune nouvelle tentative automatique d'écriture, protection contre les doublons, vérification de l'empreinte du schéma d'outil avant l'envoi.
@@ -29,9 +29,9 @@ Le compte demandé dans Réglages est celui de **Flow Strava**, le service qui r
 
 Ces réglages ne sont pas dans ce dépôt ; seul le propriétaire des projets peut les faire.
 
-### 1. Restreindre la clé API Firebase — constaté le 8 novembre 2026 : **non restreinte**
+### 1. Restreindre la clé API Firebase — référent externe accepté lors de l'audit du 8 novembre 2026
 
-La clé `AIza…` de `planif-strava.js` est publique par conception, mais une requête se présentant comme venant de `https://example.com/` est acceptée comme une requête venant de Planif. N'importe quel site peut donc utiliser la clé contre le projet.
+La [clé API Firebase](https://firebase.google.com/docs/projects/api-keys) de `planif-strava.js` identifie le projet et est publique par conception. Lors de l'audit, une requête de configuration avec un référent `https://example.com/` a été acceptée. Cela justifie de vérifier les restrictions de la clé ; le test ne démontre ni l'accès aux données privées, ni l'absence de restrictions sur les API. L'accès aux données dépend de l'authentification et des contrôles d'autorisation du serveur.
 
 Dans la [console Google Cloud](https://console.cloud.google.com/apis/credentials) du projet `strava-mobile-2f93f` → **Identifiants** → la clé *Browser key* :
 
@@ -48,11 +48,13 @@ Vérifier ensuite que la connexion fonctionne dans Planif et dans Flow Strava.
 
 ### 3. Service `/api/*` de Flow Strava
 
-Le code est dans un autre dépôt et le service n'était pas joignable depuis l'environnement de l'audit. Vérifier que chaque route (`me`, `planif/plans/*`, `planif/activities`) :
+Relecture du [code de Flow Strava](https://github.com/ShurikN57/Strava-Firebase/tree/c9c6e495977ba4410fb61deb34e80fb64216f50f/functions) :
 
-- refuse toute requête sans jeton Firebase valide (réponse 401) ;
-- ne renvoie et n'écrit que les données de l'`uid` du jeton, jamais celles d'un `uid` passé en paramètre ;
-- n'accepte que l'origine `https://shurikn57.github.io` en CORS.
+- Les routes `me`, `planif/plans/*` et `planif/activities` exigent un jeton d'identité Firebase vérifié côté serveur.
+- Les lectures et écritures sont rattachées à l'`uid` authentifié. Le mode multi-athlète exige un contrôle administrateur avant de changer le compte cible ; `me` utilise toujours l'identité du jeton.
+- CORS autorise Planif et les deux domaines Firebase Hosting de Flow Strava. Cette liste limite les appels depuis les navigateurs ; elle ne remplace pas l'authentification.
+
+Il reste à vérifier que ces contrôles sont bien ceux du service déployé, avec une requête sans jeton et un essai d'accès entre deux comptes de test.
 
 ### 4. GitHub
 

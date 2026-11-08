@@ -79,7 +79,7 @@ Les audits historiques lisent **les deux** moteurs comparés dans Git (`audit-pl
 
 ## Stockage local
 
-Toutes les données restent dans le navigateur (`localStorage` ; jetons COROS dans `sessionStorage`). Réglages → Outils propose **Exporter mes données** et **Importer une sauvegarde** ; dès qu'un plan actif existe, l'application demande un stockage persistant (`navigator.storage.persist()`) et en affiche l'état. Voir la [décision 0005](docs/decisions/0005-sauvegarde-export-import.md).
+Les plans et préférences sont conservés dans `localStorage`. Les jetons COROS y sont également conservés et restent exclus des sauvegardes. Réglages → Outils propose **Exporter mes données** et **Importer une sauvegarde** ; dès qu'un plan actif existe, l'application demande un stockage persistant (`navigator.storage.persist()`) et en affiche l'état. Voir la [décision 0005](docs/decisions/0005-sauvegarde-export-import.md).
 
 | Clé | Contenu | Sauvegarde |
 | --- | --- | --- |

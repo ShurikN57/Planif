@@ -9,9 +9,10 @@ assert(!scripts.includes("'unsafe-inline'") && !scripts.includes("'unsafe-eval'"
 // No inline style either (audit SEC-3): computed values go through data-css-* and the CSSOM.
 const styles = policy.match(/(?:^|; )style-src ([^;]+)/)[1];
 assert(!styles.includes("'unsafe-inline'"), 'style-src refuses inline styles');
+const inlineStyle = /\sstyle\s*=\s*["']/i;
 for (const name of fs.readdirSync('.').filter(n => /^planif-.*\.js$/.test(n)))
-  assert(!/\sstyle="/.test(fs.readFileSync(name, 'utf8')), `${name}: no inline style attribute in templates`);
-assert(!/\sstyle="|<style\b/.test(html), 'index.html: no inline style');
+  assert(!inlineStyle.test(fs.readFileSync(name, 'utf8')), `${name}: no inline style attribute in templates`);
+assert(!inlineStyle.test(html) && !/<style\b/i.test(html), 'index.html: no inline style');
 for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
   if (/\bsrc=/.test(m[1])) continue;
   const digest = crypto.createHash('sha256').update(m[2]).digest('base64');
