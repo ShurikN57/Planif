@@ -1174,12 +1174,12 @@ const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
 // Saved plans hold calendar days as ISO instants of local midnight in the time zone that
 // wrote them. They are re-expressed as local midnight of the same calendar day in the
 // current time zone before use, so that travel or a device time-zone change never shifts
-// a session by one day. Plans saved before dateZone existed keep their day when they are
-// read in the zone that wrote them; otherwise the nearest UTC midnight is used, which is
-// exact for any writer offset strictly between -12 h and +12 h (including Paris).
+// a session by one day. Legacy calendar plans can recover their writer offset from the
+// race day already stored in the plan settings. Without that anchor, only the instant
+// remains: keep local midnight if it matches, otherwise use the nearest UTC midnight.
 const PLAN_DATE_KEYS=['date','start','startDate','endDate'];
 function currentTimeZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(_){return '';}}
-function savedCalendarDay(iso,zone){
+function savedCalendarDay(iso,zone,legacyOffset=null){
   const t=Date.parse(iso);if(!Number.isFinite(t))return null;
   if(zone){
     try{
@@ -1189,7 +1189,9 @@ function savedCalendarDay(iso,zone){
       if(/^\d{4}-\d{2}-\d{2}$/.test(day))return day;
     }catch(_){/* Unknown zone: fall back to the legacy rule below. */}
   }
-  // No recorded zone: an instant at exactly local midnight was written in the current zone (no travel).
+  // An offset from the race date also works on dates across a seasonal clock change:
+  // after applying it, rounding removes the small difference from the race-day offset.
+  if(legacyOffset!==null)return new Date(Math.round((t+legacyOffset)/DAY)*DAY).toISOString().slice(0,10);
   const local=new Date(t);
   if(local.getHours()===0&&local.getMinutes()===0&&local.getSeconds()===0&&local.getMilliseconds()===0)return planDateKey(local);
   return new Date(Math.round(t/86400000)*86400000).toISOString().slice(0,10);
@@ -1200,9 +1202,14 @@ function localizeSavedPlan(record,zone=currentTimeZone()){
   const {dateZone,...rest}=record;
   if(zone&&dateZone===zone)return rest;
   const from=typeof dateZone==='string'?dateZone:'';
+  const raceDay=record.structure?.calRace;
+  const raceDate=record.plan.race?.date;
+  const offset=typeof raceDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raceDay)&&typeof raceDate==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raceDate)
+    ?Date.parse(raceDay+'T00:00:00Z')-Date.parse(raceDate):NaN;
+  const legacyOffset=offset>=-12*3600000&&offset<=14*3600000?offset:null;
   const plan=JSON.parse(JSON.stringify(record.plan),(key,value)=>{
     if(!PLAN_DATE_KEYS.includes(key)||typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T/.test(value))return value;
-    const day=savedCalendarDay(value,from);return day?parseDate(day).toISOString():value;
+    const day=savedCalendarDay(value,from,legacyOffset);return day?parseDate(day).toISOString():value;
   });
   return {...rest,plan};
 }

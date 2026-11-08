@@ -47,6 +47,30 @@ test('a plan written in Auckland or Los Angeles keeps its days',()=>{
  }
 });
 
+test('a legacy calendar opened after travel uses its race date to disambiguate writer offsets',()=>{
+ const plan=structuredClone(C);
+ E.ensurePlanifSessionIds(plan);
+ const structure={calStart:st.calStart,calRace:st.calRace};
+ const ref=plan.weeks.flatMap(w=>w.days).find(d=>d.items.some(i=>i.kind==='q'));
+ const item=ref.items.find(i=>i.kind==='q');
+ const moves={[item.planifId]:{from:'2026-10-05',to:E.planDateKey(ref.date)}};
+ for(const zone of ['Pacific/Kiritimati','Pacific/Auckland','America/Los_Angeles']){
+  const raw=JSON.parse(JSON.stringify(plan),function(key,value){
+   return this[key] instanceof Date?zoneMidnight(E.planDateKey(this[key]),zone):value;
+  });
+  const record={id:'legacy',structure,plan:raw,moves,createdAt:'2026-10-01T12:00:00Z'};
+  const snapshot=JSON.stringify(record);
+  const local=E.localizeSavedPlan(record);
+  assert.deepEqual(dayKeys(local.plan),expected,zone);
+  assert.deepEqual(local.plan,E.snapshotPlan(plan),'dates and complete workout contents are unchanged after reloading');
+  assert.deepEqual(local.moves,moves);
+  assert.equal(local.createdAt,record.createdAt);
+  assert.equal(JSON.stringify(record),snapshot);
+  const saved=JSON.parse(E.serializeSavedPlans(local));
+  assert.deepEqual(E.localizeSavedPlan(saved),local);
+ }
+});
+
 test('the current zone is a no-op and other values are untouched',()=>{
  const zone=E.currentTimeZone();assert(zone);
  const stored={id:'p',plan:JSON.parse(JSON.stringify(C)),dateZone:zone};
