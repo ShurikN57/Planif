@@ -739,3 +739,16 @@ body[data-ui="app"] .tabbar{border-top-color:color-mix(in srgb,var(--line) 65%,t
  position:relative!important;z-index:1!important;width:100%!important;
  max-width:520px!important;box-sizing:border-box!important;overflow:auto!important;
 }
+/* Utilities replacing former inline style attributes (the CSP refuses them); !important keeps the
+   precedence those attributes had. */
+.u-mt6{margin-top:.6rem!important}
+.u-mt7{margin-top:.7rem!important}
+.u-mt8{margin-top:.8rem!important}
+.u-mb7{margin-bottom:.7rem!important}
+.u-m0{margin:0!important}
+.u-m1{margin:1rem!important}
+.u-m-title{margin:.2rem 0 0!important}
+.u-wrap{overflow-wrap:anywhere!important}
+.u-fs135{font-size:1.35rem!important}
+.u-fs165{font-size:1.65rem!important}
+.u-separator{border-top:1px solid var(--line)!important;padding-top:.8rem!important;margin-top:.4rem!important}

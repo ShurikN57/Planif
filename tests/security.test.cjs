@@ -6,6 +6,12 @@ const html = fs.readFileSync('index.html', 'utf8'),
 const policy = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
 const scripts = policy.match(/(?:^|; )script-src ([^;]+)/)[1];
 assert(!scripts.includes("'unsafe-inline'") && !scripts.includes("'unsafe-eval'"));
+// No inline style either (audit SEC-3): computed values go through data-css-* and the CSSOM.
+const styles = policy.match(/(?:^|; )style-src ([^;]+)/)[1];
+assert(!styles.includes("'unsafe-inline'"), 'style-src refuses inline styles');
+for (const name of fs.readdirSync('.').filter(n => /^planif-.*\.js$/.test(n)))
+  assert(!/\sstyle="/.test(fs.readFileSync(name, 'utf8')), `${name}: no inline style attribute in templates`);
+assert(!/\sstyle="|<style\b/.test(html), 'index.html: no inline style');
 for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
   if (/\bsrc=/.test(m[1])) continue;
   const digest = crypto.createHash('sha256').update(m[2]).digest('base64');

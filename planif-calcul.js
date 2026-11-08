@@ -33,7 +33,7 @@
           mx = Math.max(...vols),
           avg = vols.reduce((a, x) => a + x, 0) / vols.length;
         h +=
-          `<section class="calVolume" aria-label="Volume et charge"><h3>Volume et charge</h3><div class="kv" style="margin-bottom:.7rem"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">` +
+          `<section class="calVolume" aria-label="Volume et charge"><h3>Volume et charge</h3><div class="kv u-mb7"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">` +
           C.weeks
             .map(
               (w, i) =>
@@ -42,7 +42,7 @@
             .join('') +
           '</div><div class="legend">' +
           Object.values(ZONES)
-            .map(z => `<span style="--c:${z.c}">${z.lab}</span>`)
+            .map(z => `<span data-css-c="${z.c}">${z.lab}</span>`)
             .join('') +
           '</div></section>';
       }
