@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.03')
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
   .then(function (evidence) {
     (function () {
       const $ = id => document.getElementById(id);
