@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const E=require('../planif-engine.js').createEngine(),clone=x=>JSON.parse(JSON.stringify(x));
+const {between,hasCode}=require('./helpers/source.cjs');
 const st={...require('./fixtures/plans-before-modules.json')[0].st,vma:18,s1lo:12,s1hi:12.5,s2:14.5,refDist:1,refTime:2400,profile:2,penalty:false,mode:'cal',calStart:'2026-10-19',calRace:'2027-01-10',calDist:1,calGoal:null,vol:300,runs:5,qualityCount:2,avail:[true,true,true,true,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6'};
 const close=(a,b)=>assert(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const session=(parts,rec=0)=>E.withLoad({fam:'s2',variants:[{parts,rec,work:parts.reduce((n,p)=>n+p[0],0),total:parts.reduce((n,p)=>n+p[0],0)+rec,structure:{type:'continuous'},sector:'s2'},{parts:clone(parts),rec,work:parts.reduce((n,p)=>n+p[0],0),total:parts.reduce((n,p)=>n+p[0],0)+rec,structure:{type:'continuous'},sector:'s2'}]},st);
@@ -41,23 +42,26 @@ const done=legacy.weeks[3].days.flatMap(d=>d.items).find(it=>it.kind==='q').plan
 const protectedPlan=E.recalculatePlanLoads(clone(legacy),st,{preserve:true,today:new Date(2026,9,21),completedIds:[done]});
 assert.deepEqual(protectedPlan.weeks[0],legacy.weeks[0],'entire started week remains byte-equivalent');assert.deepEqual(protectedPlan.weeks[3],legacy.weeks[3],'future completed session protects its full week');assert.equal(protectedPlan.weeks[2].loadModel,'personal-v1');
 const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),data=new Map(),record={id:'test-load-plan',structure:{},plan:legacy},saved=JSON.stringify(record);data.set('active',saved);data.set('planif-strava-records-v1:athlete:test-load-plan',JSON.stringify({[done]:{status:'realized'}}));
-const calendarSource=source.slice(source.indexOf('function appCalendarWeeks('),source.indexOf('function appBlockWeeks('));
-assert(calendarSource.includes('${fmtDur(w.vol)}<small>${pts(w.load)}</small>'),'weekly header retains volume and points');
-assert(!calendarSource.includes('Charge estimée :'),'weekly footer does not duplicate header points');
-assert(!calendarSource.includes('Qualité : travail cumulé'),'weekly footer stays concise');
-assert(calendarSource.includes('Qualité ${Math.round(w.qualityMinutes)}')&&calendarSource.includes('Cible ${fmtDur(w.targetVolume)}'),'quality and target remain visible');
+const calendarSource=between(source,'appCalendarWeeks','appBlockWeeks');
+assert(hasCode(calendarSource,'${fmtDur(w.vol)}<small>${pts(w.load)}</small>'),'weekly header retains volume and points');
+assert(!hasCode(calendarSource,'Charge estimée :'),'weekly footer does not duplicate header points');
+assert(!hasCode(calendarSource,'Qualité : travail cumulé'),'weekly footer stays concise');
+assert(hasCode(calendarSource,'Qualité ${Math.round(w.qualityMinutes)}')&&hasCode(calendarSource,'Cible ${fmtDur(w.targetVolume)}'),'quality and target remain visible');
 const noteContext={};vm.createContext(noteContext);
-vm.runInContext(source.slice(source.indexOf('function loadAccountingNote('),source.indexOf('const activeRangeText=')),noteContext);
+vm.runInContext(between(source,'loadAccountingNote','activeRangeText'),noteContext);
 assert.equal(noteContext.loadAccountingNote({}), '','no empty explanatory paragraph');
 assert.equal(noteContext.loadAccountingNote({loadNotices:['Références incohérentes.']}),'<p class="lbl">Références incohérentes.</p>','model warnings remain visible');
-assert(!source.includes('Charge estimée du programme · mêmes coefficients'),'generic accounting explanation removed');
-assert(source.includes('class="sessionCharge"'),'workout detail exposes points without opening an info panel');
-assert(!source.slice(source.indexOf('function tileHtml('),source.indexOf('const refOf=')).includes('Charge estimée'),'calendar tiles stay concise');
+assert(!hasCode(source,'Charge estimée du programme · mêmes coefficients'),'generic accounting explanation removed');
+assert(hasCode(source,'class="sessionCharge"'),'workout detail exposes points without opening an info panel');
+assert(!between(source,'tileHtml','refOf').includes('Charge estimée'),'calendar tiles stay concise');
 let failActive=false,alerts=0;
 const context={...E,activePlan:clone(record),planHistory:[],STORE:{active:'active',history:'history'},recoveryState:null,refPlanPending:false,structureEditing:false,globalThis:null,readState:()=>st,validSavedPlan:p=>!!p?.plan?.weeks,getJson:(k,f)=>JSON.parse(data.get(k)||'null')||f,inputErrors:()=>[],console:{error(){}},alert:()=>alerts++,localStorage:{get length(){return data.size;},key:i=>[...data.keys()][i],setItem:(k,v)=>{if(k==='active'&&failActive)throw Error('quota');data.set(k,v);}}};delete context.globalThis;
-// Use the real date revival and migration code with an explicit fixed date for repeatability.
-vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function reviveSavedPlan('),source.indexOf('function recoveryHtml()')),context);
-const migration=source.slice(source.indexOf('function loadProtectedIds()'),source.indexOf('function render(){',source.indexOf('function loadProtectedIds()'))).replace('preserve:true,completedIds:loadProtectedIds()','preserve:true,today:new Date(2026,9,21),completedIds:loadProtectedIds()');
+// Use the real date revival and migration code.
+vm.createContext(context);vm.runInContext(between(source,'reviveSavedPlan','recoveryHtml'),context);
+// Since 2026.10.21.06 the migration reconciles summaries with recalculatePlanSummary, which does not
+// depend on today's date: the former fixed-date substitution no longer had any target.
+const migration=between(source,'loadProtectedIds','render');
+assert(hasCode(migration,'recalculatePlanSummary(reviveSavedPlan(previous.plan),st)'),'migration reconciles summaries only');
 vm.runInContext(migration,context);vm.runInContext('migrateProgramLoads(readState())',context);
 assert.equal(context.activePlan.plan.loadModel,'personal-v1');assert.equal(context.activePlan.plan.summaryVersion,2);assert.equal(context.planHistory.length,1);assert.deepEqual(clone(context.planHistory[0].plan),legacy,'backup contains unmodified old plan');
 // Reconcile reporting for past/completed weeks too, without editing the workouts.

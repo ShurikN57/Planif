@@ -4,7 +4,10 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');
 const version=require('../planif-version.js');
 assert(html.includes(`./planif-version.js?v=${version}`));
-assert(fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8').includes("stravaScript.src='./planif-strava.js?v='+APP_VERSION"));
+const {hasCode}=require('./helpers/source.cjs');
+assert(hasCode(fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8'),"stravaScript.src='./planif-strava.js?v='+APP_VERSION"));
+// Also expose the internal search and api functions to the test (formatting-independent).
+const exposeInternals=code=>{const re=/return\s*\{\s*settingsHtml\s*,/;assert(re.test(code),'PlanifStrava public object found');return code.replace(re,'return {search,api,settingsHtml,');};
 assert(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8').includes(`./planif-strava.js?v=${version}`));
 assert(html.includes('firebase-auth-compat.js'));
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
@@ -19,7 +22,7 @@ function env(){
  document:{addEventListener:(k,fn)=>documentHandlers[k]=fn},Date,JSON,crypto:require('node:crypto').webcrypto,Uint8Array,setTimeout:fn=>setImmediate(fn),console,
  fetch:async(url,opt)=>{fetches.push({url,opt});if(failOnce){failOnce=false;return{ok:false,status:401,json:async()=>({error:'expired'})};}let body={};if(url.endsWith('/api/me'))body={uid:user.uid,profile:{displayName:user.displayName}};else if(url.includes('/plans/'))body=opt?.method==='PUT'?{id:'w0-q0',status:'planned',revision:1}:{sessions:[]};else if(url.includes('activities?'))body={activities:[],truncated:false};return{ok:true,status:200,json:async()=>body};}};
  context.window.PlanifStravaContext={get activePlan(){return{id:'plan-1',title:'10 km'};},get appOpt(){return 0;},sessionInfo:()=>null,redraw:()=>redraws++,settings:()=>{}};
- vm.createContext(context);vm.runInContext(source.replace('return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,heartRateZones:','return {settingsHtml,sessionHtml,onSession,badge,rank,statusLabel,search,api,heartRateZones:'),context);
+ vm.createContext(context);vm.runInContext(exposeInternals(source),context);
  return{link:context.window.PlanifStrava,documentHandlers,windowHandlers,context};
 }
 (async()=>{

@@ -104,7 +104,7 @@ test('import keeps the exact plan for recovery and rolls back earlier writes on 
    if(k===history&&failHistory){failHistory=false;throw Error('quota');}data.set(k,v);
   }}};
  vm.createContext(ctx);
- vm.runInContext(uiSource.slice(uiSource.indexOf('const BACKUP_SAFETY_KEY='),uiSource.indexOf('function importBackup(){')),ctx);
+ vm.runInContext(require('./helpers/source.cjs').between(uiSource,'BACKUP_SAFETY_KEY','importBackup'),ctx);
  assert.throws(()=>ctx.applyBackupImport(incoming),/Tes données actuelles sont conservées/);
  for(const [key,value] of Object.entries(current))assert.equal(data.get(key),value,key);
  assert.equal(data.get(pending),'true');assert.equal(data.has(recovery),false);

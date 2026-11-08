@@ -31,7 +31,7 @@ for(const vol of [130,230,420])for(const runs of [3,4,7])for(const dist of [0,1,
 console.log(`OK: isolated/protected three-run jogs, 35%/50% limits on actual and target volume, equivalent options and consistent totals in ${weeks} weeks.`);
 // Capacity is visible while editing settings, including when no post-generation warning exists.
 const fs=require('node:fs'),vm=require('node:vm'),ui=fs.readFileSync('planif-ui.js','utf8');
-const source=ui.slice(ui.indexOf('function weeklyBalanceHtml(){'),ui.indexOf("$('scr-ref').addEventListener('toggle'"));
+const source=require('./helpers/source.cjs').functionSource(ui,'weeklyBalanceHtml');
 const context={recoveryState:null,inputErrors:E.inputErrors,readState:()=>base,lastPlan:build(base),RULES:E.RULES,fmtDur:E.fmtDur,warnText:()=>''};
 vm.createContext(context);vm.runInContext(source+';this.preview=weeklyBalanceHtml;',context);
 assert.match(context.preview(),/data-volume-capacity/);assert.match(context.preview(),/ajoute une sortie ou réduis la cible/);

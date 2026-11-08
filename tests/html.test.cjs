@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{test}=require('node:test');
 const root=path.join(__dirname,'..');
 const {escapeHtml}=require('../planif-html.js');
+const {hasCode}=require('./helpers/source.cjs');
 const source=name=>fs.readFileSync(path.join(root,name),'utf8');
 const modules=fs.readdirSync(root).filter(n=>/^planif-.*\.js$/.test(n));
 
@@ -28,7 +29,7 @@ test('shared escaping loads before every module that uses it',()=>{
 
 test('saved plan titles are escaped where they are displayed',()=>{
  const ui=source('planif-ui.js');
- assert(ui.includes('${escapeHtml(activePlan.title)}'));
- assert(ui.includes("${escapeHtml(p.title||'Plan de course')}"));
+ assert(hasCode(ui,'${escapeHtml(activePlan.title)}'));
+ assert(hasCode(ui,"${escapeHtml(p.title||'Plan de course')}"));
  assert(!/\$\{activePlan\.title\}/.test(ui));
 });

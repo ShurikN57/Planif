@@ -6,7 +6,8 @@ const listeners={},total={},duration={},message={},rows=[{dataset:{loadResult:'0
 const tool={querySelector:s=>({'[data-load-total]':total,'[data-load-duration]':duration}[s]||message),querySelectorAll:()=>rows};
 const root={querySelector:s=>s==='[data-load-curve]'?chart:tool,addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)};
 const ctx={...engine,$:()=>root,readState:()=>state,renderApp:()=>renders++,toolAttr:x=>String(x).replaceAll('"','&quot;')};vm.createContext(ctx);
-vm.runInContext(source.slice(source.indexOf('// Independent scratch calculator:'),source.indexOf('function syncedHrZonesHtml()')),ctx);
+const {between,hasCode}=require('./helpers/source.cjs');
+vm.runInContext(between(source,'LOAD_PRESETS','syncedHrZonesHtml'),ctx);
 const run=s=>vm.runInContext(s,ctx);
 const edit=(type,index,field,value)=>listeners[type].forEach(fn=>fn({target:{dataset:{loadIndex:String(index),loadField:field},value}}));
 const click=(selector,dataset={})=>listeners.click.forEach(fn=>fn({target:{closest:s=>s===selector?{dataset}:null}}));
@@ -40,7 +41,7 @@ edit('change',0,'pace','s2');run('updateLoadToolUi()');assert.equal(total.textCo
 state={...state,vma:0};run('updateLoadToolUi()');assert.equal(total.textContent,'—');assert(message.textContent.includes('Repères'));
 state=JSON.parse(snapshot);assert.equal(JSON.stringify(state),snapshot);assert(!('_lp' in state),'engine cache never mutates athlete state');
 assert.equal(run('LOAD_PRESETS.length'),12);assert(run('loadToolHtml()').includes('data-load-add'));assert(renders>0);
-assert(source.includes('+criticalToolHtml()+loadToolHtml()'),'calculator is in Calcul');
+assert(hasCode(source,'+criticalToolHtml()+loadToolHtml()'),'calculator is in Calcul');
 const html=run('loadToolHtml()');assert(html.includes('Charge totale'));assert(!html.includes('Zone Daniels'));assert(!html.includes('Total ancien Planif'));assert(!html.includes('data-load-daniels'));assert.equal((html.match(/data-load-total/g)||[]).length,1);
 assert.equal(JSON.stringify(state),snapshot,'calculator never changes athlete references');
 // Personalized model: agreed anchors, logarithmic durations, continuous speed interpolation.

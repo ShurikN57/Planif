@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
+const {between}=require('./helpers/source.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 injectEngine(context);context.engine=context.__engine;
@@ -130,12 +131,12 @@ console.log('OK: Jogg/LD labels, shared easy guidance, assimilation with reduced
 // Render the real tile and detail functions, including block-mode links.
 context.state=state;context.plan=c;
 vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts',ptsRange=(a,b)=>pts(a)+' à '+pts(b);const vText=v=>presentVariantRaw(v).text,vChips=v=>presentVariantRaw(v).chips;`+
- html.slice(html.indexOf('const activeRangeText='),html.indexOf('function renderWeeks('))+
- html.slice(html.indexOf('const SECT_SHORT='),html.indexOf('function calWeekHtml('))+
- html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
- html.slice(html.indexOf('const splitRec='),html.indexOf('const LIB_SECTORS='))+
- html.slice(html.indexOf('function sessionInfoHeaderHtml('),html.indexOf('function libSessionHtml('))+
- html.slice(html.indexOf('function sessionScreenHtml('),html.indexOf('function openSession('))+
+ between(html,'activeRangeText','renderWeeks')+
+ between(html,'SECT_SHORT','calWeekHtml')+
+ between(html,'tileHtml','refOf')+
+ between(html,'splitRec','LIB_SECTORS')+
+ between(html,'sessionInfoHeaderHtml','libSessionHtml')+
+ between(html,'sessionScreenHtml','openSession')+
  `\nthis.ui={tileHtml,itemShort,qualityScheduleHtml,sessionRecoveryRows,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
 const aw=c.weeks.find(w=>w.assimilation),af=aw.foot.findIndex(f=>f.assimilationActive);
 assert(context.ui.tileHtml({kind:'foot',f:aw.foot[af]},aw,{w:aw.index,f:af}).includes(`data-open="${aw.index},f,${af}"`));
@@ -189,7 +190,7 @@ console.log('OK: combined Jogg pace range, chronological quality steps, optional
 // Library progression uses each VO2 format's effort duration, not a shared 18-minute goal.
 context.pred=pred;
 vm.runInContext(`let lastPred=pred;const info=(title,lines)=>lines.join(' ');`+
- html.slice(html.indexOf('const LIB_SECTORS='),html.indexOf('function libSessionHtml('))+
+ between(html,'LIB_SECTORS','libSessionHtml')+
  `\nthis.library={candidates:libCandidates,work:libWork,count:libFormatCount,load:libCandidateLoad,html:appLibHtml,set:(sec,phase)=>{libSector=sec;libVol=phase;},range:vo2WorkRange};`,context);
 const L=context.library;
 const phaseCandidates=[0,1,2].map(i=>L.candidates('vo2',L.work('vo2')[i],i));

@@ -5,7 +5,8 @@ const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:
 const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};
 vm.createContext(ctx);
 loadRuntime(ctx);
-const refPendingDefinition=html.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)?.[0];
+const {between,declaration,functionSource}=require('./helpers/source.cjs');
+const refPendingDefinition=functionSource(html,'refPendingLoad');
 assert(refPendingDefinition,'pending-reference loader must remain available');
 vm.runInContext(refPendingDefinition,ctx);
 vm.runInContext(`
@@ -30,7 +31,7 @@ assert.equal(JSON.stringify(revived),JSON.stringify(saved.plan));
 assert(Number.isFinite(+revived.race.date)&&Number.isFinite(+revived.start));
 assert(Number.isFinite(+revived.weeks[0].startDate)&&Number.isFinite(+revived.weeks[0].days[0].date));
 vm.runInContext('let refDraft=null;',ctx);
-vm.runInContext(html.slice(html.indexOf('let lastPlan=null,lastPred=null,lastSt=null;'),html.indexOf('const pts=x=>'))+`
+vm.runInContext(between(html,'lastPlan','pts')+`
 this.renderRecovery=render;this.rendered=()=>lastPlan;
 buildCalendar=()=>{throw Error('Unexpected regeneration during recovery');};
 `,ctx);
@@ -42,12 +43,12 @@ data.set('planif-recovery-state-v1',JSON.stringify({id:saved.id,status:'restored
 assert.equal(JSON.stringify(ctx.rendered()),JSON.stringify(saved.plan));
 data.set('planif-recovery-state-v1',JSON.stringify({id:saved.id,status:'resumed'}));E.protectPlanRecovery();assert.equal(ctx.state(),null);
 assert(!html.includes('resetBtn')&&!html.includes('data-act="reset"'));
-const card=html.slice(html.indexOf('<div class="card toolsCard">'),html.indexOf('function themeButtonText'));
+const card=html.slice(html.indexOf('<div class="card toolsCard">'),declaration(html,'themeButtonText'));
 const order=['data-act="theme"','data-act="update"','data-act="copy"','data-act="audit"','data-goto="expert"'].map(s=>card.indexOf(s));
 assert(order.every((v,i)=>v>=0&&(!i||v>order[i-1])));
 console.log('OK: immutable backup, no regeneration during recovery, preserved sessions and dates, reload persistence, mode repair and tools order.');
 // Plan browser uses detached snapshots; restoration archives the current plan first.
-vm.runInContext(html.slice(html.indexOf('function savedPlanEntries(){'),html.indexOf('function themeButtonText(){'))+`
+vm.runInContext(between(html,'savedPlanEntries','themeButtonText')+`
 this.library={entries:savedPlanEntries,restore:restoreSavedPlanRecord,summary:savedPlanSummary};
 this.setHistory=h=>planHistory=h;this.getActive=()=>activePlan;this.getHistory=()=>planHistory;
 `,ctx);

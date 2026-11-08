@@ -25,7 +25,7 @@ const calendar=E.reviewBlockLoads(placed,st).weeks[0];close(calendar.target,12);
 w.days=w.days.slice(1);const partial=E.reviewBlockLoads(placed,st).weeks[0];assert(partial.notes.includes('partial_week'));assert.equal(partial.ranges,null);
 const empty=E.reviewBlockLoads({B:plan.B,weeks:[{sessions:[],foot:[],sl:0,target:0}]},st).weeks[0];assert.equal(empty.sessionShare,null);assert.equal(empty.targetShare,null);
 for(const row of E.RULES.load.blockReview.s2)assert(row[3]>=8,'bands require enough audited examples');
-const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),context={...E,pts:x=>Math.round(x)+' pts'};vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function blockLoadRowHtml('),source.indexOf('function libSessionHtml(')),context);
+const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8'),context={...E,pts:x=>Math.round(x)+' pts'};vm.createContext(context);vm.runInContext(require('./helpers/source.cjs').between(source,'blockLoadRowHtml','libSessionHtml'),context);
 const html=context.blockLoadReviewHtml(plan,st);assert(html.includes('Repères provisoires Planif'));assert(html.includes('pas sur le temps'));assert(html.includes('Travail ciblé'));assert(html.includes('27,1 %'));assert(html.includes('17,1 %'));assert(html.includes('à examiner'));
 assert(context.primaryLoadReviewHtml(plan,st,0,plan.weeks[0].sessions[0]).includes('Place de la séance'));assert.equal(context.primaryLoadReviewHtml(plan,st,0,plan.weeks[0].sessions[1]),'');
 console.log('OK: exact load shares; work-only mixed/specific accounting; options; volume interpolation without extrapolation; actual placed workouts; block resets, assimilation, partial/capacity guards; pure saved-plan review and accessible UI.');

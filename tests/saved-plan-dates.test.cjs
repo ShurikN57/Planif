@@ -91,7 +91,7 @@ test('the application loads and saves plans with their zone',()=>{
  const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:id.startsWith('mode')?'radio':'text',appendChild(){},addEventListener(){}});return elements.get(id);};
  const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};
  vm.createContext(ctx);loadRuntime(ctx);
- vm.runInContext(uiSource.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)[0],ctx);
+ vm.runInContext(require('./helpers/source.cjs').functionSource(uiSource,'refPendingLoad'),ctx);
  vm.runInContext('this.api={load,putJson,keys:STORE,defaults:()=>({...DEFAULTS}),active:()=>activePlan,history:()=>planHistory};',ctx);
  const {api}=ctx;
  const stored={...writtenInParis,id:'paris-plan',dateZone:'Europe/Paris'};

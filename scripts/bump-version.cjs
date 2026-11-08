@@ -13,7 +13,7 @@ const fs=require('node:fs'),path=require('node:path');
 const VERSION_RE=/^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
 const ANY_VERSION=/\b\d{4}\.\d{2}\.\d{2}\.\d{2}\b/g;
 const FILES=['planif-version.js','index.html','planif-ui.js','sw.js'];
-const CACHE_RE=/const CACHE = 'planif-v(\d+)-([a-z0-9-]+?)-(\d{8})-(\d{2})';/;
+const CACHE_RE=/const CACHE\s*=\s*'planif-v(\d+)-([a-z0-9-]+?)-(\d{8})-(\d{2})'\s*;/;
 
 function validVersion(value){
  if(!VERSION_RE.test(value)||value.endsWith('.00'))return false;
@@ -23,7 +23,7 @@ function validVersion(value){
 }
 
 function readVersion(root){
- const match=fs.readFileSync(path.join(root,'planif-version.js'),'utf8').match(/APP_VERSION='([^']+)'/);
+ const match=fs.readFileSync(path.join(root,'planif-version.js'),'utf8').match(/APP_VERSION\s*=\s*'([^']+)'/);
  if(!match||!validVersion(match[1]))throw Error('planif-version.js: APP_VERSION introuvable ou mal formée.');
  return match[1];
 }
