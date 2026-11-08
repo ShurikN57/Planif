@@ -48,12 +48,12 @@ All data stays in the browser (`localStorage`, COROS tokens in `sessionStorage`)
 | `planif-plan-history-v1` | Archived plans, with `dateZone` | yes |
 | `planif-mode-v1`, `planif-weekly-balance-v2` | Mode, migration marker | yes |
 | `planif-theme`, `planif-speed-unit`, `calc-allures-ui`, `calc-allures-tab`, `calc-allures-calview`, `planif-coros-profile-v1` | Preferences | yes |
-| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-*` | Safety copies and recovery state | no |
+| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-latest` | Safety copies and recovery state | no |
 | `planif-reference-plan-pending-v1` | Pending reference application | no (cleared on import) |
 | `planif-coros-v1`, `planif-coros-capabilities-v1`, `planif-strava-auth-v1`, `planif-strava-records-v1:*` | Device and account data | no |
 | `calc-allures-v7` | Legacy migration source | no |
 
-The backup file (`format: planif-backup`, `schema: 1`) holds the raw storage strings of the exported keys (`PlanifBackup.KEYS`). Import refuses unknown keys, invalid plans, files over 8 MB, prototype keys and any `<` (Planif never writes one; templates insert saved text into HTML). Before writing, it stores a full copy of the current values under `planif-before-import-<timestamp>`, archives the current active plan after the imported history, keeps each record's `dateZone`, then reloads. A new exported key must be added to `PlanifBackup.KEYS` with its validation rule.
+The backup file (`format: planif-backup`, `schema: 1`) holds the raw storage strings of the exported keys (`PlanifBackup.KEYS`). Import refuses unknown keys and UI settings, invalid plans and workouts, files over 8 MB, prototype keys and any `<`. Before writing, it stores the current Planif values under `planif-before-import-latest`; the previous active plan is accessible in Mes plans. An import that replaces the active plan archives the old one and opens the imported plan in recovery mode, without recalculating sessions. Each record keeps its `dateZone`. A new exported key must be added to `PlanifBackup.KEYS` with its validation rule.
 
 ### Time zones
 

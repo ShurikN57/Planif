@@ -42,7 +42,8 @@ test('malformed or foreign files are refused with a clear message',()=>{
   [JSON.stringify({format:'planif-backup',schema:1,values:{'planif-mode-v1':'cal'}}),/aucun plan/],
   [withValue('planif-strava-auth-v1','{}'),/clé inconnue/],
   [withValue('planif-mode-v1','calendar'),/inconnue/],
-  [withValue('calc-allures-tab','<b>'),/invalide/],
+  [withValue('calc-allures-tab','<b>'),/inconnue/],
+  [withValue('calc-allures-tab','not-a-tab'),/inconnue/],
   [withValue('planif-global-v1','{"vma":{"nested":1}}'),/invalide/],
   [withValue('planif-global-v1','{oops'),/illisible/],
   [withValue('planif-active-plan-v1','{"id":"x"}'),/structure manquante/],
@@ -82,4 +83,35 @@ test('an imported plan keeps its calendar days and sessions in any zone',()=>{
  const days=p=>p.weeks.flatMap(w=>w.days.map(d=>E.planDateKey(d.date)));
  assert.deepEqual(days(record.plan),days(C));
  assert.deepEqual(record.plan.weeks.flatMap(w=>w.days.flatMap(d=>d.items.map(it=>it.planifId))),C.weeks.flatMap(w=>w.days.flatMap(d=>d.items.map(it=>it.planifId))));
+});
+
+test('rejects missing workout data and attribute-breaking session IDs',()=>{
+ for(const item of [{kind:'q'},{kind:'foot'}, {kind:'race'}, {kind:'unknown'},
+   {kind:'sl',planifId:'x" data-act="import'}]){
+  const p=plan('invalid');p.plan.weeks[0].days[0].items.push(item);
+  assert.throws(()=>B.parseBackup(withValue('planif-active-plan-v1',JSON.stringify(p))),/jour ou séance invalide/);
+ }
+});
+
+test('import keeps the exact plan for recovery and rolls back earlier writes on failure',()=>{
+ const vm=require('node:vm'),{uiSource}=require('./helpers/runtime.cjs');
+ const current=storage(),incoming=B.parseBackup(withValue('planif-active-plan-v1',E.serializeSavedPlans(plan('plan-new'))));
+ const data=new Map(Object.entries(current)),active='planif-active-plan-v1',history='planif-plan-history-v1',recovery='recovery',pending='pending';
+ data.set(pending,'true');
+ let failHistory=true;
+ const ctx={refDraft:null,structureEditing:false,PlanifBackup:B,STORE:{active,history},RECOVERY_STATE:recovery,REF_PLAN_PENDING_KEY:pending,
+  localStorage:{getItem:k=>data.get(k)??null,removeItem:k=>data.delete(k),setItem:(k,v)=>{
+   if(k===history&&failHistory){failHistory=false;throw Error('quota');}data.set(k,v);
+  }}};
+ vm.createContext(ctx);
+ vm.runInContext(uiSource.slice(uiSource.indexOf('const BACKUP_SAFETY_KEY='),uiSource.indexOf('function importBackup(){')),ctx);
+ assert.throws(()=>ctx.applyBackupImport(incoming),/Tes données actuelles sont conservées/);
+ for(const [key,value] of Object.entries(current))assert.equal(data.get(key),value,key);
+ assert.equal(data.get(pending),'true');assert.equal(data.has(recovery),false);
+ const safety=JSON.parse(data.get('planif-before-import-latest'));
+ assert.equal(safety.values[active],current[active]);
+ ctx.applyBackupImport(incoming);
+ assert.equal(data.get(active),incoming.values[active],'import does not recalculate workouts');
+ assert.deepEqual(JSON.parse(data.get(recovery)),{id:'plan-new',status:'restored'});
+ assert.equal(data.has(pending),false);
 });

@@ -615,7 +615,7 @@ let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="tileTop"><span class="k">${c.k}</span>${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}</span><span class="tileContent"><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}</span>`;
-  const movable=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?` data-move-session="${it.planifId}"`:'';
+  const movable=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?` data-move-session="${escapeHtml(it.planifId)}"`:'';
   return ref?`<button type="button" class="${cls}" style="${st}"${movable} data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${opt.calendar?'':'<span class="go" aria-hidden="true">›</span>'}${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
@@ -1085,8 +1085,10 @@ function savedPlanEntries(){
   const entries=[];
   if(validSavedPlan(activePlan))entries.push({kind:'active',label:'Plan actif',record:snapshotPlan(activePlan)});
   for(const p of planHistory)if(validSavedPlan(p))entries.push({kind:'archive',label:'Plan archivé',record:snapshotPlan(p)});
-  const backup=getJson(RECOVERY_BACKUP);
-  try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label:'Copie de sécurité',record:localizeSavedPlan(p)});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
+  for(const [key,label] of [[RECOVERY_BACKUP,'Copie de sécurité'],[BACKUP_SAFETY_KEY,'Copie de sécurité · avant import']]){
+    const backup=getJson(key);
+    try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label,record:localizeSavedPlan(p)});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
+  }
   return entries;
 }
 function savedPlanDate(value){const d=new Date(value);return value&&!Number.isNaN(+d)?d.toLocaleDateString('fr-FR'):'Date inconnue';}
@@ -1137,7 +1139,7 @@ function restoreSavedPlanRecord(record){
   return restored;
 }
 /* Export / import of local data (PlanifBackup) and persistent storage. */
-const BACKUP_SAFETY_PREFIX='planif-before-import-';
+const BACKUP_SAFETY_KEY='planif-before-import-latest';
 function backupStatus(text){const el=$('backupStatus');if(el)el.textContent=text;}
 async function exportBackup(){
   try{
@@ -1162,20 +1164,30 @@ function importConfirmText(summary){
     summary.activeTitle?'Plan actif : '+summary.activeTitle:'Aucun plan actif dans la sauvegarde.',
     summary.historyCount+' plan'+(summary.historyCount>1?'s':'')+' archivé'+(summary.historyCount>1?'s':''),
     summary.exportedAt?'Exportée le '+savedPlanDate(summary.exportedAt)+(summary.version?' (version '+summary.version+')':''):'',
-    '','Ton plan actuel sera archivé. Une copie de sécurité complète de tes données actuelles reste sur cet appareil.'].filter(x=>x!=='').join('\n');
+    '','Si le plan actif est remplacé, il sera archivé. Une copie de sécurité de tes données Planif actuelles reste sur cet appareil.'].filter(x=>x!=='').join('\n');
 }
 function applyBackupImport(parsed){
   if(refDraft||structureEditing)throw Error('Termine ou annule la modification en cours avant d’importer une sauvegarde.');
   const keys=[...new Set([...Object.keys(PlanifBackup.KEYS),RECOVERY_STATE,REF_PLAN_PENDING_KEY])];
   const before={};for(const key of keys)before[key]=localStorage.getItem(key);
-  try{localStorage.setItem(BACKUP_SAFETY_PREFIX+Date.now(),JSON.stringify({savedAt:new Date().toISOString(),values:before}));}
-  catch(_){throw Error('Import impossible : stockage local plein ou indisponible. Rien n’a été modifié.');}
   const next=PlanifBackup.planImport(before,parsed);
+  if(Object.hasOwn(next,STORE.active)){
+    const active=JSON.parse(next[STORE.active]);
+    next[RECOVERY_STATE]=active?JSON.stringify({id:active.id,status:'restored'}):null;
+    next[REF_PLAN_PENDING_KEY]=null;
+  }
+  try{localStorage.setItem(BACKUP_SAFETY_KEY,JSON.stringify({savedAt:new Date().toISOString(),values:before}));}
+  catch(_){throw Error('Import impossible : stockage local plein ou indisponible. Rien n’a été modifié.');}
+  const applied=[];
+  const write=(key,value)=>{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);};
   try{
-    for(const [key,value] of Object.entries(next))localStorage.setItem(key,value);
-    localStorage.removeItem(RECOVERY_STATE);localStorage.removeItem(REF_PLAN_PENDING_KEY);
+    for(const [key,value] of Object.entries(next))if(before[key]!==value){write(key,value);applied.push(key);}
   }catch(error){
-    for(const [key,value] of Object.entries(before)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(_){console.warn('Planif : restauration après import incomplète.',key);}}
+    let restored=true;
+    // Release the space used by larger imported entries before restoring smaller originals.
+    for(const key of applied.reverse()){try{localStorage.removeItem(key);}catch(_){restored=false;}}
+    for(const key of applied){try{write(key,before[key]);}catch(_){restored=false;}}
+    if(!restored)throw Error('Import interrompu : restauration automatique incomplète. La copie avant import est conservée.');
     throw Error('Import non enregistré : stockage local plein ou indisponible. Tes données actuelles sont conservées.');
   }
 }
