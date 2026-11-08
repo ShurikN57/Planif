@@ -42,6 +42,19 @@ jobs:
         run: npm run lint
       - name: Prettier
         run: npm run format:check
+  audits:
+    name: Planning audits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The audits rebuild historical engines from Git.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Planning, personal-load and block-load audits
+        run: npm run audit
   verify-live:
     name: Verify live files
     needs: [test, lint]

@@ -4,15 +4,21 @@ const fs = require('node:fs'),
   cp = require('node:child_process'),
   assert = require('node:assert/strict'),
   crypto = require('node:crypto');
+// Both sides are read from Git so that later, intentional engine changes cannot invalidate this
+// historical review: before = 2f8765e, after = 5681e48 (2026.10.21.04, the reviewed change).
 const revision = '2f8765ed85a0582112f86fa3643ba6a78f2c5cb1',
-  read = file => cp.execFileSync('git', ['show', revision + ':' + file], {encoding: 'utf8'});
-let c = {module: {exports: {}}};
-vm.runInNewContext(read('planif-rules.js'), c);
-const rules = c.module.exports;
-c = {module: {exports: {}}, require: () => rules};
-vm.runInNewContext(read('planif-engine.js'), c);
-const old = c.module.exports,
-  current = require('../planif-engine.js'),
+  reviewedRevision = '5681e48',
+  read = (file, at = revision) => cp.execFileSync('git', ['show', at + ':' + file], {encoding: 'utf8'});
+const engineAt = at => {
+  const rulesContext = {module: {exports: {}}};
+  vm.runInNewContext(read('planif-rules.js', at), rulesContext);
+  const context = {module: {exports: {}}, require: () => rulesContext.module.exports};
+  vm.runInNewContext(read('planif-engine.js', at), context);
+  return context.module.exports;
+};
+const old = engineAt(revision),
+  current = engineAt(reviewedRevision),
+  reviewed = require('../tests/fixtures/plans-after-personal-load.json').plans,
   rows = require('../tests/fixtures/plans-before-modules.json'),
   previous = require('../tests/fixtures/plans-after-assimilation.json').plans;
 const keys = new Set([
@@ -70,11 +76,13 @@ for (const [i, row] of rows.entries()) {
       if (before.weeks[j].load) ratios.push(w.load / before.weeks[j].load);
     }
     out[kind] = hash(after);
+    assert.equal(out[kind], reviewed[i][kind], `reviewed fixture ${i} ${kind}`);
   }
   plans.push(out);
 }
 const review = {
   historicalCommit: revision,
+  reviewedCommit: reviewedRevision,
   plans: rows.length * 2,
   weeks,
   fallbackWeeks,

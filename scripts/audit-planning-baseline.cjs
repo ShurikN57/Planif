@@ -5,17 +5,27 @@ const fs = require('fs'),
   cp = require('child_process'),
   assert = require('assert/strict'),
   crypto = require('crypto');
+// Both sides are read from Git so that later, intentional engine changes cannot invalidate this
+// historical review: before = c3013c5, after = 922af38 (2026.10.19.44, the reviewed change).
 const rev = 'c3013c5',
-  read = p => cp.execFileSync('git', ['show', rev + ':' + p], {encoding: 'utf8'});
-let c = {module: {exports: {}}};
-vm.runInNewContext(read('planif-rules.js'), c);
-const rules = c.module.exports;
-c = {module: {exports: {}}, require: () => rules};
-vm.runInNewContext(read('planif-engine.js'), c);
-const old = c.module.exports,
-  cur = require(process.cwd() + '/planif-engine.js'),
+  reviewedRev = '922af38',
+  read = (p, at = rev) => cp.execFileSync('git', ['show', at + ':' + p], {encoding: 'utf8'});
+const rulesAt = at => {
+  const context = {module: {exports: {}}};
+  vm.runInNewContext(read('planif-rules.js', at), context);
+  return context.module.exports;
+};
+const engineAt = (at, source = read('planif-engine.js', at)) => {
+  const rules = rulesAt(at),
+    context = {module: {exports: {}}, require: () => rules};
+  vm.runInNewContext(source, context);
+  return context.module.exports;
+};
+const old = engineAt(rev),
+  cur = engineAt(reviewedRev),
   rows = require(process.cwd() + '/tests/fixtures/plans-before-modules.json'),
-  fixture = require(process.cwd() + '/tests/fixtures/plans-after-balance.json');
+  fixture = require(process.cwd() + '/tests/fixtures/plans-after-balance.json'),
+  reviewed = require(process.cwd() + '/tests/fixtures/plans-after-assimilation.json');
 const hash = v => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex'),
   json = v => JSON.parse(JSON.stringify(v));
 const diffs = (a, b, p = '', out = []) => {
@@ -26,18 +36,17 @@ const diffs = (a, b, p = '', out = []) => {
   } else out.push(p);
   return out;
 };
+// Reviewed engine with only the former assimilation construction re-injected.
+const legacyHook = 'function buildWeek(B,st,o){',
+  reviewedSource = read('planif-engine.js', reviewedRev);
+assert(reviewedSource.includes(legacyHook), 'assimilation hook found in the reviewed engine');
 let neutralContext = {
   module: {exports: {}},
-  require: () => require(process.cwd() + '/planif-rules.js'),
+  require: () => rulesAt(reviewedRev),
   __legacyAssimilation: old.createEngine().buildAssimilationWeek
 };
 vm.runInNewContext(
-  fs
-    .readFileSync('planif-engine.js', 'utf8')
-    .replace(
-      'function buildWeek(B,st,o){',
-      'function buildWeek(B,st,o){if(o.assim)return __legacyAssimilation(B,st,o);'
-    ),
+  reviewedSource.replace(legacyHook, legacyHook + 'if(o.assim)return __legacyAssimilation(B,st,o);'),
   neutralContext
 );
 const historyNeutral = neutralContext.module.exports;
@@ -62,6 +71,7 @@ for (const [i, row] of rows.entries()) {
       b = json(ne[method]({...state}, np));
     assert.equal(hash(a), fixture.plans[i][kind], `historical fixture ${i} ${kind}`);
     fp[kind] = hash(b);
+    assert.equal(fp[kind], reviewed.plans[i][kind], `reviewed fixture ${i} ${kind}`);
     const neutral = json(historyNeutral.createEngine()[method]({...state}, np));
     assert.deepEqual({...b, weeks: null}, {...a, weeks: null}, `plan envelope ${i} ${kind}`);
     const changes = [];
@@ -100,7 +110,14 @@ for (const [i, row] of rows.entries()) {
   }
   plans.push(fp);
 }
-const summary = {historicalCommit: rev, cases: rows.length, unchangedCharge, changedCharge, changedAssim};
+const summary = {
+  historicalCommit: rev,
+  reviewedCommit: reviewedRev,
+  cases: rows.length,
+  unchangedCharge,
+  changedCharge,
+  changedAssim
+};
 console.log(JSON.stringify(summary, null, 2));
 console.log(JSON.stringify({firstChangedWeek: report[0]?.changes[0]}, null, 2));
 if (process.argv.includes('--write-reviewed')) {
