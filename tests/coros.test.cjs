@@ -2,7 +2,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 // The app validates calendar dates in the device's local day; toISOString() would use the UTC day.
 const localToday=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
+// planif-html.js is loaded before this module in the browser.
+const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const issuer='https://mcpeu.coros.com';
 const storage=()=>{const data=new Map();return{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),data};};
 function env({url='https://shurikn57.github.io/Planif/',local=storage(),session=storage(),online=true,responder}={}){

@@ -12,7 +12,7 @@ window.PlanifCoros=(()=>{
   const callback=new URL(location.href).searchParams.get('coros_callback')==='1';
   const read=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null');}catch(_){return null;}};
   const write=(store,key,value)=>{store.setItem(key,JSON.stringify(value));};
-  const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const escape=globalThis.PlanifHtml.escapeHtml;
   const emit=()=>document.dispatchEvent(new Event('planif-coros-change'));
   const base64=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   const random=()=>base64(crypto.getRandomValues(new Uint8Array(32)));

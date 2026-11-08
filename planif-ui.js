@@ -1,9 +1,9 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.01').then(function(evidence){
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.02').then(function(evidence){
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES,localizeSavedPlan,serializeSavedPlans}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES,localizeSavedPlan,serializeSavedPlans,currentTimeZone}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
 const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
@@ -608,13 +608,14 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
 
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
 const APP_VERSION=globalThis.PlanifVersion;
+const escapeHtml=globalThis.PlanifHtml.escapeHtml;
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
 try{appTab=localStorage.getItem('calc-allures-tab')||'today';document.body.dataset.ui=localStorage.getItem('calc-allures-ui')||'app';}catch(e){console.warn('Planif : préférence ou stockage local indisponible.',e?.name||'Erreur');}
 const today0=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 function tileHtml(it,w,ref,opt={}){const c=itemShort(it,w),compact=!!opt.calendar&&(it.kind==='foot'||it.kind==='sl'),cls=`tile${it.kind==='race'?' raceT':''}${it.kind==='foot'?' footT':''}${compact?' calCompact':''}`,st=`--c:${itemColor(it,w)}`,inner=`<span class="tileTop"><span class="k">${c.k}</span>${globalThis.PlanifStrava?.badge(planifSessionInfo(ref))||''}</span><span class="tileContent"><span class="s">${c.s}</span>${compact?'':`<span class="t">${paceHtml(c.t)}</span>`}</span>`;
-  const movable=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?` data-move-session="${it.planifId}"`:'';
+  const movable=opt.calendar&&it.planifId&&!['race','veille'].includes(it.kind)?` data-move-session="${escapeHtml(it.planifId)}"`:'';
   return ref?`<button type="button" class="${cls}" style="${st}"${movable} data-open="${ref.q!==undefined?`${ref.w},q,${ref.q}`:ref.f!==undefined?`${ref.w},f,${ref.f}`:ref.sl?`${ref.w},sl,0`:`${ref.w},${ref.d},${ref.i}`}">${opt.calendar?'':'<span class="go" aria-hidden="true">›</span>'}${inner}</button>`:`<div class="${cls}" style="${st}">${inner}</div>`;}
 const refOf=(w,x,i)=>({w:w.index,d:w.days.indexOf(x),i});
 /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
@@ -680,7 +681,7 @@ function appCalendarWeeks(C,st){
     h+=blockLoadReviewHtml(C,st);
   }
   h+='</div>';
-  h+=`<p class="lbl">Appui long sur une séance, puis glisse-la vers un jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${calendarMoveMessage.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>`;
+  h+=`<p class="lbl">Appui long sur une séance, puis glisse-la vers un jour de la même semaine.</p><p class="lbl" id="calMoveStatus" role="status" aria-live="polite">${escapeHtml(calendarMoveMessage)}</p>`;
   C.weeks.forEach((w,i)=>{
     const open=calOpen.has(i),pos=w.phase!=='assim'&&w.segLen?` ${w.segK+1}/${w.segLen}`:'';
     h+=`<div class="cw${i===curIdx?' nowW':''}${w.assimilation?' assimW':''}${w.raceWeek?' raceW':''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>`+
@@ -859,7 +860,7 @@ function chronoTime(seconds,hundredths=false){if(!Number.isFinite(seconds)||seco
 function chronoMeters(){return chronoState.category==='free'?Number(chronoState.free.replace(',','.'))*1000:Number(chronoState.distance);}
 function chronoTargetHtml(){const meters=chronoMeters();return Number.isFinite(meters)&&meters>0&&meters<=1000000?wheelPicker('chrono',String(meters),meters,''):'<span class="lbl">Renseigne une distance valide.</span>';}
 function refreshChronoTarget(){const target=$('scr-calc').querySelector('[data-chrono-target]');if(target)target.innerHTML=chronoTargetHtml();}
-function toolAttr(value){return String(value).replace(/[&"<>]/g,ch=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[ch]));}
+function toolAttr(value){return escapeHtml(value);}
 
 const wheelSaved={chrono:{},endurance:{},endurance2:{},endurance3:{},endurance4:{},critical:{}};
 function wheelSeconds(scope,key,meters,initial){const k=String(key);if(!Object.prototype.hasOwnProperty.call(wheelSaved[scope],k)){const t=initial?enduranceSeconds(initial):NaN;wheelSaved[scope][k]=Number.isFinite(t)&&t>0?t:meters===21097.5?3600:meters===42195?7200:0;}return wheelSaved[scope][k];}
@@ -1008,9 +1009,8 @@ function appStudyHtml(){
 
 /* ---------- Réglages (v9.2) : contrôles reliés aux champs existants, une seule source de vérité ---------- */
 let setBuilt=false,lastCalError=null,ref2Open=!!$('ref2Time').value;
-const escA=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-const fText=(lab,id,mode)=>`<label class="sf"><span>${lab}</span><input data-bind="${id}" value="${escA($(id).value)}" inputmode="${mode||'text'}" autocomplete="off"></label>`;
-const fDate=(lab,id)=>`<label class="sf"><span>${lab}</span><input type="date" data-bind="${id}" value="${escA($(id).value)}"></label>`;
+const fText=(lab,id,mode)=>`<label class="sf"><span>${lab}</span><input data-bind="${id}" value="${escapeHtml($(id).value)}" inputmode="${mode||'text'}" autocomplete="off"></label>`;
+const fDate=(lab,id)=>`<label class="sf"><span>${lab}</span><input type="date" data-bind="${id}" value="${escapeHtml($(id).value)}"></label>`;
 const fSel=(lab,id)=>`<label class="sf"><span>${lab}</span><select data-bind="${id}">${$(id).innerHTML}</select></label>`;
 const fSw=(lab,id)=>`<label class="sw"><input type="checkbox" data-bind="${id}"${$(id).checked?' checked':''}><span>${lab}</span></label>`;
 const info=(t,body)=>`<details class="info"><summary>ⓘ ${t}</summary>${body.map(p=>`<p>${p}</p>`).join('')}</details>`;
@@ -1037,7 +1037,7 @@ function parseSpeedValue(text,unit){
   const m=/^(\d+)[:'’](\d{2})$/.exec(value);if(!m||+m[2]>=60)return null;
   const seconds=+m[1]*60+(+m[2]);return seconds>0?3600/seconds:null;
 }
-function speedField(label,id){return `<label class="sf"><span>${label}</span><input data-speed="${id}" value="${escA(speedInputValue(id))}" inputmode="${speedUnit==='kmh'&&id!=='s1'?'decimal':'text'}" autocomplete="off" aria-label="${label}, ${speedUnit==='pace'?'min/km':'km/h'}"></label>`;}
+function speedField(label,id){return `<label class="sf"><span>${label}</span><input data-speed="${id}" value="${escapeHtml(speedInputValue(id))}" inputmode="${speedUnit==='kmh'&&id!=='s1'?'decimal':'text'}" autocomplete="off" aria-label="${label}, ${speedUnit==='pace'?'min/km':'km/h'}"></label>`;}
 function commitSpeedInput(input){
   const id=input.dataset.speed,parts=input.value.trim().split(/\s*(?:–|—|-|à)\s*/);
   const values=parts.map(x=>parseSpeedValue(x,speedUnit)),valid=(id==='s1'?parts.length<=2:parts.length===1)&&values.every(v=>v!==null);
@@ -1061,7 +1061,7 @@ function appSetHtml(){
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
   if(cal&&activePlan){
-    h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${activePlan.title}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div>${!structureEditing?'<button type="button" class="cta ghost" data-act="refresh-program">Mettre à jour le programme</button>':''}<button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
+    h+=`<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing?'Modification':'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${escapeHtml(activePlan.title)}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length>1?'s':''} dans l’historique</div>${!structureEditing?'<button type="button" class="cta ghost" data-act="refresh-program">Mettre à jour le programme</button>':''}<button type="button" class="cta ghost" data-act="${structureEditing?'commit-structure':'edit-structure'}">${structureEditing?'Valider les changements':'Modifier la structure'}</button>${structureEditing?'<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>':''}</div>`;
   }
 
   if(!recoveryState&&cal&&(!activePlan||structureEditing)){
@@ -1078,22 +1078,23 @@ function appSetHtml(){
   h+=PlanifCoros.settingsHtml();
   h+=globalThis.PlanifStrava?.settingsHtml()||'';
 
-  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="plans">Mes plans</button><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
+  h+=`<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="plans">Mes plans</button><button type="button" class="cta ghost" data-act="export">Exporter mes données</button><button type="button" class="cta ghost" data-act="import">Importer une sauvegarde</button><p class="lbl" id="backupStatus" role="status"></p><p class="lbl" id="storageStatus"></p><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
   return h;
 }
 function savedPlanEntries(){
   const entries=[];
   if(validSavedPlan(activePlan))entries.push({kind:'active',label:'Plan actif',record:snapshotPlan(activePlan)});
   for(const p of planHistory)if(validSavedPlan(p))entries.push({kind:'archive',label:'Plan archivé',record:snapshotPlan(p)});
-  const backup=getJson(RECOVERY_BACKUP);
-  try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label:'Copie de sécurité',record:localizeSavedPlan(p)});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
+  for(const [key,label] of [[RECOVERY_BACKUP,'Copie de sécurité'],[BACKUP_SAFETY_KEY,'Copie de sécurité · avant import']]){
+    const backup=getJson(key);
+    try{const p=JSON.parse(backup?.values?.[STORE.active]||'null');if(validSavedPlan(p))entries.push({kind:'backup',label,record:localizeSavedPlan(p)});}catch(_){console.warn('Planif : préférence ou stockage local indisponible.',_?.name||'Erreur');}
+  }
   return entries;
 }
-const savedPlanEscape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function savedPlanDate(value){const d=new Date(value);return value&&!Number.isNaN(+d)?d.toLocaleDateString('fr-FR'):'Date inconnue';}
 function savedPlanSummary(entry){
   const p=entry.record,C=p.plan;
-  return `<span class="lbl">${entry.label}</span><h3>${savedPlanEscape(p.title||'Plan de course')}</h3><p class="lbl">${DIST[C.race.distance]?.lab||'Course'} · ${savedPlanDate(C.start)} → ${savedPlanDate(C.race.date)}<br>${C.weeks.length} semaines${p.archivedAt?' · Archivé le '+savedPlanDate(p.archivedAt):p.updatedAt?' · Enregistré le '+savedPlanDate(p.updatedAt):''}</p>`;
+  return `<span class="lbl">${entry.label}</span><h3>${escapeHtml(p.title||'Plan de course')}</h3><p class="lbl">${DIST[C.race.distance]?.lab||'Course'} · ${savedPlanDate(C.start)} → ${savedPlanDate(C.race.date)}<br>${C.weeks.length} semaines${p.archivedAt?' · Archivé le '+savedPlanDate(p.archivedAt):p.updatedAt?' · Enregistré le '+savedPlanDate(p.updatedAt):''}</p>`;
 }
 function savedPlanDetail(entry){
   const C=reviveSavedPlan(entry.record.plan);
@@ -1105,8 +1106,8 @@ function savedPlanDetail(entry){
       if(!day.items.length)h+='<p class="lbl">Repos</p>';
       for(const it of day.items){
         if(it.kind==='q'){
-          h+=`<p><strong>${savedPlanEscape(sessionTitle(it.s))}</strong> · ${fmtDur(it.s.total)}</p>`;
-          for(const [j,v] of it.s.variants.entries())h+=`<p class="lbl">Option ${j+1} : ${savedPlanEscape(vText(v))}<br>${vChips(v).map(savedPlanEscape).join(' · ')}</p>`;
+          h+=`<p><strong>${escapeHtml(sessionTitle(it.s))}</strong> · ${fmtDur(it.s.total)}</p>`;
+          for(const [j,v] of it.s.variants.entries())h+=`<p class="lbl">Option ${j+1} : ${escapeHtml(vText(v))}<br>${vChips(v).map(escapeHtml).join(' · ')}</p>`;
         }else h+='<p>'+agendaItem(it,w,null)+'</p>';
       }
       h+='</div>';
@@ -1136,6 +1137,83 @@ function restoreSavedPlanRecord(record){
   }
   activePlan=restored;planHistory=history;recoveryState=state;structureEditing=false;
   return restored;
+}
+/* Export / import of local data (PlanifBackup) and persistent storage. */
+const BACKUP_SAFETY_KEY='planif-before-import-latest';
+function backupStatus(text){const el=$('backupStatus');if(el)el.textContent=text;}
+async function exportBackup(){
+  try{
+    const values={};
+    for(const key of Object.keys(PlanifBackup.KEYS)){const value=localStorage.getItem(key);if(value!==null)values[key]=value;}
+    if(!values[STORE.active]&&!values[STORE.history]){backupStatus('Aucun plan à exporter pour le moment.');return;}
+    const backup=PlanifBackup.createBackup(values,{version:APP_VERSION,timeZone:currentTimeZone()});
+    const name=PlanifBackup.backupFileName(backup.exportedAt);
+    const file=new File([JSON.stringify(backup,null,1)],name,{type:'application/json'});
+    if(navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file],title:'Sauvegarde Planif'});backupStatus('Sauvegarde prête : enregistre-la dans Fichiers ou envoie-la-toi.');return;}
+      catch(error){if(error?.name==='AbortError'){backupStatus('Export annulé.');return;}}
+    }
+    const url=URL.createObjectURL(file),link=document.createElement('a');
+    link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    backupStatus('Sauvegarde téléchargée : '+name+'.');
+  }catch(error){console.error('Export Planif impossible',error);backupStatus('Export impossible : '+(error?.message||'erreur inconnue')+'.');}
+}
+function importConfirmText(summary){
+  return ['Importer cette sauvegarde ?',
+    summary.activeTitle?'Plan actif : '+summary.activeTitle:'Aucun plan actif dans la sauvegarde.',
+    summary.historyCount+' plan'+(summary.historyCount>1?'s':'')+' archivé'+(summary.historyCount>1?'s':''),
+    summary.exportedAt?'Exportée le '+savedPlanDate(summary.exportedAt)+(summary.version?' (version '+summary.version+')':''):'',
+    '','Si le plan actif est remplacé, il sera archivé. Une copie de sécurité de tes données Planif actuelles reste sur cet appareil.'].filter(x=>x!=='').join('\n');
+}
+function applyBackupImport(parsed){
+  if(refDraft||structureEditing)throw Error('Termine ou annule la modification en cours avant d’importer une sauvegarde.');
+  const keys=[...new Set([...Object.keys(PlanifBackup.KEYS),RECOVERY_STATE,REF_PLAN_PENDING_KEY])];
+  const before={};for(const key of keys)before[key]=localStorage.getItem(key);
+  const next=PlanifBackup.planImport(before,parsed);
+  if(Object.hasOwn(next,STORE.active)){
+    const active=JSON.parse(next[STORE.active]);
+    next[RECOVERY_STATE]=active?JSON.stringify({id:active.id,status:'restored'}):null;
+    next[REF_PLAN_PENDING_KEY]=null;
+  }
+  try{localStorage.setItem(BACKUP_SAFETY_KEY,JSON.stringify({savedAt:new Date().toISOString(),values:before}));}
+  catch(_){throw Error('Import impossible : stockage local plein ou indisponible. Rien n’a été modifié.');}
+  const applied=[];
+  const write=(key,value)=>{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);};
+  try{
+    for(const [key,value] of Object.entries(next))if(before[key]!==value){write(key,value);applied.push(key);}
+  }catch(error){
+    let restored=true;
+    // Release the space used by larger imported entries before restoring smaller originals.
+    for(const key of applied.reverse()){try{localStorage.removeItem(key);}catch(_){restored=false;}}
+    for(const key of applied){try{write(key,before[key]);}catch(_){restored=false;}}
+    if(!restored)throw Error('Import interrompu : restauration automatique incomplète. La copie avant import est conservée.');
+    throw Error('Import non enregistré : stockage local plein ou indisponible. Tes données actuelles sont conservées.');
+  }
+}
+function importBackup(){
+  const input=document.createElement('input');input.type='file';input.accept='application/json,.json';
+  input.addEventListener('change',async()=>{
+    const file=input.files?.[0];if(!file)return;
+    try{
+      if(file.size>PlanifBackup.MAX_BYTES)throw Error('Fichier trop volumineux pour une sauvegarde Planif.');
+      const parsed=PlanifBackup.parseBackup(await file.text());
+      if(!confirm(importConfirmText(parsed.summary))){backupStatus('Import annulé.');return;}
+      applyBackupImport(parsed);
+      backupStatus('Sauvegarde importée. Rechargement…');location.reload();
+    }catch(error){backupStatus(error?.message||'Import impossible.');}
+  });
+  input.click();
+}
+let persistenceRequested=false;
+function requestPersistentStorage(){
+  if(persistenceRequested)return;persistenceRequested=true;
+  try{globalThis.navigator?.storage?.persist?.().then(updateStorageStatus,()=>{});}catch(_){/* Not supported: the status line explains the risk. */}
+}
+async function updateStorageStatus(){
+  const el=$('storageStatus');if(!el)return;
+  let persisted=null;try{persisted=await globalThis.navigator?.storage?.persisted?.();}catch(_){persisted=null;}
+  el.textContent=persisted?'Stockage protégé : le navigateur ne supprimera pas tes plans de lui-même.':'Stockage non protégé : le navigateur peut effacer tes plans (Safari après 7 jours sans visite si Planif n’est pas sur l’écran d’accueil). Exporte régulièrement tes données.';
 }
 function openSavedPlans(){
   let dialog=$('savedPlansDialog');
@@ -1276,6 +1354,8 @@ $('appShell').addEventListener('click',e=>{
   const m=e.target.closest('[data-mode]');if(m){if(recoveryState){if(m.dataset.mode==='cal')recoverSavedPlan();return;}switchModeState(m.dataset.mode);setBuilt=false;calOpen=null;render();renderApp();return;}
   const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='plans'){openSavedPlans();return;}
+  if(a.dataset.act==='export'){exportBackup();return;}
+  if(a.dataset.act==='import'){importBackup();return;}
   if(a.dataset.act==='theme'){toggleTheme();return;}
   if(a.dataset.act==='update'){updateApp(a);return;}
   if(a.dataset.act==='add-ref2'){ref2Open=true;setBuilt=false;renderApp();return;}
@@ -1540,6 +1620,7 @@ function updateInputErrorBanner(){
   }
 }
 function renderApp(){
+  if(validSavedPlan(activePlan))requestPersistentStorage();
   if(lastPlan?.weeks&&lastSt&&!recoveryState&&!inputErrors(lastSt).length)lastPlan=recalculatePlanSummary(reviveSavedPlan(lastPlan),lastSt);
   updateInputErrorBanner();
   if(appSession){
@@ -1555,7 +1636,7 @@ function renderApp(){
   $('appTitle').textContent='';
   document.querySelectorAll('.tabbar button').forEach(b=>{if(b.dataset.tab===appTab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   ['today','cal','ref','calc','study','set'].forEach(k=>{$('scr-'+k).hidden=k!==appTab;});
-  if(appTab==='set'){if(!setBuilt){$('scr-set').innerHTML=appSetHtml();initSet();setBuilt=true;}updateSet();updateInputErrorBanner();return;}
+  if(appTab==='set'){if(!setBuilt){$('scr-set').innerHTML=appSetHtml();initSet();setBuilt=true;updateStorageStatus();}updateSet();updateInputErrorBanner();return;}
   const f={today:appTodayHtml,cal:appCalHtml,ref:appRefHtml,calc:appCalcHtml,study:appStudyHtml}[appTab];
   $('scr-'+appTab).innerHTML=f();
   if(appTab==='ref')initRef();if(appTab==='calc'){updateConversionUi();updateToolsUi();updateLoadToolUi();updateLoadCurveUi();}

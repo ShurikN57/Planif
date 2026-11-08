@@ -14,6 +14,8 @@ The application remains a static PWA hosted by GitHub Pages. It has no build ste
 | `planif-coros.js` | COROS connection, workout preview and export adapter |
 | `planif-strava.js` | Athlete connection and activity association |
 | `planif-calendar-drag.js` | Calendar pointer interaction |
+| `planif-html.js` | Shared `escapeHtml`, loaded first; every template inserting non-literal data uses it |
+| `planif-backup.js` | Pure export/import of local data: backup format, validation and merge |
 | `sw.js` | Versioned offline application cache |
 
 ## Engine entry point
@@ -33,6 +35,25 @@ node scripts/verify-live.cjs
 ```
 
 The same commands are available as `npm run check`, `npm test` and `npm run verify-live` (Node.js 22, see `.nvmrc`; `package.json` declares no dependency). CI runs on every branch push and pull request. The suite runs under `Europe/Paris`, `America/Los_Angeles` and `Pacific/Auckland`, all blocking; `npm run test:tz` reproduces this locally: it runs all three suites even when one fails, prints each result, and exits non-zero when any of them fails. Live-file verification runs only after the tests pass on `main`.
+
+### Local storage
+
+All data stays in the browser (`localStorage`, COROS tokens in `sessionStorage`). Settings → Outils offers **Exporter mes données** and **Importer une sauvegarde**; after the first active plan, the app asks for persistent storage (`navigator.storage.persist()`) and shows its state.
+
+| Key | Content | Backup |
+| --- | --- | --- |
+| `planif-global-v1` | References and physiology (`GLOBAL_IDS`) | yes |
+| `planif-block-draft-v1`, `planif-calendar-draft-v1` | Form drafts per mode | yes |
+| `planif-active-plan-v1` | Active plan, with `dateZone` | yes |
+| `planif-plan-history-v1` | Archived plans, with `dateZone` | yes |
+| `planif-mode-v1`, `planif-weekly-balance-v2` | Mode, migration marker | yes |
+| `planif-theme`, `planif-speed-unit`, `calc-allures-ui`, `calc-allures-tab`, `calc-allures-calview`, `planif-coros-profile-v1` | Preferences | yes |
+| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-latest` | Safety copies and recovery state | no |
+| `planif-reference-plan-pending-v1` | Pending reference application | no (cleared on import) |
+| `planif-coros-v1`, `planif-coros-capabilities-v1`, `planif-strava-auth-v1`, `planif-strava-records-v1:*` | Device and account data | no |
+| `calc-allures-v7` | Legacy migration source | no |
+
+The backup file (`format: planif-backup`, `schema: 1`) holds the raw storage strings of the exported keys (`PlanifBackup.KEYS`). Import refuses unknown keys and UI settings, invalid plans and workouts, files over 8 MB, prototype keys and any `<`. Before writing, it stores the current Planif values under `planif-before-import-latest`; the previous active plan is accessible in Mes plans. An import that replaces the active plan archives the old one and opens the imported plan in recovery mode, without recalculating sessions. Each record keeps its `dateZone`. A new exported key must be added to `PlanifBackup.KEYS` with its validation rule.
 
 ### Time zones
 
