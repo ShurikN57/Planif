@@ -3,5 +3,6 @@
   "singleQuote": true,
   "trailingComma": "none",
   "arrowParens": "avoid",
-  "bracketSpacing": false
+  "bracketSpacing": false,
+  "quoteProps": "preserve"
 }
