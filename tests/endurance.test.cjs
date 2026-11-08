@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   vm = require('node:vm');
-const source = fs.readFileSync(require.resolve('../planif-ui.js'), 'utf8');
+const source = fs.readFileSync(require.resolve('../planif-calcul.js'), 'utf8');
 const listeners = {},
   output = {},
   comparison = {},
@@ -34,11 +34,9 @@ vm.createContext(context);
 // planif-html.js provides escapeHtml before planif-ui.js in the browser.
 const {loadHtml} = require('./helpers/runtime.cjs');
 loadHtml(context);
-vm.runInContext('var escapeHtml=PlanifHtml.escapeHtml;', context);
-vm.runInContext(
-  require('./helpers/source.cjs').between(source, 'CHRONO_DISTANCES', 'syncedHrZonesHtml'),
-  context
-);
+context.escapeHtml = context.PlanifHtml.escapeHtml;
+// Calcul tools are created by planif-calcul.js; its factory body runs here with the context as deps.
+vm.runInContext(require('./helpers/source.cjs').factoryBody(source, 'create'), context);
 const run = code => vm.runInContext(code, context);
 const click = (selector, dataset = {}) =>
   listeners.click.forEach(fn => fn({target: {closest: s => (s === selector ? {dataset} : null)}}));

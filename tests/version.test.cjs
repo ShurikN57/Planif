@@ -87,3 +87,20 @@ test('bump refuses invalid, older or equal versions and inconsistent sources wit
     fs.rmSync(dir, {recursive: true, force: true});
   }
 });
+
+test('the stylesheet is versioned, cached offline and checked like the scripts', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8'),
+    sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8'),
+    version = check(root).version;
+  assert(html.includes(`<link rel="stylesheet" href="./planif.css?v=${version}">`));
+  assert(!/<style\b/.test(html), 'styles live in planif.css');
+  assert(sw.includes(`'./planif.css?v=${version}'`));
+  const dir = copy();
+  try {
+    const page = path.join(dir, 'index.html');
+    fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace(`planif.css?v=${version}`, 'planif.css'));
+    assert(check(dir).problems.some(p => p.includes('planif.css')));
+  } finally {
+    fs.rmSync(dir, {recursive: true, force: true});
+  }
+});

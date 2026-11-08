@@ -4,7 +4,8 @@ The application remains a static PWA hosted by GitHub Pages. It has no build ste
 
 | File | Responsibility |
 | --- | --- |
-| `index.html` | Markup, styles, theme bootstrap and script order |
+| `index.html` | Markup, theme bootstrap (hashed in the CSP) and script order |
+| `planif.css` | All application styles (versioned, in the offline shell; not formatted by Prettier) |
 | `planif-version.js` | Application version |
 | `planif-rules.js` | Planning parameters |
 | `planif-engine.js` | Prediction, workout generation, calendars, placement and pure presentation helpers |
@@ -16,6 +17,7 @@ The application remains a static PWA hosted by GitHub Pages. It has no build ste
 | `planif-calendar-drag.js` | Calendar pointer interaction |
 | `planif-html.js` | Shared `escapeHtml`, loaded first; every template inserting non-literal data uses it |
 | `planif-backup.js` | Pure export/import of local data: backup format, validation and merge |
+| `planif-calcul.js` | Calcul tab tools (chrono, endurance, critical speed, load calculator), heart-rate panel and weekly volume/charge summary; `PlanifCalcul.create(deps)` receives its dependencies from the interface and never writes plans or references |
 | `sw.js` | Versioned offline application cache |
 
 ## Engine entry point

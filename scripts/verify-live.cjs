@@ -4,6 +4,7 @@ const files = [
   'index.html',
   'sw.js',
   'planif-studies.json',
+  'planif.css',
   ...fs.readdirSync('.').filter(n => /^planif-.*\.js$/.test(n))
 ];
 const base = 'https://shurikn57.github.io/Planif/';
