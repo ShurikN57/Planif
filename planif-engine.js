@@ -371,11 +371,11 @@ function vo2Dist(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=
   const[vlo,vhi,lo,hi]=vo2Band(rm,n*rm,st),v=(vlo+vhi)/2;rm=d/1000/v*60;const rr=recVO2Range(rm),rec=rangeMid(rr),bsr=RULES.vo2.recovery.betweenSets,bs=rangeMid(bsr),work=n*rm,sets=sp?sp.sets:1;
   return cand({sector:'vo2',fam,kind:'dist',key:`vo2:${fam}:${d}`,size:`d${d}`,structure:{type:'intervals',reps:n,distanceM:d,repDurationMin:rm,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free',sets:sp?sp.sets:0,perSet:sp?sp.per:0,recoveryBetweenSetsMin:bs,recoveryBetweenSetsRangeMin:bsr},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,v]],rec:(n-sets)*rec+(sets-1)*bs,recEach:rec,work});});}
 function vo2Time(table,fam){return(W,st)=>Object.entries(table).map(([d,[a,b]])=>{d=+d;
-  const n=clamp(Math.round(W/d),a,b),work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rr=recVO2Range(d),rec=rangeMid(rr),m=Math.round((vlo+vhi)/2*d/60*100)*10;
+  const n=clamp(Math.round(W/d),a,b),work=n*d,[vlo,vhi,lo,hi]=vo2Band(d,work,st),rr=recVO2Range(d),rec=rangeMid(rr);
   return cand({sector:'vo2',fam,kind:'time',key:`vo2:${fam}:${d}`,size:`t${d}`,structure:{type:'intervals',reps:n,durationMin:d,recoveryMin:rec,recoveryRangeMin:rr,recoveryType:'free'},intensity:{type:'pct_vma_range',minPct:lo,maxPct:hi,minKmh:vlo,maxKmh:vhi},parts:[[work,(vlo+vhi)/2]],rec:(n-1)*rec,recEach:rec,work});});}
 function vo2Pyr(W,st){return RULES.vo2.formats.pyramids.map(L=>{const work=L.reduce((x,y)=>x+y,0);let rec=0;for(let i=0;i<L.length-1;i++)rec+=recVO2(L[i]);
   const parts=L.map(d=>{const[vlo,vhi]=vo2Band(d,work,st);return[d,(vlo+vhi)/2];});
-  const[a1,b1]=vo2Band(Math.min(...L),work,st),[a2,b2]=vo2Band(Math.max(...L),work,st),rr=L.slice(0,-1).map(recVO2Range),rlo=Math.min(...rr.map(x=>x[0])),rhi=Math.max(...rr.map(x=>x[1]));
+  const[,b1]=vo2Band(Math.min(...L),work,st),[a2]=vo2Band(Math.max(...L),work,st),rr=L.slice(0,-1).map(recVO2Range),rlo=Math.min(...rr.map(x=>x[0])),rhi=Math.max(...rr.map(x=>x[1]));
   return cand({sector:'vo2',fam:'vo2.pyr',kind:'shape',key:`vo2:pyr:${L.join('-')}`,size:'pyr',structure:{type:'ladder',shape:'pyramid',durationsMin:L,recoveryType:'free',recoveryRangeMin:[rlo,rhi]},intensity:{type:'pct_by_duration',shortest:{durationMin:Math.min(...L),maxKmh:b1},longest:{durationMin:Math.max(...L),minKmh:a2}},parts,rec,recEach:rec/(L.length-1),work});});}
 
 
@@ -1304,7 +1304,6 @@ function raceSpeed(st,pred){const d=st.calDist;return st.calGoal?DIST[d].km/(st.
 /* Semaine de course : volume fortement réduit, un rappel d'allure, la veille légère, la course. */
 function buildSafetyTaperWeek(st,pred,vol){
   const d=st.calDist,v=raceSpeed(st,pred),km=DIST[d].km,raceMin=km/v*60,warns=[];
-  const rm=1/v*60;
   const TP=RULES.calendar.taper,RA=TP.reminderA,RB=TP.reminderB;
   const reminderMinutes=Math.min(RA.reps*RA.minutes,specificWorkLimit(v,st)),aMinutes=reminderMinutes/RA.reps;
   const stepM=RULES.specOther.durationAndEquivalence.taperDistanceStepM;
@@ -1406,7 +1405,7 @@ function placeWeek(wk,win,st){
       if(!protectedDay(d)&&f.type==='rec'&&!qualityAt(addDays(d,-1)))f.type='std';
       if(protectedDay(d)&&f.min>AF.protectedMax){spare+=f.min-AF.protectedMax;f.min=AF.protectedMax;f.type='rec';}
     }
-    for(const {d,f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
+    for(const {f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
       const extended=placed.filter(x=>x.f.min>AF.normalMax).length;
       const max=f.min>AF.normalMax||extended<AF.maxProlonged?AF.absoluteMax:AF.normalMax;
       const transfer=Math.min(spare,Math.max(0,max-f.min));f.min+=transfer;spare-=transfer;if(f.min>AF.normalMax)f.type='pro';
@@ -1414,7 +1413,7 @@ function placeWeek(wk,win,st){
     const missing=Number.isFinite(wk.vol)?Math.max(0,(wk.target??wk.targetVolume??wk.vol)-wk.vol):0;
     let added=0;
     // An isolated normal run may absorb previously unallocated minutes, after its date is known.
-    for(const {d,f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
+    for(const {f} of placed.filter(x=>!protectedDay(x.d)&&x.f.type!=='rec'&&x.f.type!=='active')){
       const extended=placed.filter(x=>x.f.min>AF.normalMax).length;
       const max=f.min>AF.normalMax||extended<AF.maxProlonged?AF.absoluteMax:AF.normalMax;
       const transfer=Math.min(missing-added,Math.max(0,max-f.min));f.min+=transfer;added+=transfer;if(f.min>AF.normalMax)f.type='pro';

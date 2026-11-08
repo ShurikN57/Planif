@@ -1,5 +1,5 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
+const assert=require('node:assert/strict'),vm=require('node:vm');
+const {injectEngine,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
 injectEngine(context);context.E=context.__engine;vm.runInContext('var activePlan=null;this.setActive=p=>activePlan=p;this.preserve=preservePastSessions;',context);

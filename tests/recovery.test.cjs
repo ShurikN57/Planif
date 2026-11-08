@@ -1,5 +1,5 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
+const assert=require('node:assert/strict'),vm=require('node:vm');
+const {loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
 const elements=new Map(),data=new Map();
 const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:id.startsWith('mode')?'radio':'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};

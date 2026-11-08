@@ -1,5 +1,4 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 // planif-html.js is loaded before this module in the browser.
 const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));

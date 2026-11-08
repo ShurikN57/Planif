@@ -1,7 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
 // The app validates calendar dates in the device's local day; toISOString() would use the UTC day.
 const localToday=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
 // planif-html.js is loaded before this module in the browser.
 const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const issuer='https://mcpeu.coros.com';

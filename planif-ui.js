@@ -3,8 +3,8 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.02').then(fun
 (function(){
 const $=id=>document.getElementById(id);
 $('f').addEventListener('submit',e=>e.preventDefault());
-const {DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose,RULES,localizeSavedPlan,serializeSavedPlans,currentTimeZone}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
-const {EVIDENCE_ENUMS,QUESTIONS,SOURCES,CONTEXT_SOURCE_IDS,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,refPathExists,auditIntegrity}=evidence;
+const {DIST,PROFILES,MEASURED,ZONES,num,parseTime,parseHM,fmtPace,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,profileLabel,suggestProfile,SECTOR_INFO,fmtRec,fmtRep,kmh,paceHtml,lt1Ref,efBand,efBandText,footColor,vo2WorkRange,vo2Band,p10Band,maxFractionMinutes,SESSION_LIBRARY,hillStruct,capsFor,loadPersonalModel,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,preparationActivation,prepareSession,variantLoad,mixedComponentLabel,activeBlockLabel,joggTitle,buildPlan,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_C,phaseLab,buildCalendar,REC_TYPE,presentVariantRaw,sessionTitle,PURPOSE,sessionPurpose,RULES,localizeSavedPlan,serializeSavedPlans,currentTimeZone}=globalThis.PlanifEngine.createEngine({getActivePlan:()=>activePlan,hasSameStructure:s=>sameStructure(calendarStructure(),s),getCompletedIds:()=>globalThis.PlanifStrava?.completedIds?.()||[]});
+const {QUESTIONS,SOURCES,sourceScope,scopeLabel,FINDINGS,RULE_META,TECHNICAL_RULES,auditIntegrity}=evidence;
 PROFILES.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.lab;if(i===2)o.selected=true;$('profile').appendChild(o);});
 {const o=document.createElement('option');o.value=MEASURED;o.textContent='Mesuré';$('profile').appendChild(o);}
 /* ---------- état ---------- */
@@ -216,6 +216,7 @@ const WARN_TEXT={
 };
 const warnText=w=>WARN_TEXT[w.code](w.params||{});
 const LD='Lignes droites : 5 à 8 × 10 à 15" (ou 60 à 100 m), récup complète, une fois dans la semaine en fin de footing';
+// eslint-disable-next-line no-unused-vars -- LD_SUFFIX is no longer used by the app; kept until a decision (audit COD-6).
 const LD_SUFFIX={strides:' + lignes droites',strides_optional:' + lignes droites (facultatif)',strides_load:' + lignes droites (selon la charge)',strides_light:' + lignes droites légères'};
 const BLOCK_LABEL={vma:'VO₂max / puissance aérobie',s1:'Premier seuil',s2:'Second seuil',eco:'Économie de course / côtes',aero:'Développement aérobie'};
 const blockLabel=B=>B.id==='spec'?`Allure spécifique ${DIST[B.dist].lab}`:BLOCK_LABEL[B.id];
@@ -609,6 +610,7 @@ $('auditSec').addEventListener('click',async e=>{if(!e.target.closest('#auditCop
 /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
 const APP_VERSION=globalThis.PlanifVersion;
 const escapeHtml=globalThis.PlanifHtml.escapeHtml;
+// eslint-disable-next-line no-unused-vars -- TABS is no longer used by the app; kept until a decision (audit COD-6).
 const TABS={today:'Accueil',cal:'Calendrier',ref:'Repères',study:'Études',set:'Réglages'};
 let appTab='today';
 let calendarMoveMessage='';
@@ -712,10 +714,12 @@ function appBlockWeeks(C,st){
     h+='</div>';});
   return h;
 }
+// eslint-disable-next-line no-unused-vars -- refHelpHtml is no longer used by the app; kept until a decision (audit COD-6).
 function refHelpHtml(title,body){return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;}
 const refEditorOpen={physio:false,chrono:false};
 let refDraft=null;
 let refPlanPending=false;
+// eslint-disable-next-line no-unused-vars -- refApplyRequested is no longer used by the app; kept until a decision (audit COD-6).
 let refApplyRequested=false;
 const REF_PLAN_PENDING_KEY='planif-reference-plan-pending-v1';
 function refSnapshot(){return Object.fromEntries(GLOBAL_IDS.map(id=>[id,isCheck($(id))?$(id).checked:$(id).value]));}
@@ -864,6 +868,7 @@ function toolAttr(value){return escapeHtml(value);}
 
 const wheelSaved={chrono:{},endurance:{},endurance2:{},endurance3:{},endurance4:{},critical:{}};
 function wheelSeconds(scope,key,meters,initial){const k=String(key);if(!Object.prototype.hasOwnProperty.call(wheelSaved[scope],k)){const t=initial?enduranceSeconds(initial):NaN;wheelSaved[scope][k]=Number.isFinite(t)&&t>0?t:meters===21097.5?3600:meters===42195?7200:0;}return wheelSaved[scope][k];}
+// eslint-disable-next-line no-unused-vars -- wheelDisplay is no longer used by the app; kept until a decision (audit COD-6).
 function wheelDisplay(t,meters){const n=Math.round(t*100),h=Math.floor(n/360000),m=Math.floor(n%360000/6000),sec=Math.floor(n%6000/100),cs=n%100;return meters<=200?String(sec)+(cs?','+String(cs).padStart(2,'0'):'')+' s':meters<=5000?String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
 function wheelPicker(scope,key,meters,initial){
  const t=wheelSeconds(scope,key,meters,initial),cs=Math.round(t*100),short=meters>200&&meters<=5000;
@@ -964,6 +969,7 @@ $('scr-calc').addEventListener('input',e=>{const {loadIndex,loadField}=e.target.
 $('scr-calc').addEventListener('change',e=>{const {loadIndex,loadField}=e.target.dataset;if(!['pace','unit'].includes(loadField))return;const b=loadToolState.blocks[Number(loadIndex)];if(!b)return;if(loadField==='pace'&&!LOAD_PRESETS.some(([key])=>key===e.target.value))return;if(loadField==='unit'){if(!['pace','speed'].includes(e.target.value))return;const speed=loadToolBlock({...b,minutes:'1'},loadToolReferences())?.speed;const seconds=speed?Math.round(3600/speed):0;b.manual=speed?(e.target.value==='speed'?String(Math.round(speed*100)/100):`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`):'';}b[loadField]=e.target.value;renderApp();});
 $('scr-calc').addEventListener('click',e=>{const point=e.target.closest('[data-load-point]');if(point){loadCurveState.selected=point.dataset.loadPoint;updateLoadCurveUi();return;}if(e.target.closest('[data-load-add]')){loadToolState.blocks.push({minutes:'10',pace:'jogg',manual:'5:00',unit:'pace'});renderApp();return;}const remove=e.target.closest('[data-load-remove]');if(remove&&loadToolState.blocks.length>1){const i=Number(remove.dataset.loadRemove);if(Number.isInteger(i)&&i>=0&&i<loadToolState.blocks.length){loadToolState.blocks.splice(i,1);renderApp();}}});
 
+// eslint-disable-next-line no-unused-vars -- syncedHrZonesHtml is no longer used by the app; kept until a decision (audit COD-6).
 function syncedHrZonesHtml(){return '';}
 function heartRatePanelHtml(){
   const z=globalThis.PlanifStrava?.heartRateZones?.();
@@ -972,7 +978,7 @@ function heartRatePanelHtml(){
   return `<div class="hrStravaPanel"><h3>Zones de FC</h3><p class="lbl">${z?'Synchronisées depuis Flow Strava · lecture seule.':'Connecte Flow Strava pour récupérer les zones de FC.'}</p><div class="physioHr">${fText('FC repos','hrMin','numeric')}${fText('FC max','hrMax','numeric')}${box('Z1 max',z?.z1Max)}${box('Z2 max',z?.z2Max)}${box('Z3 max',z?.z3Max)}${box('Z4 max',z?.z4Max)}</div>${rows.length?`<div class="hrStravaRows">${rows.map(([name,range])=>`<div><strong>${name}</strong><span>${range} bpm</span></div>`).join('')}</div><p class="lbl">Z2 : endurance active · Z3 : S1/tempo · Z4 : S2 · Z5 : au-dessus du S2.</p>`:`<p class="lbl">En attendant la connexion, les plafonds locaux restent utilisés pour les séances.</p><div class="physioHr">${fText('Plafond EF','lt1Hr','numeric')}${fText('Plafond S2','lt2Hr','numeric')}</div>`}</div>`;
 }
 function appRefHtml(){
-  const st=readState(),C=lastPlan,valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
+  const st=readState(),valid=referenceErrors(st).length===0,pred=valid?predict(st):null;
   const c=(lab,v,sub)=>`<div class="card"><div class="lbl">${lab}</div><div class="big"><strong>${fmtPace(v)}/km</strong></div><div class="lbl">(${sub||fmtSpd(v)+' km/h'})</div></div>`;
   let h=`<div class="refOverview">${refEditHtml('Repères et zones','physio',physioFieldsHtml())}${valid?`<div class="refgrid">${c('Premier seuil',(st.s1lo+st.s1hi)/2,`${fmtSpd(st.s1lo)} à ${fmtSpd(st.s1hi)} km/h`)}${c('Second seuil',st.s2)}${c('VMA',st.vma)}</div>`:'<p class="lbl">Complète S1, S2 et VMA avec le crayon pour afficher tes zones.</p>'}</div>`;
   if(refPlanPending&&activePlan)h+='<div class="card" role="status"><p>Les références sont enregistrées, mais le programme existant est conservé.</p><button type="button" class="cta" data-ref-apply>Appliquer aux séances futures non réalisées</button></div>';
@@ -1055,7 +1061,7 @@ function chronoFieldsHtml(){
 }
 function physioFieldsHtml(){return `<p class="sectionHint">Ces valeurs restent modifiables pendant le plan. Seules les séances futures sont recalculées.</p><label class="sf speedUnit"><span>Unité de vitesse</span><select data-speed-unit><option value="kmh"${speedUnit==='kmh'?' selected':''}>km/h</option><option value="pace"${speedUnit==='pace'?' selected':''}>min/km</option></select></label><div class="physioSpeeds">${speedField('S1','s1')}${speedField('S2','s2')}${speedField('VMA','vma')}</div><p class="lbl s1Hint">S1 : borne basse–haute, ou une seule valeur. En min/km : 5:13–5:00.</p>${heartRatePanelHtml()}`;}
 function appSetHtml(){
-  const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
+  const cal=$('modeCal').checked;
   let h=recoveryHtml();
 
   h+=`<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
@@ -1247,7 +1253,7 @@ function initBindings(screen){screen.querySelectorAll('select[data-bind]').forEa
 function initSet(){initBindings($('scr-set'));}
 function initRef(){initBindings($('scr-ref'));const ph=$('setProfileHint');if(ph)ph.textContent=$('profileHint').textContent;}
 function updateSet(){
-  const st=lastSt||readState(),cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
+  const cal=$('modeCal').checked,locked=cal&&!!activePlan&&!structureEditing;
   document.querySelectorAll('#scr-set [data-when]').forEach(el=>{const w=el.dataset.when;el.hidden=w==='cal'?!cal:w==='bloc'?cal:w==='spec'?$('block').value!=='spec':false;});
   document.querySelectorAll('#scr-set [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mode==='cal')===cal)));
   STRUCT_IDS.forEach(id=>{const el=document.querySelector('#scr-set [data-bind="'+id+'"]');if(el)el.disabled=locked;});
@@ -1255,6 +1261,7 @@ function updateSet(){
   const q2=document.querySelector('#scr-set [data-bind="q2Day"]');if(q2){const lab=q2.closest('label');if(lab)lab.hidden=+$('qualityCount').value<2;}
   const qh=$('setQualityHint');if(qh)qh.textContent=qualityAdvice(+$('runs').value,+$('qualityCount').value);
 }
+// eslint-disable-next-line no-unused-vars -- weeklyBalanceHtml is no longer used by the app; kept until a decision (audit COD-6).
 function weeklyBalanceHtml(){
   if(recoveryState||inputErrors(readState()).length||!lastPlan?.weeks)return '';
   const st=readState(),A=RULES.recovery.adaptiveFootings;
@@ -1513,7 +1520,7 @@ function primaryLoadReviewHtml(C,st,index,s){
 function libSessionHtml(r){
   const st=lastSt,sec=r.sector,Ws=libWork(sec);if(!Ws)return'';
   const o=libCandidates(sec,Ws[libVol]).find(x=>x.c.key===r.key);if(!o)return'<div class="card"><p class="lbl">Ce format n\'existe plus avec les réglages actuels.</p></div>';
-  const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10},st.vol),{wu,cd}=prep,ld=variantLoad(c,prep,st),[main,rec]=splitRec(vText(c));
+  const c=o.c,prep=prepareSession({fam:LIB_WARM[sec],libSector:sec,variants:[c],isLong:c.structure.type==='long_run',wu:RULES.organization.warmup[LIB_WARM[sec]][0],cd:10},st.vol),ld=variantLoad(c,prep,st);
   const pw=RULES.library.phaseWeights[o.fam],secLab=LIB_SECTORS.find(x=>x.id===sec).lab;
   const rpe=SECTOR_INFO[sec]?SECTOR_INFO[sec].rpe:null;
   let h=`<div class="sHead" style="--c:${libColor(sec)}"><div class="sHeadTitle"><h2>${secLab}</h2>${sessionInfoHeaderHtml('Pourquoi ce format',`<p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe?`<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}${pw?`<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n,i)=>`${n} ${Math.round(pw[i]*100)} %`).join(', ')}.</p>`:''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p>`)}</div><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
@@ -1596,7 +1603,7 @@ function sessionScreenHtml(){
   const when=day?fmtD(day.date):`Semaine ${r.w+1}`,ph=day?`${phaseLab(w.phase,C.race.distance)}, semaine ${w.index+1}`:`${blockLabel(C.B)}${w.assim?', assimilation':''}`,col=itemColor(it,w);
   const load=it.kind==='q'?it.s.variants[appOpt]?.load??it.s.variants[0]?.load:it.kind==='sl'?w.slLoad:it.s?.load??it.f?.load??it.load;
   const head=(t,info='')=>`<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div>${Number.isFinite(load)?`<div class="sessionCharge">Charge estimée : ${pts(load)}</div>`:''}</div>`;
-  if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0],[main,rec]=splitRec(vText(v));
+  if(it.kind==='q'){const s=it.s,v=s.variants[appOpt]||s.variants[0];
     let h=head(sessionTitle(s),sessionInfoHeaderHtml('Pourquoi cette séance',`<p>${sessionPurpose(s)}</p>${s.rpe?`<p>Ressenti attendu : ${s.rpe}. La fréquence cardiaque sert seulement de contrôle.</p>`:''}<p>Charge estimée : ${pts(v.load)} pour cette option${s.loadMin!==s.loadMax?` (${ptsRange(s.loadMin,s.loadMax)} selon l'option)`:''}.</p>${s.gap?`<p>Les deux options diffèrent de ${Math.round(s.gap)}' de travail : préfère l'option A.</p>`:''}`));
     h+=`<div class="optSeg" role="group" aria-label="Option">${s.variants.map((x,i)=>`<button type="button" data-opt="${i}" aria-pressed="${i===appOpt}">Option ${'AB'[i]}</button>`).join('')}</div>`;
     h+=primaryLoadReviewHtml(C,st,r.w,s)+qualityScheduleHtml(v,s,st);

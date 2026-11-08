@@ -1,4 +1,4 @@
-const assert=require('node:assert/strict'),crypto=require('node:crypto');
+const assert=require('node:assert/strict');
 const engine=require('../planif-engine.js');
 const baseline=require('./fixtures/plans-before-modules.json');
 // Reviewed by scripts/audit-personal-load.cjs against every prior hash and

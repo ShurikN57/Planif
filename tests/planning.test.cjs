@@ -1,5 +1,5 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
+const assert=require('node:assert/strict'),vm=require('node:vm');
+const {injectEngine,uiSource:html}=require('./helpers/runtime.cjs');
 const {between}=require('./helpers/source.cjs');
 const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
 const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
@@ -118,7 +118,7 @@ for(const w of c.weeks.filter(w=>w.assimilation)){
  const active=w.days.flatMap(d=>d.items.map(it=>({d,it}))).find(x=>x.it.kind==='foot'&&x.it.f.assimilationActive);
  assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q2Day);
 }
-for(const [vol,minutes] of [[130,10],[140,15],[150,20]]){
+for(const vol of [130,140,150]){
  const st={...state,runs:3},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,block:'spec',specDist:1});
  if(vol===130){
   assert.equal(w.sessions.length,0,'130 minutes cannot fit the minimum specific session under the 35% cap');
