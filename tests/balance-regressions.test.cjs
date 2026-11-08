@@ -104,8 +104,8 @@ test('quality limits and totals hold across block and calendar plans', () => {
   assert(weeks > 800, `${weeks} weeks checked`);
 });
 
-// Formerly checked only through the unused weeklyBalanceHtml capacity preview (audit COD-6): after
-// placement, at most RULES.recovery.adaptiveFootings.maxProlonged jogs exceed normalMax in a week.
+// The retired capacity preview used the prolongation limits in its estimate. Check the actual
+// scheduled jogs after placement, when day constraints have been applied.
 test('at most two jogs per week are extended beyond the normal maximum', () => {
   const avails = [
     [false, true, true, false, true, true, true],
