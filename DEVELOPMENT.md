@@ -1,95 +1,117 @@
-# Planif development
+# Développement de Planif
 
-The application remains a static PWA hosted by GitHub Pages. It has no build step or runtime package dependency.
+Planif reste une PWA statique publiée par GitHub Pages depuis `main`, sans étape de build ni dépendance d'exécution. La documentation est en français ; le code, ses commentaires et les messages de commit sont en anglais.
 
-| File | Responsibility |
+- Ce qui a changé : [`CHANGELOG.md`](CHANGELOG.md).
+- Pourquoi les choix importants ont été faits : [`docs/decisions/`](docs/decisions/).
+- Comment travailler : [`docs/METHODOLOGIE.md`](docs/METHODOLOGIE.md). Sécurité : [`docs/SECURITE.md`](docs/SECURITE.md).
+
+## Fichiers
+
+| Fichier | Rôle |
 | --- | --- |
-| `index.html` | Markup, theme bootstrap (hashed in the CSP) and script order |
-| `planif.css` | All application styles (versioned, in the offline shell; not formatted by Prettier) |
-| `planif-version.js` | Application version |
-| `planif-rules.js` | Planning parameters |
-| `planif-engine.js` | Prediction, workout generation, calendars, placement and pure presentation helpers |
-| `planif-studies.json` | Scientific sources and extracted findings |
-| `planif-evidence.js` | Questions, rule metadata and integrity audit |
-| `planif-ui.js` | User interface, local persistence, recovery and archived plans |
-| `planif-coros.js` | COROS connection, workout preview and export adapter |
-| `planif-strava.js` | Athlete connection and activity association |
-| `planif-calendar-drag.js` | Calendar pointer interaction |
-| `planif-html.js` | Shared `escapeHtml`, loaded first; every template inserting non-literal data uses it |
-| `planif-backup.js` | Pure export/import of local data: backup format, validation and merge |
-| `planif-calcul.js` | Calcul tab tools (chrono, endurance, critical speed, load calculator), heart-rate panel and weekly volume/charge summary; `PlanifCalcul.create(deps)` receives its dependencies from the interface and never writes plans or references |
-| `sw.js` | Versioned offline application cache |
+| `index.html` | Structure de la page, script de thème (haché dans la CSP) et ordre des scripts |
+| `planif.css` | Tous les styles (versionné, dans le cache hors ligne ; non formaté par Prettier) |
+| `planif-version.js` | Version de l'application |
+| `planif-rules.js` | Paramètres de planification |
+| `planif-engine.js` | Prévisions, génération des séances, calendriers, placement, aides de présentation pures |
+| `planif-studies.json` | Sources scientifiques et résultats extraits |
+| `planif-evidence.js` | Questions, métadonnées des règles et audit d'intégrité |
+| `planif-ui.js` | Interface, persistance locale, récupération et plans archivés |
+| `planif-calcul.js` | Outils de l'onglet Calcul (chronos, endurance, vitesse critique, calculatrice de charge), panneau FC et résumé volume/charge ; `PlanifCalcul.create(deps)` reçoit ses dépendances de l'interface et n'écrit jamais ni plans ni repères |
+| `planif-backup.js` | Export/import des données locales (fonctions pures) : format, validation, fusion |
+| `planif-html.js` | `escapeHtml` partagé (chargé en premier) et application des styles calculés `data-css-*` |
+| `planif-coros.js` | Connexion COROS, aperçu et envoi des séances ([`docs/COROS.md`](docs/COROS.md)) |
+| `planif-strava.js` | Connexion du compte athlète et association des activités |
+| `planif-calendar-drag.js` | Interaction tactile du calendrier |
+| `sw.js` | Cache hors ligne versionné |
 
-## Engine entry point
+## Moteur
 
-`require('./planif-engine.js').createEngine()` creates an independent engine instance in Node. The browser uses the same file through `globalThis.PlanifEngine`. The engine does not access the DOM or local storage.
+`require('./planif-engine.js').createEngine()` crée une instance indépendante du moteur dans Node ; le navigateur utilise le même fichier via `globalThis.PlanifEngine`. Le moteur n'accède ni au DOM ni au stockage local.
 
-The optional `getActivePlan` and `hasSameStructure` callbacks supply the active calendar when regenerating a saved plan. The UI owns this state. Tests can supply a saved plan without simulating the application form.
+Les fonctions facultatives `getActivePlan` et `hasSameStructure` fournissent le calendrier actif lors de la régénération d'un plan sauvegardé. L'interface possède cet état ; les tests peuvent fournir un plan sauvegardé sans simuler le formulaire.
 
-Scientific data are loaded before UI initialization. Strava initializes after its UI context is available. All required scripts and the scientific JSON are included in the service-worker shell.
+Les données scientifiques sont chargées avant l'initialisation de l'interface. Strava s'initialise une fois son contexte d'interface disponible. Tous les scripts nécessaires et le JSON scientifique sont dans le cache du service worker.
 
-## Verification
+### Invariants de planification
+
+- Les séances de qualité entières (préparation, récupérations et retour au calme compris) sont limitées à 35 % chacune et 50 % ensemble, par rapport au volume cible **et** au volume réel de la semaine de charge. Les sorties longues marathon et les semaines de course/affûtage gardent leurs propres règles.
+- Après placement, un footing normal isolé peut absorber le volume manquant, jusqu'à 90 minutes, avec au plus deux footings prolongés. Les Réglages affichent une estimation de capacité pour les séances et jours actuels, pas un maximum universel par nombre de sorties.
+- Un changement qui touche les séances futures préserve le plan existant et l'archive avant recalcul. Les seuils d'organisation restent identifiés comme heuristiques Planif dans les métadonnées des règles.
+- Charge : [décisions 0001 à 0003](docs/decisions/).
+
+## Vérifications
 
 ```sh
-node scripts/check-syntax.cjs
-TZ=Europe/Paris node --test tests/*.test.cjs
-node scripts/verify-live.cjs
+npm ci                 # outils de développement (une fois)
+npm run format         # Prettier
+npm run lint           # ESLint
+npm run check          # syntaxe des scripts et du JSON scientifique
+npm run test:tz        # tests unitaires et d'intégration, trois fuseaux
+npm run test:e2e       # scénarios Chromium
+npm run audit          # audits historiques (clone Git complet)
+npm run verify-live    # fichiers publics = dépôt (après déploiement)
 ```
 
-The same commands are available as `npm run check`, `npm test` and `npm run verify-live` (Node.js 22, see `.nvmrc`). `package.json` declares no runtime dependency; `npm ci` installs the development tools only. JavaScript is formatted with Prettier (`npm run format`; configuration in `.prettierrc.json`, `index.html` and JSON excluded) and linted with ESLint (`npm run lint`: undeclared names, unused code, loose equality). CI runs `npm run lint` and `npm run format:check` in a separate blocking job. Tests that inspect source code use `tests/helpers/source.cjs` (declarations, whole functions, whitespace-insensitive snippets), never exact text positions. CI runs on every branch push and pull request. The suite runs under `Europe/Paris`, `America/Los_Angeles` and `Pacific/Auckland`, all blocking; `npm run test:tz` reproduces this locally: it runs all three suites even when one fails, prints each result, and exits non-zero when any of them fails. Live-file verification runs only after the tests pass on `main`.
+Node.js 22 (voir `.nvmrc`). `package.json` ne déclare aucune dépendance d'exécution ; `npm ci` installe seulement les outils de développement. Le JavaScript est formaté par Prettier (`.prettierrc.json` ; `index.html`, CSS et JSON exclus) et contrôlé par ESLint (noms non déclarés, code inutilisé, égalité lâche).
 
-### Local storage
+La CI tourne sur chaque push et chaque pull request : tests sous Europe/Paris, America/Los_Angeles et Pacific/Auckland, *Lint and format*, *Browser tests (Chromium)*, *Planning audits* (bloquants) et *Coverage (informational)*. Sur `main`, la vérification des fichiers publics attend la réussite des contrôles bloquants. `npm run test:tz` lance les trois fuseaux même si l'un échoue, affiche chaque résultat et échoue si l'un d'eux échoue.
 
-All data stays in the browser (`localStorage`, COROS tokens in `sessionStorage`). Settings → Outils offers **Exporter mes données** and **Importer une sauvegarde**; after the first active plan, the app asks for persistent storage (`navigator.storage.persist()`) and shows its state.
+### Suites de tests
 
-| Key | Content | Backup |
-| --- | --- | --- |
-| `planif-global-v1` | References and physiology (`GLOBAL_IDS`) | yes |
-| `planif-block-draft-v1`, `planif-calendar-draft-v1` | Form drafts per mode | yes |
-| `planif-active-plan-v1` | Active plan, with `dateZone` | yes |
-| `planif-plan-history-v1` | Archived plans, with `dateZone` | yes |
-| `planif-mode-v1`, `planif-weekly-balance-v2` | Mode, migration marker | yes |
-| `planif-theme`, `planif-speed-unit`, `calc-allures-ui`, `calc-allures-tab`, `calc-allures-calview`, `planif-coros-profile-v1` | Preferences | yes |
-| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-latest` | Safety copies and recovery state | no |
-| `planif-reference-plan-pending-v1` | Pending reference application | no (cleared on import) |
-| `planif-coros-v1`, `planif-coros-capabilities-v1`, `planif-strava-auth-v1`, `planif-strava-records-v1:*` | Device and account data | no |
-| `calc-allures-v7` | Legacy migration source | no |
-
-The backup file (`format: planif-backup`, `schema: 1`) holds the raw storage strings of the exported keys (`PlanifBackup.KEYS`). Import refuses unknown keys and UI settings, invalid plans and workouts, files over 8 MB, prototype keys and any `<`. Before writing, it stores the current Planif values under `planif-before-import-latest`; the previous active plan is accessible in Mes plans. An import that replaces the active plan archives the old one and opens the imported plan in recovery mode, without recalculating sessions. Each record keeps its `dateZone`. A new exported key must be added to `PlanifBackup.KEYS` with its validation rule.
-
-### Time zones
-
-Engine calendars use `Date` objects at local midnight. Saved plans store them as ISO instants, which name a calendar day only together with the zone that wrote them. Since 2026.11.08.01, writes record `dateZone` (IANA name) via `serializeSavedPlans`, and `localizeSavedPlan` restores `date`, `start`, `startDate` and `endDate` to the same calendar days in the current zone. `dateZone` exists only in storage. Older plans can recover the writer offset from the race day in their settings. If that day is missing, the fallback uses matching local midnight or the nearest UTC midnight; without either a zone or a race day, very large offsets can be ambiguous. Day keys (`moves`, Strava links, completed sessions) remain unchanged. Tests compare local calendar days; historical fingerprints use `tests/helpers/paris-dates.cjs` to serialize dates as under Europe/Paris.
-
-`module-equivalence.test.cjs` retains the original prediction fingerprints from version 2026.10.18.01. Planning fingerprints in `plans-after-balance.json` reflect the intentional 2026.10.18.03 corrections: contextual jog durations, whole-quality duration limits, minimum VO₂ preparation, equivalent mixed options and explicit placement context. The pre-extraction fixture remains available. `plans-after-assimilation.json` records the reviewed 2026.10.19.44 assimilation rules; both earlier fixtures are retained. Run `TZ=Europe/Paris node scripts/audit-planning-baseline.cjs` from a full Git checkout to reconstruct the historical engine, verify all old hashes, compare structures and prove that other-week differences originate only from assimilation history. See `AUDIT-2026-10-19.md`. Fixtures should change only for an intentional planning-rule change, with its expected differences reviewed.
-
-Historical audits read **both** compared engines from Git (`audit-planning-baseline.cjs`: `c3013c5` → `922af38`; `audit-personal-load.cjs`: `2f8765e` → `5681e48`) and check the recomputed hashes against their reviewed fixtures, so later intentional changes cannot invalidate them. `npm run audit` runs the three audits (full Git history required); CI runs it in the *Planning audits* job. A new intentional planning change gets its own audit script comparing its two commits.
-
-`tests/fixtures/plans-week-signatures.json` stores 16-hex signatures of every reviewed plan without its weeks and of each week. When a fingerprint differs, `module-equivalence` names the scenario, plan kind and changed weeks. After a reviewed rule change has updated `plans-after-personal-load.json` (or its successor), run `npm run fixtures:signatures`: it refuses to write unless every reviewed full fingerprint is reproduced.
-
-### Test suites
-
-| Command | Content |
+| Commande | Contenu |
 | --- | --- |
-| `npm test`, `npm run test:tz` | Unit and integration tests (`tests/*.test.cjs`), Europe/Paris or all three zones |
-| `npm run test:e2e` | Chromium scenarios through Playwright (`tests/e2e/*.e2e.cjs`): every tab with a saved plan, Paris plan read in Los Angeles/Auckland, Calcul load calculator, backup export → import on another device and trapped file, offline reopening from the service worker |
-| `npm run test:coverage` | Informational coverage of the modules loaded with `require()` (engine, rules, evidence, backup, HTML). Files executed through `vm` in tests (interface, COROS, Strava, Calcul, calendar drag) are not measured: the browser scenarios cover them |
-| `npm run audit` | Historical planning audits |
+| `npm test`, `npm run test:tz` | Tests unitaires et d'intégration (`tests/*.test.cjs`), Europe/Paris ou les trois fuseaux |
+| `npm run test:e2e` | Scénarios Chromium via Playwright (`tests/e2e/*.e2e.cjs`) : tous les onglets avec un plan, plan de Paris relu à Los Angeles et Auckland (calendrier affiché), calculatrice de charge, export → import sur un autre appareil et fichier piégé, réouverture hors ligne. Toute violation de la CSP fait échouer un scénario |
+| `npm run test:coverage` | Couverture informative des modules chargés par `require()`. Les fichiers exécutés via `vm` dans les tests (interface, COROS, Strava, Calcul, calendrier) ne sont pas mesurés : les scénarios navigateur les couvrent |
+| `npm run audit` | Audits historiques des règles de planification |
 
-New tests use named `node:test` cases (`test('…', () => …)`), so that a failure names the case and the other cases still run; older single-script files are converted when they are modified. Playwright is pinned to the version whose Chromium build is installed (`npx playwright install --with-deps chromium` in CI).
+Les nouveaux tests utilisent des cas `node:test` nommés ; les anciens fichiers-scripts sont convertis lorsqu'ils sont modifiés. Les tests qui inspectent le code source passent par `tests/helpers/source.cjs` (déclarations, fonctions entières, extraits insensibles aux espaces), jamais par des positions de texte exactes. Playwright est figé sur la version dont le Chromium est installé (`npx playwright install --with-deps chromium` en CI). L'intégration de la persistance est isolée dans `tests/helpers/runtime.cjs`.
 
-Whole quality sessions (including preparation, recovery and cooldown) are limited to 35% individually and 50% combined, against both the target and actual charge-week volume. Marathon long runs and race/taper weeks retain their own rules. An isolated normal jog may absorb missing volume after calendar placement, up to 90 minutes, with at most two prolonged jogs. The settings screen displays a live capacity estimate for the current sessions and days, not a universal maximum by outing count.
+### Empreintes et audits
 
-The CSP permits a SHA-256 hash for the inline theme bootstrap; any change to that script requires updating its hash in the HTML policy. Firebase SDK tags pin version 10.14.1 with SHA-384 integrity hashes (verified against the published SDK bytes). Preserve COROS regional endpoints and Firebase Auth endpoints when adjusting the policy. Storage preference failures are logged; failed plan writes also show a visible warning.
+`module-equivalence.test.cjs` conserve les empreintes de prévision d'origine (2026.10.18.01) et vérifie les empreintes revues de 252 plans (`plans-after-personal-load.json`). Les références précédentes restent disponibles : `plans-before-modules.json` (avant extraction), `plans-after-balance.json` (corrections voulues de 2026.10.18.03 : durées de footing contextuelles, limites de qualité entière, préparation VO₂ minimale, options mixtes équivalentes, contexte de placement explicite) et `plans-after-assimilation.json` (règles d'assimilation revues de 2026.10.19.44, voir [`docs/audit/AUDIT-2026-10-19.md`](docs/audit/AUDIT-2026-10-19.md)). Les empreintes ne changent que pour un changement de règle voulu, dont les différences attendues sont revues.
 
-Engine tests import the actual module. UI persistence integration is isolated in `tests/helpers/runtime.cjs`.
+Les audits historiques lisent **les deux** moteurs comparés dans Git (`audit-planning-baseline.cjs` : `c3013c5` → `922af38` ; `audit-personal-load.cjs` : `2f8765e` → `5681e48`) et vérifient les empreintes recalculées par rapport à leur référence revue : un changement voulu ultérieur ne peut pas les invalider. Un nouveau changement voulu des règles reçoit son propre script d'audit comparant ses deux commits. `audit-block-load.cjs` vérifie les cellules de calibration de la revue par bloc ([décision 0003](docs/decisions/0003-revue-charge-par-bloc.md)).
 
-For a release, run `npm run version:bump` (next `AAAA.MM.JJ.NN` for today) or `npm run version:bump -- 2026.11.08.01 --label <cache-label>`. The script updates `planif-version.js`, the versioned script URLs in `index.html`, the scientific JSON URL in `planif-ui.js`, and the service-worker cache name and shell, and refuses to write if these locations already disagree or the new version is not later. `npm run version:check` (also enforced by `tests/version.test.cjs`) verifies consistency. Once the version change reaches `main`, `.github/workflows/release.yml` reruns the checks and creates tag `v<version>` with a GitHub Release; it can also be started manually (Actions → Release Planif → Run workflow) and does nothing if the tag exists. Verify that all public files match the commit after deployment. Changes affecting future sessions must preserve the existing plan and archive it before recalculation. Organizational thresholds remain identified as Planif heuristics in rule metadata.
+`tests/fixtures/plans-week-signatures.json` contient des signatures courtes (16 caractères hexadécimaux) de chaque plan revu sans ses semaines et de chaque semaine. Si une empreinte diffère, `module-equivalence` nomme le scénario, le type de plan et les semaines modifiées. Après un changement de règle revu qui a mis à jour la référence complète, lancer `npm run fixtures:signatures` : le script refuse d'écrire tant que chaque empreinte revue n'est pas reproduite.
 
-Since 2026.10.21.04, public program loads use the shared personalized calculator model. Historical accounting remains internal to scheduling safety; do not replace its thresholds with the lower public scores. See `AUDIT-PERSONAL-LOAD.md` and run `TZ=Europe/Paris node scripts/audit-personal-load.cjs` before changing the reviewed `plans-after-personal-load.json` fixture.
+## Stockage local
 
-Since 2026.10.21.06, `recalculatePlanSummary` reconciles reporting against placed calendar items, rather than potentially stale weekly lists/counters. Quality minutes sum the first option's work parts (including distance-based and mixed workouts), excluding warmup/recovery and active endurance; long-run S1 and race work are included. Percentages use placed planned volume. All displayed weeks use current personalized coefficients, including past/completed weeks. The original active plan is archived once before the summary-version-2 migration; dates, IDs, formats, paces and validations remain intact. Subsequent mobile rendering reconciles a revived copy only. The existing preservation-aware accounting API and scheduling guards remain unchanged. Points describe prescribed load, not load measured from linked activities.
+Toutes les données restent dans le navigateur (`localStorage` ; jetons COROS dans `sessionStorage`). Réglages → Outils propose **Exporter mes données** et **Importer une sauvegarde** ; dès qu'un plan actif existe, l'application demande un stockage persistant (`navigator.storage.persist()`) et en affiche l'état. Voir la [décision 0005](docs/decisions/0005-sauvegarde-export-import.md).
 
-Since 2026.10.21.10, `reviewBlockLoads` reviews a detached copy of the placed plan. The primary workout maximizes work specific to the block, averaged across options; its whole-session share and targeted-work share use the same personalized weekly denominator. Mixed components and AS10 mixed/alternating race segments are separated. Blocks expose descriptive progression in Calendar → Chronologie and in the primary workout detail. A >5% fall in targeted points is an advisory Planif heuristic; a block change, partial week, capacity adjustment, assimilation or taper resets normal progression comparisons. Assimilation compares total points to the preceding charge week separately. No workout is enlarged or removed to satisfy a score.
+| Clé | Contenu | Sauvegarde |
+| --- | --- | --- |
+| `planif-global-v1` | Repères et physiologie (`GLOBAL_IDS`) | oui |
+| `planif-block-draft-v1`, `planif-calendar-draft-v1` | Brouillons du formulaire par mode | oui |
+| `planif-active-plan-v1` | Plan actif, avec `dateZone` | oui |
+| `planif-plan-history-v1` | Plans archivés, avec `dateZone` | oui |
+| `planif-mode-v1`, `planif-weekly-balance-v2` | Mode, marqueur de migration | oui |
+| `planif-theme`, `planif-speed-unit`, `calc-allures-ui`, `calc-allures-tab`, `calc-allures-calview`, `planif-coros-profile-v1` | Préférences | oui |
+| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-latest` | Copies de sécurité et état de récupération | non |
+| `planif-reference-plan-pending-v1` | Application de repères en attente | non (effacée à l'import) |
+| `planif-coros-v1`, `planif-coros-capabilities-v1`, `planif-strava-auth-v1`, `planif-strava-records-v1:*` | Données d'appareil et de compte | non |
+| `calc-allures-v7` | Ancienne source de migration | non |
 
-S2 observed bands in `RULES.load.blockReview` come from the reproducible 705-plan synthetic audit: 3 speed levels, 3–7 hours, 3–6 outings, 1–3 qualities, four charge weeks plus assimilation, and 27-week calendars over four race distances. Each calibration cell retains at least eight volume-compatible weeks with requested outings/qualities; intervals are outward-rounded 10th–90th percentiles. Only interpolate between audited volumes of the same outings/quality configuration; never extrapolate or apply these bands to other blocks. These are descriptive engine-calibration hypotheses, not scientific training recommendations. Run `TZ=Europe/Paris node scripts/audit-block-load.cjs`; it verifies every stored calibration cell and that reviewing all 705 plans changes none of their input data. Existing planning fixtures remain untouched.
+Le fichier de sauvegarde (`format: planif-backup`, `schema: 1`) contient les chaînes brutes des clés exportées (`PlanifBackup.KEYS`). Une nouvelle clé exportée doit y être ajoutée avec sa règle de validation.
+
+## Fuseaux horaires
+
+Les calendriers du moteur utilisent des `Date` à minuit local. Les plans sauvegardés enregistrent `dateZone` via `serializeSavedPlans`, et `localizeSavedPlan` ramène `date`, `start`, `startDate` et `endDate` au même jour calendaire dans le fuseau actuel ; `dateZone` n'existe que dans le stockage. Les clés de jour (`moves`, liens Strava, séances réalisées) sont des chaînes `AAAA-MM-JJ`. Les tests comparent des jours locaux ; les empreintes historiques utilisent `tests/helpers/paris-dates.cjs` pour sérialiser les dates comme sous Europe/Paris. Voir la [décision 0004](docs/decisions/0004-dates-et-fuseaux.md).
+
+## Sécurité du code
+
+- La CSP n'autorise aucun script ni style inline. Le script de thème est autorisé par son empreinte SHA-256 : toute modification impose de mettre à jour cette empreinte dans la politique (vérifié par `tests/security.test.cjs`).
+- Aucun attribut `style` dans les gabarits : classes de `planif.css`, ou attributs `data-css-*` appliqués par `PlanifHtml` ([décision 0007](docs/decisions/0007-styles-sans-inline.md)).
+- Toute donnée non littérale insérée dans du HTML passe par `escapeHtml` (`planif-html.js`).
+- Le SDK Firebase est figé en 10.14.1 avec des empreintes d'intégrité SHA-384. Conserver les points d'accès régionaux COROS et ceux de Firebase Auth en modifiant la politique.
+- Les échecs d'enregistrement des préférences sont journalisés ; un échec d'écriture du plan affiche un avertissement visible.
+- Modèle de sécurité et vérifications du propriétaire : [`docs/SECURITE.md`](docs/SECURITE.md).
+
+## Publier une version
+
+1. `npm run version:bump` (version `AAAA.MM.JJ.NN` du jour) ou `npm run version:bump -- AAAA.MM.JJ.NN --label <libellé-du-cache>`. Le script met à jour `planif-version.js`, les URL versionnées de `index.html` (scripts et feuille de style), l'URL du JSON scientifique dans `planif-ui.js`, ainsi que le nom et le contenu du cache de `sw.js`. Il refuse d'écrire si ces emplacements sont déjà incohérents ou si la version n'est pas postérieure. `npm run version:check` (et `tests/version.test.cjs`) vérifie la cohérence.
+2. Ajouter l'entrée correspondante dans `CHANGELOG.md`.
+3. Après la fusion dans `main`, `.github/workflows/release.yml` relance les contrôles et crée le tag `v<version>` avec une release GitHub (lancement manuel possible : Actions → Release Planif → Run workflow ; sans effet si le tag existe).
+4. Vérifier que les fichiers publics correspondent au commit (`verify-live`, automatique sur `main`).

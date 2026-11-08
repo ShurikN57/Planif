@@ -1,0 +1,29 @@
+# Charge personnalisée du programme — 2026.10.21.04
+
+> Traduction française (lot L7, novembre 2026) de l'audit d'origine `AUDIT-PERSONAL-LOAD.md`, sans changement de fond. Deux évolutions ultérieures sont signalées en note : la réconciliation des statistiques (2026.10.21.06, [décision 0002](../decisions/0002-reconciliation-statistiques.md)) et l'audit figé sur ses deux commits (lot L6).
+
+Le programme affiche désormais les mêmes points personnalisés que la calculatrice. Les fonctions partagées sont dans `planif-engine.js` ; l'interface les importe. Les parties de travail sont comptées séparément, à leur vitesse prescrite. L'échauffement, le retour au calme, la course facile non précisée et les récupérations trottinées comptent 0,20 point/minute. Aucun multiplicateur de densité supplémentaire n'est appliqué aux points affichés. Les fourchettes de séance utilisent les options la moins et la plus coûteuse, et la semaine additionne les éléments réellement placés à ses dates. L'endurance active et le S1 inclus dans les sorties longues sont comptés.
+
+Cela reste une heuristique Planif inspirée de Daniels, et non une mesure physiologique validée : S1 = 240 min / 0,30 ; S2 = 60 min / 0,60 ; VMA = 6 min / 1,00. Les coefficients des allures spécifiques sont interpolés sur le logarithme du temps de course ; la courbe de vitesse est interpolée entre ces points. À 105 % de la VMA le facteur vaut 1,20, et à 110 % il vaut 1,50.
+
+## Sécurité et entrées non prises en charge
+
+Changer l'échelle des points ne doit pas assouplir les limites d'entraînement. L'assemblage conserve l'ancienne comptabilité de sécurité pour le choix des candidats et des formats, la classification des semaines lourdes (points de travail historiques / volume ≥ 0,18), la qualité la plus coûteuse et le placement des récupérations. Les champs de charge publics sont convertis après l'assemblage. Le résultat de sécurité d'origine est conservé dans `safetyLoad`. Les plafonds en minutes, les budgets de durée de 35 %/50 %, l'assimilation, les dates et toutes les structures de séance sont inchangés. Une mise à l'échelle universelle du seuil de 0,18 serait inexacte, car le rapport de conversion dépend de l'intensité.
+
+Lorsque les allures de course prédites contredisent les seuils fixes, la comptabilité personnalisée revient aux ancrages de vitesse fixes, avec un avertissement visible. Pour une estimation de course hors de 6–240 minutes, l'allure utilise l'interpolation entre ancrages de vitesse plutôt que d'extrapoler son coefficient de durée. Au-delà de 110 % de la VMA (notamment les sprints en côte à 115 %), le coefficient historique, plus élevé, est conservé : exception prudente et explicitement signalée. La calculatrice applique les mêmes replis. Les lignes droites facultatives sans vitesse prescrite ne peuvent pas recevoir une intensité inventée ; la comptabilité existante en durée de préparation/facile est conservée.
+
+## Revue par rapport à la version précédente
+
+Lancer `npm run audit:personal-load` depuis un clone Git complet. Le script charge le moteur et les règles réels du commit `2f8765ed85a0582112f86fa3643ba6a78f2c5cb1`, vérifie d'abord chaque empreinte existante de la référence d'assimilation, puis compare exactement chaque champ hors comptabilité. Seule une liste explicite de champs de comptabilité est exclue. Les prévisions, les formats, toutes les minutes, les allures, les structures de récupération, les jours, les codes d'avertissement, les indicateurs de semaine lourde et l'identité des séances les plus coûteuses sont vérifiés inchangés.
+
+> Note (lot L6) : le côté « après » est désormais lu dans Git au commit revu `5681e48`, et les empreintes recalculées sont comparées à `plans-after-personal-load.json`. Un changement voulu ultérieur ne peut plus invalider cet audit.
+
+Résultat : **252 plans / 2 142 semaines**, sans aucun changement hors comptabilité. Les nouveaux totaux hebdomadaires de points valent **0,461174 à 0,576519** fois les anciens. **1 071 semaines** portent un avertissement de repli, parce que leurs références sont incompatibles avec les hypothèses de durée fixes ou hors de la plage de durée prise en charge. Les références précédentes sont conservées. Le nouveau `plans-after-personal-load.json` n'a été écrit qu'après ces vérifications ; `--write-reviewed` les relance toutes avant d'écrire.
+
+## Plans sauvegardés
+
+La migration des charges ne régénère aucune séance. Avant de modifier le plan actif, une copie intacte est archivée ; l'historique d'archives existant est conservé. Seules les semaines entièrement futures et sans séance réalisée sont converties. Toute semaine déjà commencée (y compris aujourd'hui) ou contenant une séance réalisée est laissée intacte, y compris son échelle de points d'origine : on évite ainsi de mélanger deux échelles dans une semaine. L'interface signale les semaines conservées. Les validations Strava en cache sont vérifiées avant que l'authentification asynchrone soit prête. Le mode récupération, une application de références en attente et la modification de structure diffèrent la migration. Le marqueur de version la rend idempotente. Une écriture qui échoue laisse le plan actif inchangé et affiche une erreur.
+
+> Note (2026.10.21.06) : depuis, toutes les semaines affichées, y compris passées ou réalisées, utilisent les coefficients personnalisés actuels pour les statistiques ; voir la [décision 0002](../decisions/0002-reconciliation-statistiques.md).
+
+`tests/program-load.test.cjs` vérifie les sommes exactes par bloc et par semaine, l'absence de surcharge de densité, les coefficients partagés, les totaux complets du calendrier placé, l'idempotence, la protection du passé et des séances réalisées, les validations en cache, l'ordre d'archivage et l'échec de stockage. La suite complète conserve ses assertions de sécurité et de structure.

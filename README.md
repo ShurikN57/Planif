@@ -29,10 +29,14 @@ Les audits (`npm run audit`) sont à lancer depuis un clone Git complet avant to
 
 ## Documentation
 
-- [`DEVELOPMENT.md`](DEVELOPMENT.md) — architecture, rôle des fichiers, procédure de version.
+- [`DEVELOPMENT.md`](DEVELOPMENT.md) — architecture, vérifications, stockage, publication d'une version.
+- [`CHANGELOG.md`](CHANGELOG.md) — journal des versions.
+- [`docs/decisions/`](docs/decisions/) — décisions importantes et leurs raisons.
 - [`docs/METHODOLOGIE.md`](docs/METHODOLOGIE.md) — méthode de travail (branches, PR, définition de « terminé »).
-- [`docs/audit/`](docs/audit/) — audits ; [`AUDIT-2026-10-19.md`](AUDIT-2026-10-19.md), [`AUDIT-PERSONAL-LOAD.md`](AUDIT-PERSONAL-LOAD.md).
-- [`COROS.md`](COROS.md) — intégration COROS.
+- [`docs/SECURITE.md`](docs/SECURITE.md) — modèle de sécurité et vérifications du propriétaire.
+- [`docs/audit/`](docs/audit/) — audits (complet du 7 novembre 2026, assimilation du 19 octobre, charge personnalisée du 21 octobre).
+- [`docs/COROS.md`](docs/COROS.md) — intégration COROS.
+- [`CLAUDE.md`](CLAUDE.md) — consignes pour les sessions Claude Code.
 
 ## Contribuer
 
