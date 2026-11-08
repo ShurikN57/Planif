@@ -1,5 +1,8 @@
-const assert = require('node:assert/strict');
+// Weekly balance rules of the engine: 35%/50% quality limits, consistent totals, adaptive jogs.
+const assert = require('node:assert/strict'),
+  {test} = require('node:test');
 const E = require('../planif-engine.js');
+const A = E.RULES.recovery.adaptiveFootings;
 const base = {
   ...require('./fixtures/plans-before-modules.json')[0].st,
   mode: 'cal',
@@ -38,84 +41,89 @@ const check = w => {
     assert(Math.abs(a.work - b.work) <= E.TOL(a.work) + 1e-7);
   }
 };
-const isolated = charge(build(base));
-assert(
-  isolated.some(w => w.foot.some(f => f.min === 90)),
-  'Thursday can reach 90 minutes after Tuesday quality'
-);
-for (const w of isolated) {
-  check(w);
-  assert(w.foot.every(f => f.min <= 90));
+
+test('an isolated jog absorbs missing volume up to 90 minutes and the shortfall is explained', () => {
+  const isolated = charge(build(base));
   assert(
-    w.warns.some(x => x.code === 'volume_short'),
-    '5h remains incompatible and explained'
+    isolated.some(w => w.foot.some(f => f.min === 90)),
+    'Thursday can reach 90 minutes after Tuesday quality'
   );
-}
-for (const avail of [
-  [false, true, true, false, false, false, true],
-  [false, true, false, false, false, true, true]
-]) {
-  const weeks = charge(build({...base, avail}));
-  for (const w of weeks) {
+  for (const w of isolated) {
     check(w);
-    for (const f of w.foot.filter(f => f.contextProtected)) assert(f.min <= 45);
+    assert(w.foot.every(f => f.min <= 90));
+    assert(
+      w.warns.some(x => x.code === 'volume_short'),
+      '5h remains incompatible and explained'
+    );
   }
-}
-let weeks = 0;
-for (const vol of [130, 150, 180, 230, 300, 420, 540])
-  for (const runs of [3, 4, 5, 6, 7])
-    for (const block of ['s1', 's2', 'vma', 'spec']) {
-      const st = {...base, mode: 'bloc', vol, runs, block, qualityCount: 3, N: 4, specDist: 2};
-      for (const w of E.buildPlan(st, E.predict(st)).weeks.filter(w => !w.assim)) {
-        check(w);
-        weeks++;
-      }
+});
+
+test('jogs on protected days stay within 45 minutes', () => {
+  for (const avail of [
+    [false, true, true, false, false, false, true],
+    [false, true, false, false, false, true, true]
+  ]) {
+    const weeks = charge(build({...base, avail}));
+    for (const w of weeks) {
+      check(w);
+      for (const f of w.foot.filter(f => f.contextProtected)) assert(f.min <= 45);
     }
-for (const vol of [130, 230, 420])
-  for (const runs of [3, 4, 7])
-    for (const dist of [0, 1, 2, 3]) {
-      const st = {
-        ...base,
-        vol,
-        runs,
-        calDist: dist,
-        qualityCount: 3,
-        avail: Array(7).fill(true),
-        q1Day: '',
-        q2Day: '',
-        slDay: ''
-      };
-      for (const w of charge(build(st))) {
-        check(w);
-        weeks++;
+  }
+});
+
+test('quality limits and totals hold across block and calendar plans', () => {
+  let weeks = 0;
+  for (const vol of [130, 150, 180, 230, 300, 420, 540])
+    for (const runs of [3, 4, 5, 6, 7])
+      for (const block of ['s1', 's2', 'vma', 'spec']) {
+        const st = {...base, mode: 'bloc', vol, runs, block, qualityCount: 3, N: 4, specDist: 2};
+        for (const w of E.buildPlan(st, E.predict(st)).weeks.filter(w => !w.assim)) {
+          check(w);
+          weeks++;
+        }
       }
-    }
-console.log(
-  `OK: isolated/protected three-run jogs, 35%/50% limits on actual and target volume, equivalent options and consistent totals in ${weeks} weeks.`
-);
-// Capacity is visible while editing settings, including when no post-generation warning exists.
-const fs = require('node:fs'),
-  vm = require('node:vm'),
-  ui = fs.readFileSync('planif-ui.js', 'utf8');
-const source = require('./helpers/source.cjs').functionSource(ui, 'weeklyBalanceHtml');
-const context = {
-  recoveryState: null,
-  inputErrors: E.inputErrors,
-  readState: () => base,
-  lastPlan: build(base),
-  RULES: E.RULES,
-  fmtDur: E.fmtDur,
-  warnText: () => ''
-};
-vm.createContext(context);
-vm.runInContext(source + ';this.preview=weeklyBalanceHtml;', context);
-assert.match(context.preview(), /data-volume-capacity/);
-assert.match(context.preview(), /ajoute une sortie ou réduis la cible/);
-context.lastPlan = {
-  weeks: [
-    {sessions: [], foot: [{type: 'std', contextProtected: true}], sl: 90, vol: 135, target: 135, warns: []}
-  ]
-};
-assert.match(context.preview(), /data-volume-capacity/);
-assert.match(context.preview(), /2h15/, 'protected days stay capped in the input estimate');
-console.log('OK: live settings capacity, target incompatibility guidance and protected-day capacity.');
+  for (const vol of [130, 230, 420])
+    for (const runs of [3, 4, 7])
+      for (const dist of [0, 1, 2, 3]) {
+        const st = {
+          ...base,
+          vol,
+          runs,
+          calDist: dist,
+          qualityCount: 3,
+          avail: Array(7).fill(true),
+          q1Day: '',
+          q2Day: '',
+          slDay: ''
+        };
+        for (const w of charge(build(st))) {
+          check(w);
+          weeks++;
+        }
+      }
+  assert(weeks > 800, `${weeks} weeks checked`);
+});
+
+// Formerly checked only through the unused weeklyBalanceHtml capacity preview (audit COD-6): after
+// placement, at most RULES.recovery.adaptiveFootings.maxProlonged jogs exceed normalMax in a week.
+test('at most two jogs per week are extended beyond the normal maximum', () => {
+  const avails = [
+    [false, true, true, false, true, true, true],
+    [false, true, true, false, false, false, true],
+    Array(7).fill(true),
+    [false, true, false, false, false, true, true]
+  ];
+  let weeks = 0,
+    reached = false;
+  for (const vol of [130, 230, 300, 420, 540, 660])
+    for (const runs of [3, 5, 7])
+      for (const qualityCount of [1, 2])
+        for (const avail of avails)
+          for (const w of charge(build({...base, vol, runs, qualityCount, avail}))) {
+            const extended = w.foot.filter(f => !f.unplaced && f.min > A.normalMax).length;
+            assert(extended <= A.maxProlonged, `${extended} extended jogs (vol ${vol}, ${runs} runs)`);
+            reached ||= extended === A.maxProlonged;
+            weeks++;
+          }
+  assert(weeks > 500 && reached, 'the limit is checked and actually reached');
+});
