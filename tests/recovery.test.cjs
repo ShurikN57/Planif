@@ -1,84 +1,214 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
-const elements=new Map(),data=new Map();
-const el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:id.startsWith('mode')?'radio':'text',appendChild(){},addEventListener(){}});return elements.get(id);};
-const ctx={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},console};
+const assert = require('node:assert/strict'),
+  vm = require('node:vm');
+const {loadRuntime, uiSource: html} = require('./helpers/runtime.cjs');
+const elements = new Map(),
+  data = new Map();
+const el = id => {
+  if (!elements.has(id))
+    elements.set(id, {
+      value: '',
+      checked: false,
+      type: id.startsWith('mode') ? 'radio' : 'text',
+      appendChild() {},
+      addEventListener() {}
+    });
+  return elements.get(id);
+};
+const ctx = {
+  document: {getElementById: el, createElement: () => ({})},
+  localStorage: {getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, v)},
+  console
+};
 vm.createContext(ctx);
 loadRuntime(ctx);
-const refPendingDefinition=html.match(/^function refPendingLoad\(\)\{[^\n]+\}/m)?.[0];
-assert(refPendingDefinition,'pending-reference loader must remain available');
-vm.runInContext(refPendingDefinition,ctx);
-vm.runInContext(`
+const {between, declaration, functionSource} = require('./helpers/source.cjs');
+const refPendingDefinition = functionSource(html, 'refPendingLoad');
+assert(refPendingDefinition, 'pending-reference loader must remain available');
+vm.runInContext(refPendingDefinition, ctx);
+vm.runInContext(
+  `
 this.E={buildCalendar,predict,ensurePlanifSessionIds,protectPlanRecovery,reviveSavedPlan,load,saveActivePlan,switchModeState};
 this.defaults=()=>({...DEFAULTS});this.keys=STORE;
 this.state=()=>recoveryState;this.setRecovery=r=>recoveryState=r;
 this.forceMismatch=()=>{CURRENT_MODE='cal';$('modeCal').checked=false;$('modeBloc').checked=true;};
-`,ctx);
-const E=ctx.E,st={mode:'cal',calStart:'2026-10-05',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:1165,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
-const C=E.buildCalendar(st,E.predict(st));E.ensurePlanifSessionIds(C);
-const saved={id:'original-plan',structure:{calStart:st.calStart,calRace:st.calRace,calDist:'1',vol:'5h00'},plan:JSON.parse(JSON.stringify(C))};
-const original=JSON.stringify(saved);
-data.set(ctx.keys.active,original);data.set(ctx.keys.global,JSON.stringify(ctx.defaults()));data.set(ctx.keys.mode,'cal');
-E.load();assert.equal(ctx.state().status,'pending');
-const backup=data.get('planif-recovery-before-2026101706');
-assert.equal(JSON.parse(backup).values[ctx.keys.active],original);
-E.saveActivePlan(st,{...C,weeks:[]});assert.equal(data.get(ctx.keys.active),original);
-E.protectPlanRecovery();assert.equal(data.get('planif-recovery-before-2026101706'),backup);
-ctx.forceMismatch();E.switchModeState('cal');assert.equal(el('modeCal').checked,true);assert.equal(el('modeBloc').checked,false);
-const revived=E.reviveSavedPlan(saved.plan);
-assert.equal(JSON.stringify(revived),JSON.stringify(saved.plan));
-assert(Number.isFinite(+revived.race.date)&&Number.isFinite(+revived.start));
-assert(Number.isFinite(+revived.weeks[0].startDate)&&Number.isFinite(+revived.weeks[0].days[0].date));
-vm.runInContext('let refDraft=null;',ctx);
-vm.runInContext(html.slice(html.indexOf('let lastPlan=null,lastPred=null,lastSt=null;'),html.indexOf('const pts=x=>'))+`
+`,
+  ctx
+);
+const E = ctx.E,
+  st = {
+    mode: 'cal',
+    calStart: '2026-10-05',
+    calRace: '2026-12-20',
+    calDist: 1,
+    calGoal: null,
+    avail: [false, true, true, false, true, true, true],
+    q1Day: '1',
+    q2Day: '4',
+    q3Day: '',
+    slDay: '6',
+    vma: 17,
+    s2: 14,
+    s1lo: 11.5,
+    s1hi: 12,
+    refDist: 0,
+    refTime: 1165,
+    profile: 1,
+    penalty: false,
+    ref2Dist: 1,
+    ref2Time: null,
+    block: 'spec',
+    specDist: 1,
+    specGoal: null,
+    N: 4,
+    vol: 300,
+    runs: 5,
+    qualityCount: 2,
+    assimQ2: false
+  };
+const C = E.buildCalendar(st, E.predict(st));
+E.ensurePlanifSessionIds(C);
+const saved = {
+  id: 'original-plan',
+  structure: {calStart: st.calStart, calRace: st.calRace, calDist: '1', vol: '5h00'},
+  plan: JSON.parse(JSON.stringify(C))
+};
+const original = JSON.stringify(saved);
+data.set(ctx.keys.active, original);
+data.set(ctx.keys.global, JSON.stringify(ctx.defaults()));
+data.set(ctx.keys.mode, 'cal');
+E.load();
+assert.equal(ctx.state().status, 'pending');
+const backup = data.get('planif-recovery-before-2026101706');
+assert.equal(JSON.parse(backup).values[ctx.keys.active], original);
+E.saveActivePlan(st, {...C, weeks: []});
+assert.equal(data.get(ctx.keys.active), original);
+E.protectPlanRecovery();
+assert.equal(data.get('planif-recovery-before-2026101706'), backup);
+ctx.forceMismatch();
+E.switchModeState('cal');
+assert.equal(el('modeCal').checked, true);
+assert.equal(el('modeBloc').checked, false);
+const revived = E.reviveSavedPlan(saved.plan);
+assert.equal(JSON.stringify(revived), JSON.stringify(saved.plan));
+assert(Number.isFinite(+revived.race.date) && Number.isFinite(+revived.start));
+assert(Number.isFinite(+revived.weeks[0].startDate) && Number.isFinite(+revived.weeks[0].days[0].date));
+vm.runInContext('let refDraft=null;', ctx);
+vm.runInContext(
+  between(html, 'lastPlan', 'pts') +
+    `
 this.renderRecovery=render;this.rendered=()=>lastPlan;
 buildCalendar=()=>{throw Error('Unexpected regeneration during recovery');};
-`,ctx);
-ctx.renderRecovery();assert.equal(ctx.rendered(),null);
-ctx.setRecovery({id:saved.id,status:'restored'});ctx.renderRecovery();
-assert.equal(JSON.stringify(ctx.rendered()),JSON.stringify(saved.plan));assert.equal(data.get(ctx.keys.active),original);
-E.saveActivePlan(st,C);assert.equal(data.get(ctx.keys.active),original);
-data.set('planif-recovery-state-v1',JSON.stringify({id:saved.id,status:'restored'}));E.load();ctx.renderRecovery();
-assert.equal(JSON.stringify(ctx.rendered()),JSON.stringify(saved.plan));
-data.set('planif-recovery-state-v1',JSON.stringify({id:saved.id,status:'resumed'}));E.protectPlanRecovery();assert.equal(ctx.state(),null);
-assert(!html.includes('resetBtn')&&!html.includes('data-act="reset"'));
-const card=html.slice(html.indexOf('<div class="card toolsCard">'),html.indexOf('function themeButtonText'));
-const order=['data-act="theme"','data-act="update"','data-act="copy"','data-act="audit"','data-goto="expert"'].map(s=>card.indexOf(s));
-assert(order.every((v,i)=>v>=0&&(!i||v>order[i-1])));
-console.log('OK: immutable backup, no regeneration during recovery, preserved sessions and dates, reload persistence, mode repair and tools order.');
+`,
+  ctx
+);
+ctx.renderRecovery();
+assert.equal(ctx.rendered(), null);
+ctx.setRecovery({id: saved.id, status: 'restored'});
+ctx.renderRecovery();
+assert.equal(JSON.stringify(ctx.rendered()), JSON.stringify(saved.plan));
+assert.equal(data.get(ctx.keys.active), original);
+E.saveActivePlan(st, C);
+assert.equal(data.get(ctx.keys.active), original);
+data.set('planif-recovery-state-v1', JSON.stringify({id: saved.id, status: 'restored'}));
+E.load();
+ctx.renderRecovery();
+assert.equal(JSON.stringify(ctx.rendered()), JSON.stringify(saved.plan));
+data.set('planif-recovery-state-v1', JSON.stringify({id: saved.id, status: 'resumed'}));
+E.protectPlanRecovery();
+assert.equal(ctx.state(), null);
+assert(!html.includes('resetBtn') && !html.includes('data-act="reset"'));
+const card = html.slice(html.indexOf('<div class="card toolsCard">'), declaration(html, 'themeButtonText'));
+const order = [
+  'data-act="theme"',
+  'data-act="update"',
+  'data-act="copy"',
+  'data-act="audit"',
+  'data-goto="expert"'
+].map(s => card.indexOf(s));
+assert(order.every((v, i) => v >= 0 && (!i || v > order[i - 1])));
+console.log(
+  'OK: immutable backup, no regeneration during recovery, preserved sessions and dates, reload persistence, mode repair and tools order.'
+);
 // Plan browser uses detached snapshots; restoration archives the current plan first.
-vm.runInContext(html.slice(html.indexOf('function savedPlanEntries(){'),html.indexOf('function themeButtonText(){'))+`
+vm.runInContext(
+  between(html, 'savedPlanEntries', 'themeButtonText') +
+    `
 this.library={entries:savedPlanEntries,restore:restoreSavedPlanRecord,summary:savedPlanSummary};
 this.setHistory=h=>planHistory=h;this.getActive=()=>activePlan;this.getHistory=()=>planHistory;
-`,ctx);
-const archive={...JSON.parse(original),id:'archived-plan',title:'Ancien <plan>',archivedAt:'2026-10-01T12:00:00Z'};
-ctx.setHistory([archive]);data.set(ctx.keys.history,JSON.stringify([archive]));
-const beforeRead=JSON.stringify([...data]);
-const entries=ctx.library.entries();assert.deepEqual(Array.from(entries,x=>x.kind),['active','archive','backup']);
+`,
+  ctx
+);
+const archive = {
+  ...JSON.parse(original),
+  id: 'archived-plan',
+  title: 'Ancien <plan>',
+  archivedAt: '2026-10-01T12:00:00Z'
+};
+ctx.setHistory([archive]);
+data.set(ctx.keys.history, JSON.stringify([archive]));
+const beforeRead = JSON.stringify([...data]);
+const entries = ctx.library.entries();
+assert.deepEqual(
+  Array.from(entries, x => x.kind),
+  ['active', 'archive', 'backup']
+);
 assert(ctx.library.summary(entries[1]).includes('&lt;plan&gt;'));
-entries[0].record.plan.weeks[0].days[0].items=[];
-assert.equal(JSON.stringify(ctx.getActive()),original,'preview must not share mutable objects');
-assert.equal(JSON.stringify([...data]),beforeRead,'opening the list must not write storage');
-const result=ctx.library.restore(archive);
-assert.equal(result.id,'archived-plan');assert(!result.archivedAt);
-assert.equal(JSON.stringify(result.plan),JSON.stringify(archive.plan));
-assert.equal(ctx.getHistory()[0].id,'original-plan');assert.equal(ctx.state().status,'restored');
-assert([...data.keys()].some(k=>k.startsWith('planif-before-restore-')));
-const storedBefore=Object.fromEntries([ctx.keys.active,ctx.keys.history,ctx.keys.mode,'planif-recovery-state-v1'].map(k=>[k,data.get(k)]));
-const set=ctx.localStorage.setItem;let fail=true;
-ctx.localStorage.removeItem=k=>data.delete(k);
-ctx.localStorage.setItem=(k,v)=>{if(k===ctx.keys.active&&fail){fail=false;throw Error('quota');}set(k,v);};
-assert.throws(()=>ctx.library.restore(saved),/Restauration interrompue/);
-assert.equal(ctx.getActive().id,'archived-plan','failed writes do not change memory');
-for(const [k,v] of Object.entries(storedBefore))assert.equal(data.get(k),v,'failed writes restore prior storage');
-ctx.localStorage.setItem=set;
-console.log('OK: read-only detached plan browser, escaped titles, archive-before-restore, preserved session IDs, and rollback on storage failure.');
-vm.runInContext('this.validation={referenceErrors,inputErrors};this.useInput=s=>{readState=()=>s;};this.previous=()=>({plan:lastPlan,state:lastSt});',ctx);
-assert.equal(ctx.validation.inputErrors(st).length,0);
-for(const change of [{s1lo:13,s1hi:12},{s1hi:15},{s2:18},{vma:NaN},{s2:Infinity},{s1lo:0},{vol:0}])assert(ctx.validation.inputErrors({...st,...change}).length);
-assert.equal(ctx.validation.referenceErrors({...st,s1lo:14,s1hi:14,s2:14}).length,0);
-ctx.useInput({...st,s2:99});ctx.setRecovery(null);
-const protectedPlan=JSON.stringify(ctx.previous()),storageBefore=JSON.stringify([...data]);
-ctx.renderRecovery();assert.equal(JSON.stringify(ctx.previous()),protectedPlan);assert.equal(JSON.stringify([...data]),storageBefore);
-ctx.E.saveActivePlan({...st,s2:99},C);assert.equal(JSON.stringify([...data]),storageBefore);
-console.log('OK: contradictory, empty and non-finite inputs block generation and persistence while retaining last valid plan.');
+entries[0].record.plan.weeks[0].days[0].items = [];
+assert.equal(JSON.stringify(ctx.getActive()), original, 'preview must not share mutable objects');
+assert.equal(JSON.stringify([...data]), beforeRead, 'opening the list must not write storage');
+const result = ctx.library.restore(archive);
+assert.equal(result.id, 'archived-plan');
+assert(!result.archivedAt);
+assert.equal(JSON.stringify(result.plan), JSON.stringify(archive.plan));
+assert.equal(ctx.getHistory()[0].id, 'original-plan');
+assert.equal(ctx.state().status, 'restored');
+assert([...data.keys()].some(k => k.startsWith('planif-before-restore-')));
+const storedBefore = Object.fromEntries(
+  [ctx.keys.active, ctx.keys.history, ctx.keys.mode, 'planif-recovery-state-v1'].map(k => [k, data.get(k)])
+);
+const set = ctx.localStorage.setItem;
+let fail = true;
+ctx.localStorage.removeItem = k => data.delete(k);
+ctx.localStorage.setItem = (k, v) => {
+  if (k === ctx.keys.active && fail) {
+    fail = false;
+    throw Error('quota');
+  }
+  set(k, v);
+};
+assert.throws(() => ctx.library.restore(saved), /Restauration interrompue/);
+assert.equal(ctx.getActive().id, 'archived-plan', 'failed writes do not change memory');
+for (const [k, v] of Object.entries(storedBefore))
+  assert.equal(data.get(k), v, 'failed writes restore prior storage');
+ctx.localStorage.setItem = set;
+console.log(
+  'OK: read-only detached plan browser, escaped titles, archive-before-restore, preserved session IDs, and rollback on storage failure.'
+);
+vm.runInContext(
+  'this.validation={referenceErrors,inputErrors};this.useInput=s=>{readState=()=>s;};this.previous=()=>({plan:lastPlan,state:lastSt});',
+  ctx
+);
+assert.equal(ctx.validation.inputErrors(st).length, 0);
+for (const change of [
+  {s1lo: 13, s1hi: 12},
+  {s1hi: 15},
+  {s2: 18},
+  {vma: NaN},
+  {s2: Infinity},
+  {s1lo: 0},
+  {vol: 0}
+])
+  assert(ctx.validation.inputErrors({...st, ...change}).length);
+assert.equal(ctx.validation.referenceErrors({...st, s1lo: 14, s1hi: 14, s2: 14}).length, 0);
+ctx.useInput({...st, s2: 99});
+ctx.setRecovery(null);
+const protectedPlan = JSON.stringify(ctx.previous()),
+  storageBefore = JSON.stringify([...data]);
+ctx.renderRecovery();
+assert.equal(JSON.stringify(ctx.previous()), protectedPlan);
+assert.equal(JSON.stringify([...data]), storageBefore);
+ctx.E.saveActivePlan({...st, s2: 99}, C);
+assert.equal(JSON.stringify([...data]), storageBefore);
+console.log(
+  'OK: contradictory, empty and non-finite inputs block generation and persistence while retaining last valid plan.'
+);

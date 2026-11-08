@@ -1,243 +1,573 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {injectEngine,loadRuntime,uiSource:html}=require('./helpers/runtime.cjs');
-const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,type:'text',appendChild(){},addEventListener(){}});return elements.get(id);};
-const context={document:{getElementById:el,createElement:()=>({})},localStorage:{getItem:()=>null,setItem(){}},console};vm.createContext(context);
-injectEngine(context);context.engine=context.__engine;
-const E=context.engine;
-const state={mode:'cal',calStart:'2026-10-06',calRace:'2026-12-20',calDist:1,calGoal:null,avail:[false,true,true,false,true,true,true],q1Day:'1',q2Day:'4',q3Day:'',slDay:'6',vma:17,s2:14,s1lo:11.5,s1hi:12,refDist:0,refTime:19*60+25,profile:1,penalty:false,ref2Dist:1,ref2Time:null,block:'spec',specDist:1,specGoal:null,N:4,vol:300,runs:5,qualityCount:2,assimQ2:false};
-assert.deepEqual(Array.from(E.s2Range(E.s2Group(3),9,state)),[13.86,14.42]);
-assert.deepEqual(Array.from(E.recS2Range(3)).map(x=>Math.round(x*60)),[40,50]);
-assert.deepEqual(Array.from(E.recS2Range(2.5)).map(x=>Math.round(x*60)),[30,45]);
-assert.deepEqual(Array.from(E.s2Range(E.s2Group(4),20,state)),[14.2,14.4]);
-const pred=E.predict(state);
-for(let n=5;n<=24;n++){
- const plan=E.planPhases(n,1);assert.equal(plan.length,n);
- const specific=plan.filter(p=>p.kind==='charge'&&p.block==='spec').length;
- assert([4,5].includes(specific),`N=${n}: ${specific} specific weeks`);
- let consecutive=0;for(const p of plan){if(p.kind==='charge')consecutive++;else consecutive=0;assert(consecutive<=5);}
- // Exhaust all permitted upstream compositions: if four can fit, five must not be selected.
- if(n<=19)assert.equal(specific,4,`Prefer four at N=${n}`);
+const assert = require('node:assert/strict'),
+  vm = require('node:vm');
+const {injectEngine, uiSource: html} = require('./helpers/runtime.cjs');
+const {between} = require('./helpers/source.cjs');
+const elements = new Map(),
+  el = id => {
+    if (!elements.has(id))
+      elements.set(id, {value: '', checked: false, type: 'text', appendChild() {}, addEventListener() {}});
+    return elements.get(id);
+  };
+const context = {
+  document: {getElementById: el, createElement: () => ({})},
+  localStorage: {getItem: () => null, setItem() {}},
+  console
+};
+vm.createContext(context);
+injectEngine(context);
+context.engine = context.__engine;
+const E = context.engine;
+const state = {
+  mode: 'cal',
+  calStart: '2026-10-06',
+  calRace: '2026-12-20',
+  calDist: 1,
+  calGoal: null,
+  avail: [false, true, true, false, true, true, true],
+  q1Day: '1',
+  q2Day: '4',
+  q3Day: '',
+  slDay: '6',
+  vma: 17,
+  s2: 14,
+  s1lo: 11.5,
+  s1hi: 12,
+  refDist: 0,
+  refTime: 19 * 60 + 25,
+  profile: 1,
+  penalty: false,
+  ref2Dist: 1,
+  ref2Time: null,
+  block: 'spec',
+  specDist: 1,
+  specGoal: null,
+  N: 4,
+  vol: 300,
+  runs: 5,
+  qualityCount: 2,
+  assimQ2: false
+};
+assert.deepEqual(Array.from(E.s2Range(E.s2Group(3), 9, state)), [13.86, 14.42]);
+assert.deepEqual(
+  Array.from(E.recS2Range(3)).map(x => Math.round(x * 60)),
+  [40, 50]
+);
+assert.deepEqual(
+  Array.from(E.recS2Range(2.5)).map(x => Math.round(x * 60)),
+  [30, 45]
+);
+assert.deepEqual(Array.from(E.s2Range(E.s2Group(4), 20, state)), [14.2, 14.4]);
+const pred = E.predict(state);
+for (let n = 5; n <= 24; n++) {
+  const plan = E.planPhases(n, 1);
+  assert.equal(plan.length, n);
+  const specific = plan.filter(p => p.kind === 'charge' && p.block === 'spec').length;
+  assert([4, 5].includes(specific), `N=${n}: ${specific} specific weeks`);
+  let consecutive = 0;
+  for (const p of plan) {
+    if (p.kind === 'charge') consecutive++;
+    else consecutive = 0;
+    assert(consecutive <= 5);
+  }
+  // Exhaust all permitted upstream compositions: if four can fit, five must not be selected.
+  if (n <= 19) assert.equal(specific, 4, `Prefer four at N=${n}`);
 }
-for(let n=1;n<=4;n++)assert.equal(E.planPhases(n,1).length,n);
-const c=E.buildCalendar(state,pred);assert(!c.error);assert.equal(c.weeks.length,11);assert.equal(c.plan.filter(p=>p.kind==='charge'&&p.block==='spec').length,4);
-for(const w of c.weeks){assert(w.sl<=90);assert(Number.isFinite(w.load));assert(Math.abs(w.qualityMinutes-(w.z.z2+w.z.z3+w.z.z4))<1e-8);for(const s of w.sessions)for(const v of s.variants)assert.equal(v.capFail.length,0);}
-const peak=c.weeks.at(-2);assert.equal(peak.sl,60);assert.equal(peak.sessions[1].fam,'alternating');
-const alt=peak.sessions[1],v=alt.variants[0];assert.equal(v.structure.sets,10);assert.equal(v.rec,0);assert(Math.abs(v.parts.reduce((a,p)=>a+p[0],0)-v.work)<1e-9);assert(v.raceWork<v.work);assert(E.presentVariantRaw(v).text.includes('sans récupération'));assert(E.sessionTitle(alt));
-const exact=E.p10Alternating(36,{...state,s1lo:60/4.9-.5,s1hi:60/4.9-.5},{v:60/4.1});assert.equal(exact.length,3);assert(Math.abs(exact[2].work-36)<1e-9);
+for (let n = 1; n <= 4; n++) assert.equal(E.planPhases(n, 1).length, n);
+const c = E.buildCalendar(state, pred);
+assert(!c.error);
+assert.equal(c.weeks.length, 11);
+assert.equal(c.plan.filter(p => p.kind === 'charge' && p.block === 'spec').length, 4);
+for (const w of c.weeks) {
+  assert(w.sl <= 90);
+  assert(Number.isFinite(w.load));
+  assert(Math.abs(w.qualityMinutes - (w.z.z2 + w.z.z3 + w.z.z4)) < 1e-8);
+  for (const s of w.sessions) for (const v of s.variants) assert.equal(v.capFail.length, 0);
+}
+const peak = c.weeks.at(-2);
+assert.equal(peak.sl, 60);
+assert.equal(peak.sessions[1].fam, 'alternating');
+const alt = peak.sessions[1],
+  v = alt.variants[0];
+assert.equal(v.structure.sets, 10);
+assert.equal(v.rec, 0);
+assert(Math.abs(v.parts.reduce((a, p) => a + p[0], 0) - v.work) < 1e-9);
+assert(v.raceWork < v.work);
+assert(E.presentVariantRaw(v).text.includes('sans récupération'));
+assert(E.sessionTitle(alt));
+const exact = E.p10Alternating(36, {...state, s1lo: 60 / 4.9 - 0.5, s1hi: 60 / 4.9 - 0.5}, {v: 60 / 4.1});
+assert.equal(exact.length, 3);
+assert(Math.abs(exact[2].work - 36) < 1e-9);
 // Slow athletes and small quality budgets cannot be forced into a 40+ minute continuous alternation.
-assert.equal(E.makeAlternatingSession(20,state,{v:pred[1].v}),null);
-assert(E.p10Alternating(36,{...state,s1lo:9,s1hi:9,s2:11},{v:12}).every(v=>v.work<=38));
+assert.equal(E.makeAlternatingSession(20, state, {v: pred[1].v}), null);
+assert(E.p10Alternating(36, {...state, s1lo: 9, s1hi: 9, s2: 11}, {v: 12}).every(v => v.work <= 38));
 // Both options of the S2 complement are short when the primary AS10 option is long.
-for(let k=0;k<5;k++){
- const st={...state,mode:'bloc',specGoal:2491},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k,N:5,t:k/4,assim:false,vol:330,memory:{},block:'spec',specDist:1});
- if(w.sessions[0].variants.some(v=>E.maxFractionMinutes(v)>=6)&&w.sessions[1]?.fam==='s2')assert(w.sessions[1].variants.every(v=>E.maxFractionMinutes(v)<=4));
- assert(w.sl<=90);
+for (let k = 0; k < 5; k++) {
+  const st = {...state, mode: 'bloc', specGoal: 2491},
+    b = E.getBlock(st, pred),
+    w = E.buildWeek(b, st, {
+      k,
+      N: 5,
+      t: k / 4,
+      assim: false,
+      vol: 330,
+      memory: {},
+      block: 'spec',
+      specDist: 1
+    });
+  if (w.sessions[0].variants.some(v => E.maxFractionMinutes(v) >= 6) && w.sessions[1]?.fam === 's2')
+    assert(w.sessions[1].variants.every(v => E.maxFractionMinutes(v) <= 4));
+  assert(w.sl <= 90);
 }
 // Calendar date, not a fixed Sunday, governs J-7 cap; all other distances retain their existing limit.
-const weekday=E.buildCalendar({...state,calRace:'2026-12-18',slDay:'4'},pred);assert.equal(weekday.weeks.at(-2).sl,60);
-const five=E.buildCalendar({...state,calDist:0,vol:420},pred);assert(five.weeks.some(w=>w.sl>90));assert(five.weeks.filter(w=>w.phase==='spec').every(w=>w.sl<=E.RULES.organization.longRun.cap.spec[0]));
+const weekday = E.buildCalendar({...state, calRace: '2026-12-18', slDay: '4'}, pred);
+assert.equal(weekday.weeks.at(-2).sl, 60);
+const five = E.buildCalendar({...state, calDist: 0, vol: 420}, pred);
+assert(five.weeks.some(w => w.sl > 90));
+assert(
+  five.weeks.filter(w => w.phase === 'spec').every(w => w.sl <= E.RULES.organization.longRun.cap.spec[0])
+);
 
-
-for(const w of c.weeks)for(const session of w.sessions){if(session.isLong)continue;assert.equal(session.wu,session.activation?27:24);assert.equal(session.cd,10);assert(Math.abs(session.total-(session.wu+Math.max(...session.variants.map(v=>v.total))+10))<1e-9);const before=session.total;E.prepareSession(session);assert.equal(session.total,before,'preparation must not be added twice');}
-const preparedS1=E.prepareSession({fam:'s1',variants:[{total:25}],wu:20,cd:10});assert.equal(preparedS1.total,59);
-const preparedAs10=E.prepareSession({fam:'spec',dist:1,variants:[{total:25}],wu:20,cd:10});assert.equal(preparedAs10.total,62);
+for (const w of c.weeks)
+  for (const session of w.sessions) {
+    if (session.isLong) continue;
+    assert.equal(session.wu, session.activation ? 27 : 24);
+    assert.equal(session.cd, 10);
+    assert(
+      Math.abs(session.total - (session.wu + Math.max(...session.variants.map(v => v.total)) + 10)) < 1e-9
+    );
+    const before = session.total;
+    E.prepareSession(session);
+    assert.equal(session.total, before, 'preparation must not be added twice');
+  }
+const preparedS1 = E.prepareSession({fam: 's1', variants: [{total: 25}], wu: 20, cd: 10});
+assert.equal(preparedS1.total, 59);
+const preparedAs10 = E.prepareSession({fam: 'spec', dist: 1, variants: [{total: 25}], wu: 20, cd: 10});
+assert.equal(preparedAs10.total, 62);
 
 // Regression: the October transition used to add 40 min S1 and 18 min S2.
-const transition=c.weeks[1].sessions[0];assert.equal(transition.fam,'mixed');
-for(const option of transition.variants){const [a,b]=option.structure.components;assert(a.variant.work<=25);assert(b.variant.work<=10);assert(option.work<=35);assert(E.presentVariantRaw(option).chips.every(chip=>/km\/h|km/.test(chip)));}
-const threeMinute=transition.variants.flatMap(v=>v.structure.components).find(c=>c.fam==='s2'&&c.variant.structure.durationMin===3);
-assert(threeMinute,'the transition must include a three-minute S2 component');
-assert.equal(threeMinute.variant.intensity.minKmh,13.86);
-assert.equal(threeMinute.variant.intensity.maxKmh,14.42);
-assert.deepEqual(Array.from(threeMinute.variant.structure.recoveryRangeMin).map(x=>Math.round(x*60)),[40,50]);
+const transition = c.weeks[1].sessions[0];
+assert.equal(transition.fam, 'mixed');
+for (const option of transition.variants) {
+  const [a, b] = option.structure.components;
+  assert(a.variant.work <= 25);
+  assert(b.variant.work <= 10);
+  assert(option.work <= 35);
+  assert(E.presentVariantRaw(option).chips.every(chip => /km\/h|km/.test(chip)));
+}
+const threeMinute = transition.variants
+  .flatMap(v => v.structure.components)
+  .find(c => c.fam === 's2' && c.variant.structure.durationMin === 3);
+assert(threeMinute, 'the transition must include a three-minute S2 component');
+assert.equal(threeMinute.variant.intensity.minKmh, 13.86);
+assert.equal(threeMinute.variant.intensity.maxKmh, 14.42);
+assert.deepEqual(
+  Array.from(threeMinute.variant.structure.recoveryRangeMin).map(x => Math.round(x * 60)),
+  [40, 50]
+);
 // Every mixture stays within its component limits and its requested shared envelope.
-for(const [key,cfg] of Object.entries(E.RULES.mixed.combinations))for(const role of cfg.contexts)for(const budget of [12,18,25,30,35,50]){
- const [a,b]=key.split('>'),mix=E.makeMixedSession(a,b,60,20,role,1,1,state,{maxMixedWork:budget});
- if(!mix)continue;
- for(const variant of mix.variants){assert(variant.work<=Math.min(cfg.maxWork,budget)+1e-9);assert(variant.structure.components[0].variant.work<=cfg.maxPrimary+1e-9);assert(variant.structure.components[1].variant.work<=cfg.maxSecondary+1e-9);assert.equal(variant.capFail.length,0);const [slow,fast]=variant.structure.components;assert(E.maxFractionMinutes(fast.variant)<E.minFractionMinutes(slow.variant),'faster fractions must be shorter in both options');}
-}
-assert.equal(E.makeMixedSession('s1','s2',25,10,'transition',1,1,state,{maxMixedWork:12}),null,'no oversized fallback when no format fits');
+for (const [key, cfg] of Object.entries(E.RULES.mixed.combinations))
+  for (const role of cfg.contexts)
+    for (const budget of [12, 18, 25, 30, 35, 50]) {
+      const [a, b] = key.split('>'),
+        mix = E.makeMixedSession(a, b, 60, 20, role, 1, 1, state, {maxMixedWork: budget});
+      if (!mix) continue;
+      for (const variant of mix.variants) {
+        assert(variant.work <= Math.min(cfg.maxWork, budget) + 1e-9);
+        assert(variant.structure.components[0].variant.work <= cfg.maxPrimary + 1e-9);
+        assert(variant.structure.components[1].variant.work <= cfg.maxSecondary + 1e-9);
+        assert.equal(variant.capFail.length, 0);
+        const [slow, fast] = variant.structure.components;
+        assert(
+          E.maxFractionMinutes(fast.variant) < E.minFractionMinutes(slow.variant),
+          'faster fractions must be shorter in both options'
+        );
+      }
+    }
+assert.equal(
+  E.makeMixedSession('s1', 's2', 25, 10, 'transition', 1, 1, state, {maxMixedWork: 12}),
+  null,
+  'no oversized fallback when no format fits'
+);
 // Check actual option volumes after replacement, across different athlete volumes and durations.
-for(const vol of [180,240,300,360,420])for(const date of ['2026-11-29','2026-12-20','2027-01-17']){
- const plan=E.buildCalendar({...state,vol,calRace:date,assimQ2:true},pred);assert(!plan.error);
- for(const week of plan.weeks){
-  if(week.sessions.some(s=>s.fam==='mixed'))assert(week.sessions.reduce((sum,s)=>sum+Math.max(...s.variants.map(v=>v.work)),0)<=week.budget[1]/100*week.target+1e-9);
- }
-}
+for (const vol of [180, 240, 300, 360, 420])
+  for (const date of ['2026-11-29', '2026-12-20', '2027-01-17']) {
+    const plan = E.buildCalendar({...state, vol, calRace: date, assimQ2: true}, pred);
+    assert(!plan.error);
+    for (const week of plan.weeks) {
+      if (week.sessions.some(s => s.fam === 'mixed'))
+        assert(
+          week.sessions.reduce((sum, s) => sum + Math.max(...s.variants.map(v => v.work)), 0) <=
+            (week.budget[1] / 100) * week.target + 1e-9
+        );
+    }
+  }
 // Regression: normal jog before rest remains at least as long as recovery between VO2 and long run.
-const fourth=c.weeks[3],itemOn=(week,day)=>week.days.find(d=>(d.date.getDay()+6)%7===day).items[0];
-assert.equal(itemOn(fourth,2).f.type,'std');
-assert.equal(itemOn(fourth,5).f.type,'rec');assert(itemOn(fourth,2).f.min>=itemOn(fourth,5).f.min);
-assert(Math.abs(fourth.vol-fourth.targetVolume)<=E.RULES.volume.deviationAlert*fourth.targetVolume);
-assert.equal(itemOn(fourth,3),undefined);assert.equal(itemOn(fourth,6).kind,'sl');
+const fourth = c.weeks[3],
+  itemOn = (week, day) => week.days.find(d => (d.date.getDay() + 6) % 7 === day).items[0];
+assert.equal(itemOn(fourth, 2).f.type, 'std');
+assert.equal(itemOn(fourth, 5).f.type, 'rec');
+assert(itemOn(fourth, 2).f.min >= itemOn(fourth, 5).f.min);
+assert(Math.abs(fourth.vol - fourth.targetVolume) <= E.RULES.volume.deviationAlert * fourth.targetVolume);
+assert.equal(itemOn(fourth, 3), undefined);
+assert.equal(itemOn(fourth, 6).kind, 'sl');
 // Repositioned days use the same contextual rule, and redistribution preserves weekly minutes/load.
-const q=(fam,load)=>({fam,variants:[{sector:fam==='vmaShort'?'vo2':fam}],loadMax:load,dist:undefined});
-const synthetic={sessions:[q('s2',60),q('vmaShort',40)],foot:[{type:'rec',min:40,load:16},{type:'std',min:55,load:22}],sl:80};
-const startDate=new Date(2026,9,26),endDate=new Date(2026,10,1),schedule={...state,avail:[true,true,true,true,true,true,false],q1Day:'0',q2Day:'3',slDay:'5'};
-const placed=E.placeWeek(synthetic,{start:startDate,end:endDate},schedule);
-const footAt=day=>placed.list.find(d=>(d.date.getDay()+6)%7===day).items[0].f;
-assert.equal(footAt(1).type,'std');assert.equal(footAt(1).min,50);assert.equal(footAt(4).type,'rec');assert.equal(footAt(4).min,45);
-assert.equal(synthetic.foot.reduce((sum,f)=>sum+f.min,0),95);assert.equal(synthetic.foot.reduce((sum,f)=>sum+f.load,0),38);
-console.log('OK: mixed component/shared/weekly budgets, actual pace chips, contextual footing placement, conserved volume/load, specific weeks, long-run caps and COROS preparation accounting.');
+const q = (fam, load) => ({
+  fam,
+  variants: [{sector: fam === 'vmaShort' ? 'vo2' : fam}],
+  loadMax: load,
+  dist: undefined
+});
+const synthetic = {
+  sessions: [q('s2', 60), q('vmaShort', 40)],
+  foot: [
+    {type: 'rec', min: 40, load: 16},
+    {type: 'std', min: 55, load: 22}
+  ],
+  sl: 80
+};
+const startDate = new Date(2026, 9, 26),
+  endDate = new Date(2026, 10, 1),
+  schedule = {
+    ...state,
+    avail: [true, true, true, true, true, true, false],
+    q1Day: '0',
+    q2Day: '3',
+    slDay: '5'
+  };
+const placed = E.placeWeek(synthetic, {start: startDate, end: endDate}, schedule);
+const footAt = day => placed.list.find(d => (d.date.getDay() + 6) % 7 === day).items[0].f;
+assert.equal(footAt(1).type, 'std');
+assert.equal(footAt(1).min, 50);
+assert.equal(footAt(4).type, 'rec');
+assert.equal(footAt(4).min, 45);
+assert.equal(
+  synthetic.foot.reduce((sum, f) => sum + f.min, 0),
+  95
+);
+assert.equal(
+  synthetic.foot.reduce((sum, f) => sum + f.load, 0),
+  38
+);
+console.log(
+  'OK: mixed component/shared/weekly budgets, actual pace chips, contextual footing placement, conserved volume/load, specific weeks, long-run caps and COROS preparation accounting.'
+);
 
-const mixedText=E.presentVariantRaw(transition.variants[0]).text.split(', ')[0];
-assert.match(mixedText,/^S1 : .+ — S2 : .+$/);
+const mixedText = E.presentVariantRaw(transition.variants[0]).text.split(', ')[0];
+assert.match(mixedText, /^S1 : .+ — S2 : .+$/);
 assert(!E.presentVariantRaw(transition.variants[0]).text.includes('Transition'));
-assert(transition.variants[0].work<=35);
-for(const option of transition.variants){const [slow,fast]=option.structure.components;assert(E.maxFractionMinutes(fast.variant)<E.minFractionMinutes(slow.variant));}
+assert(transition.variants[0].work <= 35);
+for (const option of transition.variants) {
+  const [slow, fast] = option.structure.components;
+  assert(E.maxFractionMinutes(fast.variant) < E.minFractionMinutes(slow.variant));
+}
 // A 4-min S1 ladder cannot be followed by a 4- or 5-min S2 fraction.
-assert.equal(E.minFractionMinutes({structure:{type:'ladder',durationsMin:[4,6,8,6,4]}}),4);
-assert.equal(E.minFractionMinutes({structure:{type:'continuous',durationMin:25}}),25);
-console.log('OK: complete mixed summary, shorter faster fractions in both options, shared caps and preserved calendar rules.');
+assert.equal(E.minFractionMinutes({structure: {type: 'ladder', durationsMin: [4, 6, 8, 6, 4]}}), 4);
+assert.equal(E.minFractionMinutes({structure: {type: 'continuous', durationMin: 25}}), 25);
+console.log(
+  'OK: complete mixed summary, shorter faster fractions in both options, shared caps and preserved calendar rules.'
+);
 
 // Jogg: one visible category and no imposed easy pace, including LD titles.
-for(const type of ['rec','std','pro']){
- assert.equal(E.joggTitle({type}),'Jogg’');
- assert.equal(E.joggTitle({type,ld:'strides'}),'Jogg + LD');
- assert.equal(E.efBandText(type,state),E.efBandText('std',state));
- assert(E.efBandText(type,state).includes('/km ('));
- assert.deepEqual(Array.from(E.efBand(type,state)),Array.from(E.efBand('std',state)));
+for (const type of ['rec', 'std', 'pro']) {
+  assert.equal(E.joggTitle({type}), 'Jogg’');
+  assert.equal(E.joggTitle({type, ld: 'strides'}), 'Jogg + LD');
+  assert.equal(E.efBandText(type, state), E.efBandText('std', state));
+  assert(E.efBandText(type, state).includes('/km ('));
+  assert.deepEqual(Array.from(E.efBand(type, state)), Array.from(E.efBand('std', state)));
 }
 // Assimilation preserves reduced quality work and an active-endurance replacement when feasible.
-for(const block of ['aero','s1','s2','vma','eco','spec'])for(const runs of [3,4,5,6])for(const vol of [180,240,300,420])for(const specDist of [0,1,2,3]){
- const st={...state,block,specDist,runs,vol,assimQ2:true},b=E.getBlock(st,pred);
- const w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,memory:{},block,specDist});
- assert(w.sessions.length>=1,'assimilation retains a quality session');
- assert(w.qualityMinutes>0,'reduced quality work is measured');
- const active=w.foot.filter(f=>f.assimilationActive);
- if(runs>=4)assert.equal(active.length,1,'active endurance must replace one quality with four or more outings');
- if(!active.length)continue;
- const f=active[0];assert(f.activeRange[0]>=10&&f.activeRange[1]<=30&&f.activeRange[1]>=f.activeRange[0],'active endurance interval stays within 10–30 minutes');
- assert(f.wu>=10);assert(f.wu+f.activeRange[1]+f.cd<=f.min+1e-9,'active endurance fits the footing duration');
- assert.equal(w.vol,w.sl+w.foot.reduce((sum,f)=>sum+f.min,0)+w.sessions.reduce((sum,s)=>sum+s.total,0));assert(Number.isFinite(w.load));
- assert(w.z.z1<=w.vol);assert.equal(w.foot.length+w.sessions.length+(w.sl>0?1:0),runs);
+for (const block of ['aero', 's1', 's2', 'vma', 'eco', 'spec'])
+  for (const runs of [3, 4, 5, 6])
+    for (const vol of [180, 240, 300, 420])
+      for (const specDist of [0, 1, 2, 3]) {
+        const st = {...state, block, specDist, runs, vol, assimQ2: true},
+          b = E.getBlock(st, pred);
+        const w = E.buildWeek(b, st, {k: 4, N: 4, t: 1, assim: true, vol, memory: {}, block, specDist});
+        assert(w.sessions.length >= 1, 'assimilation retains a quality session');
+        assert(w.qualityMinutes > 0, 'reduced quality work is measured');
+        const active = w.foot.filter(f => f.assimilationActive);
+        if (runs >= 4)
+          assert.equal(
+            active.length,
+            1,
+            'active endurance must replace one quality with four or more outings'
+          );
+        if (!active.length) continue;
+        const f = active[0];
+        assert(
+          f.activeRange[0] >= 10 && f.activeRange[1] <= 30 && f.activeRange[1] >= f.activeRange[0],
+          'active endurance interval stays within 10–30 minutes'
+        );
+        assert(f.wu >= 10);
+        assert(f.wu + f.activeRange[1] + f.cd <= f.min + 1e-9, 'active endurance fits the footing duration');
+        assert.equal(
+          w.vol,
+          w.sl + w.foot.reduce((sum, f) => sum + f.min, 0) + w.sessions.reduce((sum, s) => sum + s.total, 0)
+        );
+        assert(Number.isFinite(w.load));
+        assert(w.z.z1 <= w.vol);
+        assert.equal(w.foot.length + w.sessions.length + (w.sl > 0 ? 1 : 0), runs);
+      }
+for (const w of c.weeks.filter(w => w.assimilation)) {
+  assert(w.sessions.length >= 1, 'calendar assimilation retains quality');
+  const active = w.days
+    .flatMap(d => d.items.map(it => ({d, it})))
+    .find(x => x.it.kind === 'foot' && x.it.f.assimilationActive);
+  assert(active);
+  assert.equal((active.d.date.getDay() + 6) % 7, +state.q2Day);
 }
-for(const w of c.weeks.filter(w=>w.assimilation)){
- assert(w.sessions.length>=1,'calendar assimilation retains quality');
- const active=w.days.flatMap(d=>d.items.map(it=>({d,it}))).find(x=>x.it.kind==='foot'&&x.it.f.assimilationActive);
- assert(active);assert.equal((active.d.date.getDay()+6)%7,+state.q2Day);
+for (const vol of [130, 140, 150]) {
+  const st = {...state, runs: 3},
+    b = E.getBlock(st, pred),
+    w = E.buildWeek(b, st, {k: 4, N: 4, t: 1, assim: true, vol, block: 'spec', specDist: 1});
+  if (vol === 130) {
+    assert.equal(
+      w.sessions.length,
+      0,
+      '130 minutes cannot fit the minimum specific session under the 35% cap'
+    );
+    assert(
+      w.warns.some(x => x.code === 'qualities_reduced' && x.params.actual === 0),
+      'an infeasible retained quality must be explained'
+    );
+  } else assert(w.sessions.length >= 1);
+  assert(w.foot.every(f => !f.assimilationActive || f.activeRange[0] <= 20));
 }
-for(const [vol,minutes] of [[130,10],[140,15],[150,20]]){
- const st={...state,runs:3},b=E.getBlock(st,pred),w=E.buildWeek(b,st,{k:4,N:4,t:1,assim:true,vol,block:'spec',specDist:1});
- if(vol===130){
-  assert.equal(w.sessions.length,0,'130 minutes cannot fit the minimum specific session under the 35% cap');
-  assert(w.warns.some(x=>x.code==='qualities_reduced'&&x.params.actual===0),'an infeasible retained quality must be explained');
- }else assert(w.sessions.length>=1);
- assert(w.foot.every(f=>!f.assimilationActive||f.activeRange[0]<=20));
-}
-console.log('OK: Jogg/LD labels, shared easy guidance, assimilation with reduced quality, bounded active blocks, preferred quality day and conserved minutes.');
+console.log(
+  'OK: Jogg/LD labels, shared easy guidance, assimilation with reduced quality, bounded active blocks, preferred quality day and conserved minutes.'
+);
 
 // Render the real tile and detail functions, including block-mode links.
-context.state=state;context.plan=c;
-vm.runInContext(`let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts',ptsRange=(a,b)=>pts(a)+' à '+pts(b);const vText=v=>presentVariantRaw(v).text,vChips=v=>presentVariantRaw(v).chips;`+
- html.slice(html.indexOf('const activeRangeText='),html.indexOf('function renderWeeks('))+
- html.slice(html.indexOf('const SECT_SHORT='),html.indexOf('function calWeekHtml('))+
- html.slice(html.indexOf('function tileHtml('),html.indexOf('const refOf='))+
- html.slice(html.indexOf('const splitRec='),html.indexOf('const LIB_SECTORS='))+
- html.slice(html.indexOf('function sessionInfoHeaderHtml('),html.indexOf('function libSessionHtml('))+
- html.slice(html.indexOf('function sessionScreenHtml('),html.indexOf('function openSession('))+
- `\nthis.ui={tileHtml,itemShort,qualityScheduleHtml,sessionRecoveryRows,show:r=>{appSession=r;return sessionScreenHtml();}};`,context);
-const aw=c.weeks.find(w=>w.assimilation),af=aw.foot.findIndex(f=>f.assimilationActive);
-assert(context.ui.tileHtml({kind:'foot',f:aw.foot[af]},aw,{w:aw.index,f:af}).includes(`data-open="${aw.index},f,${af}"`));
-assert(!context.ui.show({w:aw.index,f:af}).includes('Un bloc de 10'));
-assert(!context.ui.show({w:aw.index,f:af}).includes('% LT1'));
-assert(context.ui.show({w:aw.index,f:af}).includes('<strong>'));
-assert(context.ui.show({w:aw.index,f:af}).includes('class="sessionCharge"'),'charge is visible immediately after opening a workout');
-context.PlanifStrava={badge:()=>'<span class="inPlan">✓ Réalisée</span>'};context.planifSessionInfo=()=>({id:'completed-test'});
-const compactTile=context.ui.tileHtml({kind:'q',s:aw.sessions[0]},aw,{w:aw.index,q:0},{calendar:true});
+context.state = state;
+context.plan = c;
+vm.runInContext(
+  `let lastSt=state,lastPlan=plan,appSession=null,appOpt=0;const blockLabel=()=> 'Spécifique';const pts=x=>Math.round(x)+' pts',ptsRange=(a,b)=>pts(a)+' à '+pts(b);const vText=v=>presentVariantRaw(v).text,vChips=v=>presentVariantRaw(v).chips;` +
+    between(html, 'activeRangeText', 'renderWeeks') +
+    between(html, 'SECT_SHORT', 'calWeekHtml') +
+    between(html, 'tileHtml', 'refOf') +
+    between(html, 'splitRec', 'LIB_SECTORS') +
+    between(html, 'sessionInfoHeaderHtml', 'libSessionHtml') +
+    between(html, 'sessionScreenHtml', 'openSession') +
+    `\nthis.ui={tileHtml,itemShort,qualityScheduleHtml,sessionRecoveryRows,show:r=>{appSession=r;return sessionScreenHtml();}};`,
+  context
+);
+const aw = c.weeks.find(w => w.assimilation),
+  af = aw.foot.findIndex(f => f.assimilationActive);
+assert(
+  context.ui
+    .tileHtml({kind: 'foot', f: aw.foot[af]}, aw, {w: aw.index, f: af})
+    .includes(`data-open="${aw.index},f,${af}"`)
+);
+assert(!context.ui.show({w: aw.index, f: af}).includes('Un bloc de 10'));
+assert(!context.ui.show({w: aw.index, f: af}).includes('% LT1'));
+assert(context.ui.show({w: aw.index, f: af}).includes('<strong>'));
+assert(
+  context.ui.show({w: aw.index, f: af}).includes('class="sessionCharge"'),
+  'charge is visible immediately after opening a workout'
+);
+context.PlanifStrava = {badge: () => '<span class="inPlan">✓ Réalisée</span>'};
+context.planifSessionInfo = () => ({id: 'completed-test'});
+const compactTile = context.ui.tileHtml(
+  {kind: 'q', s: aw.sessions[0]},
+  aw,
+  {w: aw.index, q: 0},
+  {calendar: true}
+);
 assert(compactTile.includes('class="tileTop"><span class="k"'));
-assert(/class="tileTop">.*class="inPlan">✓ Réalisée<\/span><\/span>/.test(compactTile),'completion shares the title row');
-assert(/class="tileContent"><span class="s">.*<\/span><span class="t">/.test(compactTile),'content and total duration share a row');
-assert(!compactTile.includes('Charge estimée'),'points are reserved for workout detail');
-delete context.PlanifStrava;delete context.planifSessionInfo;
-assert.equal(context.ui.itemShort({kind:'foot',f:{type:'std',min:50,ld:'strides'}},aw).k,'Jogg + LD');
+assert(
+  /class="tileTop">.*class="inPlan">✓ Réalisée<\/span><\/span>/.test(compactTile),
+  'completion shares the title row'
+);
+assert(
+  /class="tileContent"><span class="s">.*<\/span><span class="t">/.test(compactTile),
+  'content and total duration share a row'
+);
+assert(!compactTile.includes('Charge estimée'), 'points are reserved for workout detail');
+delete context.PlanifStrava;
+delete context.planifSessionInfo;
+assert.equal(
+  context.ui.itemShort({kind: 'foot', f: {type: 'std', min: 50, ld: 'strides'}}, aw).k,
+  'Jogg + LD'
+);
 console.log('OK: calendar/block tiles, active detail link and LD heading.');
 
-assert.deepEqual(Array.from(E.efBand('std',state)),[11.75*.75,11.75*.91]);
-const ordered=['Échauffement :','Travail :','Récup :','Retour au calme :','Durée totale :'];
-for(const w of c.weeks)for(const s of w.sessions)for(const v of s.variants){
- const detail=context.ui.qualityScheduleHtml(v,s,state);
- let last=-1;for(const label of ordered){const pos=detail.indexOf(label);assert(pos>last,label+' must follow previous step');last=pos;}
- assert(!detail.includes('NaN'),v.fam+': '+detail);assert(!detail.includes('undefined'),v.fam+': '+detail);
- const rec=context.ui.sessionRecoveryRows(v);
- assert.equal(detail.includes('Récup entre blocs :'),rec.blocks.length>0);
- if(v.intensity?.minKmh)assert(detail.includes('<strong>'));
-}
-const mixedDetail=context.ui.qualityScheduleHtml(transition.variants[0],transition,state);
-assert(mixedDetail.indexOf('Récup entre blocs :')>mixedDetail.indexOf('Récup :'));
-assert(mixedDetail.indexOf('Récup entre blocs :')<mixedDetail.indexOf('Retour au calme :'));
+assert.deepEqual(Array.from(E.efBand('std', state)), [11.75 * 0.75, 11.75 * 0.91]);
+const ordered = ['Échauffement :', 'Travail :', 'Récup :', 'Retour au calme :', 'Durée totale :'];
+for (const w of c.weeks)
+  for (const s of w.sessions)
+    for (const v of s.variants) {
+      const detail = context.ui.qualityScheduleHtml(v, s, state);
+      let last = -1;
+      for (const label of ordered) {
+        const pos = detail.indexOf(label);
+        assert(pos > last, label + ' must follow previous step');
+        last = pos;
+      }
+      assert(!detail.includes('NaN'), v.fam + ': ' + detail);
+      assert(!detail.includes('undefined'), v.fam + ': ' + detail);
+      const rec = context.ui.sessionRecoveryRows(v);
+      assert.equal(detail.includes('Récup entre blocs :'), rec.blocks.length > 0);
+      if (v.intensity?.minKmh) assert(detail.includes('<strong>'));
+    }
+const mixedDetail = context.ui.qualityScheduleHtml(transition.variants[0], transition, state);
+assert(mixedDetail.indexOf('Récup entre blocs :') > mixedDetail.indexOf('Récup :'));
+assert(mixedDetail.indexOf('Récup entre blocs :') < mixedDetail.indexOf('Retour au calme :'));
 assert(mixedDetail.includes('class="paceSpeed"'));
-const continuous={fam:'s1.cont',work:20,total:20,structure:{type:'continuous',durationMin:20},intensity:{minKmh:12,maxKmh:12.5}};
-assert(!context.ui.qualityScheduleHtml(continuous,{wu:24,cd:10},state).includes('Récup entre blocs :'));
-assert(context.ui.show({w:0,q:0}).includes('sessionSteps'));
-assert.equal(E.joggTitle({type:'active',activeRange:[20,20]}),'Jogg’ + 20’ endurance active');
-assert.equal(E.joggTitle({type:'active',activeRange:[15,15],activeReps:2}),'Jogg’ + 2x15’ endurance active');
-assert.equal(E.joggTitle({type:'active',activeBlocks:[15,15]}),'Jogg’ + 2x15’ endurance active');
-const hrState={...state,lt1Hr:157,lt2Hr:174};
-const threshold=(sector)=>({fam:sector+'.time',sector,work:20,total:23,structure:{type:'intervals',reps:4,durationMin:5,recoveryMin:1,recoveryType:'free'},intensity:{minKmh:12,maxKmh:12.5}});
-assert(context.ui.qualityScheduleHtml(threshold('s1'),{wu:24,cd:10},hrState).includes('Plafond FC S1 : 165 bpm'));
-assert(context.ui.qualityScheduleHtml(threshold('s2'),{wu:24,cd:10},hrState).includes('Plafond FC S2 : 174 bpm'));
-assert(context.ui.qualityScheduleHtml(threshold('s1'),{wu:24,cd:10},state).includes('Physiologie (FC S2)'));
-assert(context.ui.qualityScheduleHtml(threshold('s1'),{wu:24,cd:10},{...hrState,lt1Hr:140}).includes('Plafond FC S1 : 165 bpm'));
-assert(context.ui.qualityScheduleHtml(threshold('s2'),{wu:24,cd:10},state).includes('à renseigner'));
-const mixedHr=context.ui.qualityScheduleHtml(transition.variants[0],transition,hrState);
-assert(mixedHr.includes('Plafond FC S1 : 165 bpm'));assert(mixedHr.includes('Plafond FC S2 : 174 bpm'));
-const activeHtml=context.ui.show({w:aw.index,f:af});assert(activeHtml.includes('class="paceSpeed"'));
-console.log('OK: combined Jogg pace range, chronological quality steps, optional block recovery and pace-first typography.');
-
+const continuous = {
+  fam: 's1.cont',
+  work: 20,
+  total: 20,
+  structure: {type: 'continuous', durationMin: 20},
+  intensity: {minKmh: 12, maxKmh: 12.5}
+};
+assert(!context.ui.qualityScheduleHtml(continuous, {wu: 24, cd: 10}, state).includes('Récup entre blocs :'));
+assert(context.ui.show({w: 0, q: 0}).includes('sessionSteps'));
+assert.equal(E.joggTitle({type: 'active', activeRange: [20, 20]}), 'Jogg’ + 20’ endurance active');
+assert.equal(
+  E.joggTitle({type: 'active', activeRange: [15, 15], activeReps: 2}),
+  'Jogg’ + 2x15’ endurance active'
+);
+assert.equal(E.joggTitle({type: 'active', activeBlocks: [15, 15]}), 'Jogg’ + 2x15’ endurance active');
+const hrState = {...state, lt1Hr: 157, lt2Hr: 174};
+const threshold = sector => ({
+  fam: sector + '.time',
+  sector,
+  work: 20,
+  total: 23,
+  structure: {type: 'intervals', reps: 4, durationMin: 5, recoveryMin: 1, recoveryType: 'free'},
+  intensity: {minKmh: 12, maxKmh: 12.5}
+});
+assert(
+  context.ui
+    .qualityScheduleHtml(threshold('s1'), {wu: 24, cd: 10}, hrState)
+    .includes('Plafond FC S1 : 165 bpm')
+);
+assert(
+  context.ui
+    .qualityScheduleHtml(threshold('s2'), {wu: 24, cd: 10}, hrState)
+    .includes('Plafond FC S2 : 174 bpm')
+);
+assert(
+  context.ui.qualityScheduleHtml(threshold('s1'), {wu: 24, cd: 10}, state).includes('Physiologie (FC S2)')
+);
+assert(
+  context.ui
+    .qualityScheduleHtml(threshold('s1'), {wu: 24, cd: 10}, {...hrState, lt1Hr: 140})
+    .includes('Plafond FC S1 : 165 bpm')
+);
+assert(context.ui.qualityScheduleHtml(threshold('s2'), {wu: 24, cd: 10}, state).includes('à renseigner'));
+const mixedHr = context.ui.qualityScheduleHtml(transition.variants[0], transition, hrState);
+assert(mixedHr.includes('Plafond FC S1 : 165 bpm'));
+assert(mixedHr.includes('Plafond FC S2 : 174 bpm'));
+const activeHtml = context.ui.show({w: aw.index, f: af});
+assert(activeHtml.includes('class="paceSpeed"'));
+console.log(
+  'OK: combined Jogg pace range, chronological quality steps, optional block recovery and pace-first typography.'
+);
 
 // Library progression uses each VO2 format's effort duration, not a shared 18-minute goal.
-context.pred=pred;
-vm.runInContext(`let lastPred=pred;const info=(title,lines)=>lines.join(' ');`+
- html.slice(html.indexOf('const LIB_SECTORS='),html.indexOf('function libSessionHtml('))+
- `\nthis.library={candidates:libCandidates,work:libWork,count:libFormatCount,load:libCandidateLoad,html:appLibHtml,set:(sec,phase)=>{libSector=sec;libVol=phase;},range:vo2WorkRange};`,context);
-const L=context.library;
-const phaseCandidates=[0,1,2].map(i=>L.candidates('vo2',L.work('vo2')[i],i));
-const thirty=phaseCandidates.map(list=>list.find(o=>o.c.key==='vo2:int:0.5').c);
-assert.deepEqual(thirty.map(c=>c.structure.reps),[16,24,30]);
-assert(thirty.every(c=>c.work<=15&&c.structure.reps<=30));
-const four=phaseCandidates.map(list=>list.find(o=>o.c.key==='vo2:vo2.longTime:4').c);
-assert.deepEqual(four.map(c=>c.work),[12,16,20]);
-for(const sec of ['s1','s2','vo2','spec10k','hills']){
- const phases=[0,1,2].map(i=>L.candidates(sec,L.work(sec)[i],i));
- const unique=new Set(phases.flat().map(o=>o.c.key));assert.equal(L.count(sec),unique.size);
- for(let i=0;i<3;i++)for(const {c} of phases[i]){
-  const load=L.load(sec,c,state);assert(Number.isFinite(load)&&load>0);
-  if(i){const before=phases[i-1].find(o=>o.c.key===c.key);if(before)assert(c.work>=before.c.work-1e-9);}
- }
- L.set(sec,1);const rendered=L.html();assert(rendered.includes(' · charge '));assert(rendered.includes(`${L.count(sec)} formats distincts`));assert(!rendered.includes('undefined'));assert(!rendered.includes('NaN'));
+context.pred = pred;
+vm.runInContext(
+  `let lastPred=pred;const info=(title,lines)=>lines.join(' ');` +
+    between(html, 'LIB_SECTORS', 'libSessionHtml') +
+    `\nthis.library={candidates:libCandidates,work:libWork,count:libFormatCount,load:libCandidateLoad,html:appLibHtml,set:(sec,phase)=>{libSector=sec;libVol=phase;},range:vo2WorkRange};`,
+  context
+);
+const L = context.library;
+const phaseCandidates = [0, 1, 2].map(i => L.candidates('vo2', L.work('vo2')[i], i));
+const thirty = phaseCandidates.map(list => list.find(o => o.c.key === 'vo2:int:0.5').c);
+assert.deepEqual(
+  thirty.map(c => c.structure.reps),
+  [16, 24, 30]
+);
+assert(thirty.every(c => c.work <= 15 && c.structure.reps <= 30));
+const four = phaseCandidates.map(list => list.find(o => o.c.key === 'vo2:vo2.longTime:4').c);
+assert.deepEqual(
+  four.map(c => c.work),
+  [12, 16, 20]
+);
+for (const sec of ['s1', 's2', 'vo2', 'spec10k', 'hills']) {
+  const phases = [0, 1, 2].map(i => L.candidates(sec, L.work(sec)[i], i));
+  const unique = new Set(phases.flat().map(o => o.c.key));
+  assert.equal(L.count(sec), unique.size);
+  for (let i = 0; i < 3; i++)
+    for (const {c} of phases[i]) {
+      const load = L.load(sec, c, state);
+      assert(Number.isFinite(load) && load > 0);
+      if (i) {
+        const before = phases[i - 1].find(o => o.c.key === c.key);
+        if (before) assert(c.work >= before.c.work - 1e-9);
+      }
+    }
+  L.set(sec, 1);
+  const rendered = L.html();
+  assert(rendered.includes(' · charge '));
+  assert(rendered.includes(`${L.count(sec)} formats distincts`));
+  assert(!rendered.includes('undefined'));
+  assert(!rendered.includes('NaN'));
 }
 // The tile and the detail use the same preparation, cooldown and recovery load model.
-for(const c of [...thirty,...four]){
- const prep=E.prepareSession({fam:'vma',variants:[c]});
- assert.equal(prep.wu,27);assert.equal(prep.cd,10);
- assert(L.load('vo2',c,state)>0);
+for (const c of [...thirty, ...four]) {
+  const prep = E.prepareSession({fam: 'vma', variants: [c]});
+  assert.equal(prep.wu, 27);
+  assert.equal(prep.cd, 10);
+  assert(L.load('vo2', c, state) > 0);
 }
-console.log('OK: library 30-second progression 16/24/30 reps, 4-minute progression 12/16/20 minutes, distinct counts, finite loads and rendered category cards.');
+console.log(
+  'OK: library 30-second progression 16/24/30 reps, 4-minute progression 12/16/20 minutes, distinct counts, finite loads and rendered category cards.'
+);
 // Progressive fraction duration applies to both choices, including metre-based formats.
-for(const s2 of [12,14,60/3.5])for(const previous of [1.25,2,3,4]){
- const athlete={...state,s2,vma:s2+3,s1lo:s2*.82,s1hi:s2*.85};
- const history={s2:previous},ctx={k:2,t:.8,fractionHistory:history,memory:{}};
- const choices=E.generateSession('s2',28,athlete,ctx);
- for(const option of choices){
-  assert(E.maxFractionMinutes(option)<=Math.max(previous*1.5,previous+2.5)+1e-9,'both options respect the prior fraction duration');
-  assert.equal(option.capFail.length,0);
- }
- if(previous===2)assert(choices.every(v=>E.maxFractionMinutes(v)<6),'no jump from 2 to 6 minutes');
+for (const s2 of [12, 14, 60 / 3.5])
+  for (const previous of [1.25, 2, 3, 4]) {
+    const athlete = {...state, s2, vma: s2 + 3, s1lo: s2 * 0.82, s1hi: s2 * 0.85};
+    const history = {s2: previous},
+      ctx = {k: 2, t: 0.8, fractionHistory: history, memory: {}};
+    const choices = E.generateSession('s2', 28, athlete, ctx);
+    for (const option of choices) {
+      assert(
+        E.maxFractionMinutes(option) <= Math.max(previous * 1.5, previous + 2.5) + 1e-9,
+        'both options respect the prior fraction duration'
+      );
+      assert.equal(option.capFail.length, 0);
+    }
+    if (previous === 2)
+      assert(
+        choices.every(v => E.maxFractionMinutes(v) < 6),
+        'no jump from 2 to 6 minutes'
+      );
+  }
+const thousand = {
+  structure: {type: 'intervals', distanceM: 1000, repDurationMin: 60 / 14},
+  intensity: {minKmh: 13.86},
+  score: 0,
+  ruleRefs: []
+};
+const six = {structure: {durationMin: 6}, score: 0, ruleRefs: []};
+const allowed = E.fractionProgressionPool([thousand, six], 's2', {fractionHistory: {s2: 2}});
+assert(allowed.includes(thousand));
+assert(!allowed.includes(six));
+for (const block of ['s1', 's2', 'vma']) {
+  const st = {...state, mode: 'bloc', block, N: 4},
+    plan = E.buildPlan(st, E.predict(st)),
+    memory = {};
+  for (const week of plan.weeks) {
+    if (week.assim) {
+      assert(week.sessions.length >= 1, 'assimilation retains quality');
+      continue;
+    }
+    const old = {...(memory.fractions || {})};
+    const visit = v => {
+      if (v.structure?.components) {
+        v.structure.components.forEach(c => visit(c.variant));
+        return;
+      }
+      if (old[v.sector])
+        assert(E.maxFractionMinutes(v) <= Math.max(old[v.sector] * 1.5, old[v.sector] + 2.5) + 1e-9);
+    };
+    week.sessions.forEach(s => s.variants.forEach(visit));
+    E.rememberFractionDurations(week.sessions, memory);
+  }
 }
-const thousand={structure:{type:'intervals',distanceM:1000,repDurationMin:60/14},intensity:{minKmh:13.86},score:0,ruleRefs:[]};
-const six={structure:{durationMin:6},score:0,ruleRefs:[]};
-const allowed=E.fractionProgressionPool([thousand,six],'s2',{fractionHistory:{s2:2}});
-assert(allowed.includes(thousand));assert(!allowed.includes(six));
-for(const block of ['s1','s2','vma']){
- const st={...state,mode:'bloc',block,N:4},plan=E.buildPlan(st,E.predict(st)),memory={};
- for(const week of plan.weeks){
-  if(week.assim){assert(week.sessions.length>=1,'assimilation retains quality');continue;}
-  const old={...(memory.fractions||{})};
-  const visit=v=>{if(v.structure?.components){v.structure.components.forEach(c=>visit(c.variant));return;}
-   if(old[v.sector])assert(E.maxFractionMinutes(v)<=Math.max(old[v.sector]*1.5,old[v.sector]+2.5)+1e-9);
-  };
-  week.sessions.forEach(s=>s.variants.forEach(visit));E.rememberFractionDurations(week.sessions,memory);
- }
-}
-console.log('OK: gradual fraction durations in both options, 1000-m conversion, multiple athlete speeds, full block progression and unchanged active-endurance assimilation.');
+console.log(
+  'OK: gradual fraction durations in both options, 1000-m conversion, multiple athlete speeds, full block progression and unchanged active-endurance assimilation.'
+);

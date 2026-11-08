@@ -1,156 +1,538 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const assert = require('node:assert/strict'),
+  fs = require('node:fs'),
+  vm = require('node:vm'),
+  path = require('node:path');
 // planif-html.js is loaded before this module in the browser.
-const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
-const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));
-const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('/* Transcription')),ctx);const adapter=ctx.window.PlanifCorosAdapter;
-const base={title:'Planif · Premier seuil',description:'Séance de test',kind:'quality',warmupMin:20,cooldownMin:10,easyBand:[9.8,10.7]};
-const quality=(S,I={type:'speed_range',minKmh:14,maxKmh:14.5},extras={})=>({...base,variant:{structure:S,intensity:I,...extras}});
-const extendedJog=adapter.plan({title:'Jogg',description:'Footing prolongé',kind:'foot',foot:{min:90,maxMinutes:90},footBand:[9,10]});
-assert.equal(extendedJog.choices[0].max,90,'extended jog choices must respect the absolute cap');
-function make(snapshot){const before=JSON.stringify(snapshot),d=adapter.plan(snapshot);const c=adapter.course(d,Object.fromEntries(d.choices.map(x=>[x.id,x.value])),{noIntensity:true,free:true});assert.equal(JSON.stringify(snapshot),before);validate(c);return{d,c};}
-const expand=c=>c.sections.flatMap(s=>s.intervalGroup?Array.from({length:s.repeats},()=>s.sets).flat():[s]);
-function validate(c){assert.equal(c.sportType,1);assert(c.courseName&&c.courseName.length<=100);assert(c.courseDescription);assert.deepEqual(Object.keys(c).sort(),fixture.inputSchema.properties.course.required.slice().sort());
- for(const s of c.sections){if(s.intervalGroup){assert(s.repeats>=1&&s.repeats<=20);assert.deepEqual(Object.keys(s).sort(),['intervalGroup','repeats','sets']);assert(s.sets.every(x=>[2,3].includes(x.sectionType)&&!x.intervalGroup));}
- for(const p of s.intervalGroup?s.sets:[s]){assert([1,2,3,4].includes(p.sectionType));assert([1,2,4].includes(p.targetType));if(p.targetType!==4)assert(Number.isInteger(p.targetValue)&&p.targetValue>0);else assert(!('targetValue'in p));assert(!('intensityPercentStart'in p));assert(!('sectionIntensity'in p));if(p.intensityType){assert.equal(p.intensityType,2);assert(p.intensityValueStart>=120&&p.intensityValueEnd<=1499);assert(p.intensityValueStart<=p.intensityValueEnd);}}}
+const source =
+  require('./helpers/runtime.cjs').htmlSource +
+  '\n' +
+  fs.readFileSync(require('node:path').join(__dirname, '../planif-coros.js'), 'utf8');
+const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/coros-workout-tool.json'), 'utf8'));
+const ctx = {window: {}};
+vm.createContext(ctx);
+vm.runInContext(source.slice(source.indexOf('/* Transcription')), ctx);
+const adapter = ctx.window.PlanifCorosAdapter;
+const base = {
+  title: 'Planif · Premier seuil',
+  description: 'Séance de test',
+  kind: 'quality',
+  warmupMin: 20,
+  cooldownMin: 10,
+  easyBand: [9.8, 10.7]
+};
+const quality = (S, I = {type: 'speed_range', minKmh: 14, maxKmh: 14.5}, extras = {}) => ({
+  ...base,
+  variant: {structure: S, intensity: I, ...extras}
+});
+const extendedJog = adapter.plan({
+  title: 'Jogg',
+  description: 'Footing prolongé',
+  kind: 'foot',
+  foot: {min: 90, maxMinutes: 90},
+  footBand: [9, 10]
+});
+assert.equal(extendedJog.choices[0].max, 90, 'extended jog choices must respect the absolute cap');
+function make(snapshot) {
+  const before = JSON.stringify(snapshot),
+    d = adapter.plan(snapshot);
+  const c = adapter.course(d, Object.fromEntries(d.choices.map(x => [x.id, x.value])), {
+    noIntensity: true,
+    free: true
+  });
+  assert.equal(JSON.stringify(snapshot), before);
+  validate(c);
+  return {d, c};
 }
-let c=make(quality({type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]})).c;
-let rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).length,7);assert.equal(rows.filter(x=>x.sectionType===3).length,6);assert.equal(rows.filter(x=>x.sectionType===2).reduce((a,s)=>a+s.targetValue,0),2100);assert.equal(rows.filter(x=>x.sectionType===3).reduce((a,s)=>a+s.targetValue,0),450);assert.equal(rows.at(-1).sectionType,4);assert.equal(rows[1].intensityValueStart,Math.round(3600/14.5));assert.equal(rows[1].intensityValueEnd,Math.round(3600/14));
-c=make(quality({type:'intervals',reps:5,distanceM:1000,recoveryMin:1.5},{type:'race_pace',refKmh:14.7})).c;rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).reduce((a,s)=>a+s.targetValue,0),5000);assert(rows.filter(x=>x.sectionType===2).every(x=>x.targetType===1));
-c=make(quality({type:'intermittent',reps:30,sets:3,perSet:10,workMin:.5,recoveryMin:.375,recoveryRangeMin:[.25,.5],recoveryBetweenSetsMin:2.5,recoveryBetweenSetsRangeMin:[2,3]},{type:'pct_vma_range',minKmh:17,maxKmh:17.5,minPct:100,maxPct:103})).c;rows=expand(c);assert.equal(rows.filter(x=>x.sectionType===2).length,30);assert.equal(rows.filter(x=>x.sectionType===3).length,29);assert.equal(rows.filter(x=>x.sectionType===3&&x.targetValue===150).length,2);assert(rows.every(x=>!('intensityPercentStart'in x)));
-c=make(quality({type:'intervals',reps:45,distanceM:200,recoveryMin:.5})).c;assert(c.sections.filter(s=>s.intervalGroup).every(s=>s.repeats<=20));assert.equal(expand(c).filter(s=>s.sectionType===2).length,45);
-c=make(quality({type:'continuous',progression:'thirds',durationMin:16.25},{type:'progression',speedsKmh:[12,12.5,13]})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).reduce((a,s)=>a+s.targetValue,0),975);
-c=make(quality({type:'intervals',progression:'increasing',reps:3,durationMin:5,recoveryMin:1},{type:'progression_range'},{corosBands:[[12,12],[12.5,12.5],[13,13]]})).c;assert.equal(JSON.stringify(expand(c).filter(s=>s.sectionType===2).map(s=>s.intensityValueStart)),JSON.stringify([300,288,277]));
-c=make(quality({type:'ladder',durationsMin:[3,5,3],recoveryRangeMin:[1,2]},{type:'by_duration',bands:[{durationsMin:[3],minKmh:14,maxKmh:14.5},{durationsMin:[5],minKmh:13.8,maxKmh:14.1}]},{recEach:1.5})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).reduce((a,s)=>a+s.targetValue,0),660);
-c=make(quality({type:'sets',sets:3,durationsMin:[5,3],recoveryBetweenFractionsMin:1,recoveryBetweenSetsMin:2})).c;assert.equal(expand(c).filter(s=>s.sectionType===2).length,6);assert.equal(expand(c).filter(s=>s.sectionType===3).length,5);
-c=make(quality({type:'sets',sets:2,segments:[{distanceM:1000,target:'s2'},{distanceM:500,target:'race'}],linked:true,recoveryBetweenSetsMin:2},{type:'mixed',s2Kmh:14,raceKmh:15})).c;assert.equal(expand(c).filter(s=>s.sectionType===3).length,1);
+const expand = c =>
+  c.sections.flatMap(s => (s.intervalGroup ? Array.from({length: s.repeats}, () => s.sets).flat() : [s]));
+function validate(c) {
+  assert.equal(c.sportType, 1);
+  assert(c.courseName && c.courseName.length <= 100);
+  assert(c.courseDescription);
+  assert.deepEqual(Object.keys(c).sort(), fixture.inputSchema.properties.course.required.slice().sort());
+  for (const s of c.sections) {
+    if (s.intervalGroup) {
+      assert(s.repeats >= 1 && s.repeats <= 20);
+      assert.deepEqual(Object.keys(s).sort(), ['intervalGroup', 'repeats', 'sets']);
+      assert(s.sets.every(x => [2, 3].includes(x.sectionType) && !x.intervalGroup));
+    }
+    for (const p of s.intervalGroup ? s.sets : [s]) {
+      assert([1, 2, 3, 4].includes(p.sectionType));
+      assert([1, 2, 4].includes(p.targetType));
+      if (p.targetType !== 4) assert(Number.isInteger(p.targetValue) && p.targetValue > 0);
+      else assert(!('targetValue' in p));
+      assert(!('intensityPercentStart' in p));
+      assert(!('sectionIntensity' in p));
+      if (p.intensityType) {
+        assert.equal(p.intensityType, 2);
+        assert(p.intensityValueStart >= 120 && p.intensityValueEnd <= 1499);
+        assert(p.intensityValueStart <= p.intensityValueEnd);
+      }
+    }
+  }
+}
+let c = make(
+  quality({type: 'intervals', reps: 7, durationMin: 5, recoveryMin: 1.25, recoveryRangeMin: [1, 1.5]})
+).c;
+let rows = expand(c);
+assert.equal(rows.filter(x => x.sectionType === 2).length, 7);
+assert.equal(rows.filter(x => x.sectionType === 3).length, 6);
+assert.equal(
+  rows.filter(x => x.sectionType === 2).reduce((a, s) => a + s.targetValue, 0),
+  2100
+);
+assert.equal(
+  rows.filter(x => x.sectionType === 3).reduce((a, s) => a + s.targetValue, 0),
+  450
+);
+assert.equal(rows.at(-1).sectionType, 4);
+assert.equal(rows[1].intensityValueStart, Math.round(3600 / 14.5));
+assert.equal(rows[1].intensityValueEnd, Math.round(3600 / 14));
+c = make(
+  quality({type: 'intervals', reps: 5, distanceM: 1000, recoveryMin: 1.5}, {type: 'race_pace', refKmh: 14.7})
+).c;
+rows = expand(c);
+assert.equal(
+  rows.filter(x => x.sectionType === 2).reduce((a, s) => a + s.targetValue, 0),
+  5000
+);
+assert(rows.filter(x => x.sectionType === 2).every(x => x.targetType === 1));
+c = make(
+  quality(
+    {
+      type: 'intermittent',
+      reps: 30,
+      sets: 3,
+      perSet: 10,
+      workMin: 0.5,
+      recoveryMin: 0.375,
+      recoveryRangeMin: [0.25, 0.5],
+      recoveryBetweenSetsMin: 2.5,
+      recoveryBetweenSetsRangeMin: [2, 3]
+    },
+    {type: 'pct_vma_range', minKmh: 17, maxKmh: 17.5, minPct: 100, maxPct: 103}
+  )
+).c;
+rows = expand(c);
+assert.equal(rows.filter(x => x.sectionType === 2).length, 30);
+assert.equal(rows.filter(x => x.sectionType === 3).length, 29);
+assert.equal(rows.filter(x => x.sectionType === 3 && x.targetValue === 150).length, 2);
+assert(rows.every(x => !('intensityPercentStart' in x)));
+c = make(quality({type: 'intervals', reps: 45, distanceM: 200, recoveryMin: 0.5})).c;
+assert(c.sections.filter(s => s.intervalGroup).every(s => s.repeats <= 20));
+assert.equal(expand(c).filter(s => s.sectionType === 2).length, 45);
+c = make(
+  quality(
+    {type: 'continuous', progression: 'thirds', durationMin: 16.25},
+    {type: 'progression', speedsKmh: [12, 12.5, 13]}
+  )
+).c;
+assert.equal(
+  expand(c)
+    .filter(s => s.sectionType === 2)
+    .reduce((a, s) => a + s.targetValue, 0),
+  975
+);
+c = make(
+  quality(
+    {type: 'intervals', progression: 'increasing', reps: 3, durationMin: 5, recoveryMin: 1},
+    {type: 'progression_range'},
+    {
+      corosBands: [
+        [12, 12],
+        [12.5, 12.5],
+        [13, 13]
+      ]
+    }
+  )
+).c;
+assert.equal(
+  JSON.stringify(
+    expand(c)
+      .filter(s => s.sectionType === 2)
+      .map(s => s.intensityValueStart)
+  ),
+  JSON.stringify([300, 288, 277])
+);
+c = make(
+  quality(
+    {type: 'ladder', durationsMin: [3, 5, 3], recoveryRangeMin: [1, 2]},
+    {
+      type: 'by_duration',
+      bands: [
+        {durationsMin: [3], minKmh: 14, maxKmh: 14.5},
+        {durationsMin: [5], minKmh: 13.8, maxKmh: 14.1}
+      ]
+    },
+    {recEach: 1.5}
+  )
+).c;
+assert.equal(
+  expand(c)
+    .filter(s => s.sectionType === 2)
+    .reduce((a, s) => a + s.targetValue, 0),
+  660
+);
+c = make(
+  quality({
+    type: 'sets',
+    sets: 3,
+    durationsMin: [5, 3],
+    recoveryBetweenFractionsMin: 1,
+    recoveryBetweenSetsMin: 2
+  })
+).c;
+assert.equal(expand(c).filter(s => s.sectionType === 2).length, 6);
+assert.equal(expand(c).filter(s => s.sectionType === 3).length, 5);
+c = make(
+  quality(
+    {
+      type: 'sets',
+      sets: 2,
+      segments: [
+        {distanceM: 1000, target: 's2'},
+        {distanceM: 500, target: 'race'}
+      ],
+      linked: true,
+      recoveryBetweenSetsMin: 2
+    },
+    {type: 'mixed', s2Kmh: 14, raceKmh: 15}
+  )
+).c;
+assert.equal(expand(c).filter(s => s.sectionType === 3).length, 1);
 // Continuous 400 m S1 / 400 m AS10: both targets remain work, even with all recoveries manual.
-const alternatingSnapshot=quality({type:'sets',sets:10,segments:[{distanceM:400,target:'s1'},{distanceM:400,target:'race'}],linked:true,recoveryBetweenSetsMin:0},{type:'mixed',s1Kmh:60/4.9,raceKmh:60/4.1});
-c=make(alternatingSnapshot).c;rows=expand(c);assert.equal(rows.filter(s=>s.sectionType===2).length,20);assert.equal(rows.filter(s=>s.sectionType===3).length,0);
-assert.equal(rows[1].intensityValueStart,294);assert.equal(rows[1].intensityValueEnd,294);assert.equal(rows[2].intensityValueStart,246);assert.equal(rows[2].intensityValueEnd,246);
-const alternatingDraft=adapter.plan(alternatingSnapshot),alternatingManual=adapter.course(alternatingDraft,{}, {noIntensity:true,free:true},{coreRecovery:'manual'});
-assert.equal(expand(alternatingManual).filter(s=>s.sectionType===3).length,0);
-c=make(quality({type:'fartlek_structured',reps:6,durationMin:2,recoveryMin:1},{type:'feel',paceTarget:false})).c;assert(expand(c).every(s=>!('intensityType'in s)));
-let d=adapter.plan(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'}));assert(d.free);assert.throws(()=>adapter.course(d,{}, {noIntensity:true}),/Tour/);c=make(quality({type:'hill_reps',reps:6,durationMin:.5,sprints:{reps:6,seconds:10}},{type:'effort'})).c;assert.equal(expand(c).filter(s=>s.targetType===4).length,11);
-const foot={title:'EF normale',description:'Footing de test',kind:'foot',foot:{type:'std',min:55},footBand:[9.9,10.7]};d=adapter.plan(foot);c=adapter.course(d,{c0:50},{});assert.equal(c.sections[0].targetValue,3000);assert.throws(()=>adapter.course(d,{c0:66},{}),/plage/);
-c=make({...foot,foot:{type:'active',wu:20,cd:10,activeRange:[15,45]},activeBand:[11.2,11.8],hrCue:'Ne pas dépasser 160 bpm.'}).c;assert.equal(expand(c)[1].targetValue,1800);assert(c.courseDescription.includes('160 bpm'));
-assert.throws(()=>adapter.plan({...foot,foot:{type:'std',min:55,ld:'strides'}}),/lignes droites/);
-assert.throws(()=>adapter.plan(quality({type:'fartlek_free',workMin:16},{type:'feel'})),/fartlek libre/);
-assert.throws(()=>adapter.course(adapter.plan(quality({type:'intervals',reps:2,durationMin:4,recoveryMin:1})),{},{}),/ressenti/);
-assert.throws(()=>adapter.pace([0,14]),/plage/);
-assert.throws(()=>adapter.pace([31,32]),/limites/);
-const preparedSnapshot=quality({type:'intervals',reps:7,durationMin:5,recoveryMin:1.25,recoveryRangeMin:[1,1.5]},undefined,{sector:'s1'});
-preparedSnapshot.preparation=true;preparedSnapshot.s2Kmh=14;preparedSnapshot.warmupMin=24;
-const original=JSON.stringify(preparedSnapshot),prepared=adapter.plan(preparedSnapshot),values=Object.fromEntries(prepared.choices.map(x=>[x.id,x.value]));
-const consent={noIntensity:true,free:true};
-const prepCourse=adapter.course(prepared,values,consent,{profile:'guided'});validate(prepCourse);
-rows=expand(prepCourse);assert.equal(rows[0].targetValue,1200);assert.equal(rows.at(-1).targetValue,600);
-assert.equal(rows.filter(s=>s.sectionType===2&&s.targetValue===12).length,3);
-assert.equal(rows.filter(s=>s.sectionType===3&&s.targetValue===48).length,3);
-assert.equal(rows.filter(s=>s.targetType===4).length,0);
-assert.equal(rows.slice(0,8).reduce((a,s)=>a+s.targetValue,0),24*60);
-assert.equal(rows.filter(s=>s.sectionType===2&&s.targetValue===300).length,7);
-assert.equal(rows.filter(s=>s.sectionType===3&&s.targetValue===75).length,6);
-assert.equal(adapter.labels(prepared,{profile:'guided'}).length,prepCourse.sections.length);
-const coreOriginal=prepCourse.sections.slice(5,-1);
-const unprepared=make({...preparedSnapshot,preparation:false}).c.sections.slice(1,-1);
-assert.equal(JSON.stringify(coreOriginal),JSON.stringify(unprepared));
-const manualCourse=adapter.course(prepared,{},consent,{profile:'manual'});validate(manualCourse);
-assert(expand(manualCourse).filter(s=>s.sectionType===3).every(s=>s.targetType===4&&!('targetValue'in s)));
-assert(expand(manualCourse).every(s=>!('intensityType'in s)&&!('intensityValueStart'in s)&&!('intensityValueEnd'in s)));
-assert.equal(expand(manualCourse).at(-1).sectionType,4);assert.equal(expand(manualCourse).at(-1).targetType,4);assert(!('targetValue'in expand(manualCourse).at(-1)));
-assert.equal(expand(manualCourse).filter(s=>s.sectionType===2&&s.targetValue===300).length,7);
-assert.equal(adapter.labels(prepared,{profile:'manual'}).length,manualCourse.sections.length);
+const alternatingSnapshot = quality(
+  {
+    type: 'sets',
+    sets: 10,
+    segments: [
+      {distanceM: 400, target: 's1'},
+      {distanceM: 400, target: 'race'}
+    ],
+    linked: true,
+    recoveryBetweenSetsMin: 0
+  },
+  {type: 'mixed', s1Kmh: 60 / 4.9, raceKmh: 60 / 4.1}
+);
+c = make(alternatingSnapshot).c;
+rows = expand(c);
+assert.equal(rows.filter(s => s.sectionType === 2).length, 20);
+assert.equal(rows.filter(s => s.sectionType === 3).length, 0);
+assert.equal(rows[1].intensityValueStart, 294);
+assert.equal(rows[1].intensityValueEnd, 294);
+assert.equal(rows[2].intensityValueStart, 246);
+assert.equal(rows[2].intensityValueEnd, 246);
+const alternatingDraft = adapter.plan(alternatingSnapshot),
+  alternatingManual = adapter.course(
+    alternatingDraft,
+    {},
+    {noIntensity: true, free: true},
+    {coreRecovery: 'manual'}
+  );
+assert.equal(expand(alternatingManual).filter(s => s.sectionType === 3).length, 0);
+c = make(
+  quality(
+    {type: 'fartlek_structured', reps: 6, durationMin: 2, recoveryMin: 1},
+    {type: 'feel', paceTarget: false}
+  )
+).c;
+assert(expand(c).every(s => !('intensityType' in s)));
+let d = adapter.plan(
+  quality({type: 'hill_reps', reps: 6, durationMin: 0.5, sprints: {reps: 6, seconds: 10}}, {type: 'effort'})
+);
+assert(d.free);
+assert.throws(() => adapter.course(d, {}, {noIntensity: true}), /Tour/);
+c = make(
+  quality({type: 'hill_reps', reps: 6, durationMin: 0.5, sprints: {reps: 6, seconds: 10}}, {type: 'effort'})
+).c;
+assert.equal(expand(c).filter(s => s.targetType === 4).length, 11);
+const foot = {
+  title: 'EF normale',
+  description: 'Footing de test',
+  kind: 'foot',
+  foot: {type: 'std', min: 55},
+  footBand: [9.9, 10.7]
+};
+d = adapter.plan(foot);
+c = adapter.course(d, {c0: 50}, {});
+assert.equal(c.sections[0].targetValue, 3000);
+assert.throws(() => adapter.course(d, {c0: 66}, {}), /plage/);
+c = make({
+  ...foot,
+  foot: {type: 'active', wu: 20, cd: 10, activeRange: [15, 45]},
+  activeBand: [11.2, 11.8],
+  hrCue: 'Ne pas dépasser 160 bpm.'
+}).c;
+assert.equal(expand(c)[1].targetValue, 1800);
+assert(c.courseDescription.includes('160 bpm'));
+assert.throws(() => adapter.plan({...foot, foot: {type: 'std', min: 55, ld: 'strides'}}), /lignes droites/);
+assert.throws(
+  () => adapter.plan(quality({type: 'fartlek_free', workMin: 16}, {type: 'feel'})),
+  /fartlek libre/
+);
+assert.throws(
+  () =>
+    adapter.course(
+      adapter.plan(quality({type: 'intervals', reps: 2, durationMin: 4, recoveryMin: 1})),
+      {},
+      {}
+    ),
+  /ressenti/
+);
+assert.throws(() => adapter.pace([0, 14]), /plage/);
+assert.throws(() => adapter.pace([31, 32]), /limites/);
+const preparedSnapshot = quality(
+  {type: 'intervals', reps: 7, durationMin: 5, recoveryMin: 1.25, recoveryRangeMin: [1, 1.5]},
+  undefined,
+  {sector: 's1'}
+);
+preparedSnapshot.preparation = true;
+preparedSnapshot.s2Kmh = 14;
+preparedSnapshot.warmupMin = 24;
+const original = JSON.stringify(preparedSnapshot),
+  prepared = adapter.plan(preparedSnapshot),
+  values = Object.fromEntries(prepared.choices.map(x => [x.id, x.value]));
+const consent = {noIntensity: true, free: true};
+const prepCourse = adapter.course(prepared, values, consent, {profile: 'guided'});
+validate(prepCourse);
+rows = expand(prepCourse);
+assert.equal(rows[0].targetValue, 1200);
+assert.equal(rows.at(-1).targetValue, 600);
+assert.equal(rows.filter(s => s.sectionType === 2 && s.targetValue === 12).length, 3);
+assert.equal(rows.filter(s => s.sectionType === 3 && s.targetValue === 48).length, 3);
+assert.equal(rows.filter(s => s.targetType === 4).length, 0);
+assert.equal(
+  rows.slice(0, 8).reduce((a, s) => a + s.targetValue, 0),
+  24 * 60
+);
+assert.equal(rows.filter(s => s.sectionType === 2 && s.targetValue === 300).length, 7);
+assert.equal(rows.filter(s => s.sectionType === 3 && s.targetValue === 75).length, 6);
+assert.equal(adapter.labels(prepared, {profile: 'guided'}).length, prepCourse.sections.length);
+const coreOriginal = prepCourse.sections.slice(5, -1);
+const unprepared = make({...preparedSnapshot, preparation: false}).c.sections.slice(1, -1);
+assert.equal(JSON.stringify(coreOriginal), JSON.stringify(unprepared));
+const manualCourse = adapter.course(prepared, {}, consent, {profile: 'manual'});
+validate(manualCourse);
+assert(
+  expand(manualCourse)
+    .filter(s => s.sectionType === 3)
+    .every(s => s.targetType === 4 && !('targetValue' in s))
+);
+assert(
+  expand(manualCourse).every(
+    s => !('intensityType' in s) && !('intensityValueStart' in s) && !('intensityValueEnd' in s)
+  )
+);
+assert.equal(expand(manualCourse).at(-1).sectionType, 4);
+assert.equal(expand(manualCourse).at(-1).targetType, 4);
+assert(!('targetValue' in expand(manualCourse).at(-1)));
+assert.equal(expand(manualCourse).filter(s => s.sectionType === 2 && s.targetValue === 300).length, 7);
+assert.equal(adapter.labels(prepared, {profile: 'manual'}).length, manualCourse.sections.length);
 assert(!manualCourse.courseDescription.includes('Récupération : undefined'));
-assert.throws(()=>adapter.course(prepared,values,{noIntensity:true}),/Tour/);
-const active=adapter.plan({...preparedSnapshot,activation:true,warmupMin:27});
-const activeCourse=adapter.course(active,values,consent,{profile:'guided'});validate(activeCourse);rows=expand(activeCourse);
-assert.equal(rows[8].targetValue,105);assert.equal(rows[8].intensityValueStart,257);assert.equal(rows[8].intensityValueEnd,257);
-assert.equal(rows[7].targetValue,45);assert.equal(rows[9].targetValue,90);
-assert.equal(rows.slice(0,10).reduce((a,s)=>a+s.targetValue,0),27*60);
-assert.equal(rows.filter(s=>s.targetType===4).length,0);
-assert.equal(adapter.labels(active,{profile:'guided'}).length,activeCourse.sections.length);
-for(const [warmupMin,cooldownMin,activation] of [[15,5,false],[18,5,true],[20,8,false],[23,8,true],[24,10,false],[27,10,true]]){
- const draft=adapter.plan({...preparedSnapshot,warmupMin,cooldownMin,activation});
- const course=adapter.course(draft,values,consent,{profile:'guided'});validate(course);
- const steps=expand(course);
- assert.equal(steps.slice(0,activation?10:8).reduce((sum,s)=>sum+s.targetValue,0),warmupMin*60);
- assert.equal(steps.at(-1).targetValue,cooldownMin*60);
- assert.equal(steps.filter(s=>s.sectionType===2&&s.targetValue===300).length,7,'quality core unchanged by preparation size');
+assert.throws(() => adapter.course(prepared, values, {noIntensity: true}), /Tour/);
+const active = adapter.plan({...preparedSnapshot, activation: true, warmupMin: 27});
+const activeCourse = adapter.course(active, values, consent, {profile: 'guided'});
+validate(activeCourse);
+rows = expand(activeCourse);
+assert.equal(rows[8].targetValue, 105);
+assert.equal(rows[8].intensityValueStart, 257);
+assert.equal(rows[8].intensityValueEnd, 257);
+assert.equal(rows[7].targetValue, 45);
+assert.equal(rows[9].targetValue, 90);
+assert.equal(
+  rows.slice(0, 10).reduce((a, s) => a + s.targetValue, 0),
+  27 * 60
+);
+assert.equal(rows.filter(s => s.targetType === 4).length, 0);
+assert.equal(adapter.labels(active, {profile: 'guided'}).length, activeCourse.sections.length);
+for (const [warmupMin, cooldownMin, activation] of [
+  [15, 5, false],
+  [18, 5, true],
+  [20, 8, false],
+  [23, 8, true],
+  [24, 10, false],
+  [27, 10, true]
+]) {
+  const draft = adapter.plan({...preparedSnapshot, warmupMin, cooldownMin, activation});
+  const course = adapter.course(draft, values, consent, {profile: 'guided'});
+  validate(course);
+  const steps = expand(course);
+  assert.equal(
+    steps.slice(0, activation ? 10 : 8).reduce((sum, s) => sum + s.targetValue, 0),
+    warmupMin * 60
+  );
+  assert.equal(steps.at(-1).targetValue, cooldownMin * 60);
+  assert.equal(
+    steps.filter(s => s.sectionType === 2 && s.targetValue === 300).length,
+    7,
+    'quality core unchanged by preparation size'
+  );
 }
-const slower=adapter.course(active,values,consent,{profile:'guided',activationKmh:13.8});assert.equal(expand(slower)[8].intensityValueStart,261);
-assert.throws(()=>adapter.course(active,values,consent,{activationKmh:14.1}),/second seuil/);
-assert.throws(()=>adapter.course(active,values,consent,{activationKmh:NaN}),/second seuil/);
-assert.throws(()=>adapter.plan({...preparedSnapshot,activation:true,s2Kmh:0}),/second seuil/);
-assert.throws(()=>adapter.course(active,values,consent,{profile:'invalid'}),/profil/);
-const manualActive=adapter.course(active,{},consent,{profile:'manual'});validate(manualActive);
-assert(expand(manualActive).every(s=>!('intensityType'in s)));
-assert.equal(expand(manualActive).filter(s=>s.targetValue===105).length,1);
-assert.equal(JSON.stringify(preparedSnapshot),original);
+const slower = adapter.course(active, values, consent, {profile: 'guided', activationKmh: 13.8});
+assert.equal(expand(slower)[8].intensityValueStart, 261);
+assert.throws(() => adapter.course(active, values, consent, {activationKmh: 14.1}), /second seuil/);
+assert.throws(() => adapter.course(active, values, consent, {activationKmh: NaN}), /second seuil/);
+assert.throws(() => adapter.plan({...preparedSnapshot, activation: true, s2Kmh: 0}), /second seuil/);
+assert.throws(() => adapter.course(active, values, consent, {profile: 'invalid'}), /profil/);
+const manualActive = adapter.course(active, {}, consent, {profile: 'manual'});
+validate(manualActive);
+assert(expand(manualActive).every(s => !('intensityType' in s)));
+assert.equal(expand(manualActive).filter(s => s.targetValue === 105).length, 1);
+assert.equal(JSON.stringify(preparedSnapshot), original);
 // Family selection uses the real app function; S2-only, semi and marathon do not get the activation.
-ctx.preparationActivation=require('../planif-engine.js').preparationActivation;
-const uiSource=fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8');
-const selector=uiSource.slice(uiSource.indexOf('function corosActivation('),uiSource.indexOf('function corosSessionSnapshot('));vm.runInContext(selector,ctx);
-assert(ctx.corosActivation({sector:'vo2'}));assert(ctx.corosActivation({sector:'spec10k'}));
-assert(ctx.corosActivation({structure:{type:'fartlek_structured'}}));
-assert(ctx.corosActivation({}, {fam:'spec',dist:0}));assert(ctx.corosActivation({}, {fam:'spec',dist:1}));
-assert(!ctx.corosActivation({sector:'s2'},{fam:'s2'}));assert(!ctx.corosActivation({}, {fam:'spec',dist:2}));assert(!ctx.corosActivation({}, {fam:'spec',dist:3}));
-assert(ctx.corosActivation({structure:{components:[{variant:{sector:'vo2'}}]}}));
-console.log('OK : distances, allures inversées, choix de durée/récupération, absence de récup finale, séries de 30/45 fractions, progressions, pyramides, blocs, fartlek au ressenti, côtes libres, immutabilité et refus explicites.');
+ctx.preparationActivation = require('../planif-engine.js').preparationActivation;
+const uiSource = fs.readFileSync(path.join(__dirname, '../planif-ui.js'), 'utf8');
+const selector = uiSource.slice(
+  uiSource.indexOf('function corosActivation('),
+  uiSource.indexOf('function corosSessionSnapshot(')
+);
+vm.runInContext(selector, ctx);
+assert(ctx.corosActivation({sector: 'vo2'}));
+assert(ctx.corosActivation({sector: 'spec10k'}));
+assert(ctx.corosActivation({structure: {type: 'fartlek_structured'}}));
+assert(ctx.corosActivation({}, {fam: 'spec', dist: 0}));
+assert(ctx.corosActivation({}, {fam: 'spec', dist: 1}));
+assert(!ctx.corosActivation({sector: 's2'}, {fam: 's2'}));
+assert(!ctx.corosActivation({}, {fam: 'spec', dist: 2}));
+assert(!ctx.corosActivation({}, {fam: 'spec', dist: 3}));
+assert(ctx.corosActivation({structure: {components: [{variant: {sector: 'vo2'}}]}}));
+console.log(
+  'OK : distances, allures inversées, choix de durée/récupération, absence de récup finale, séries de 30/45 fractions, progressions, pyramides, blocs, fartlek au ressenti, côtes libres, immutabilité et refus explicites.'
+);
 
 // Manual export matches the user's COROS screenshots: complete repeated pairs, no loose last rep.
-const mixedPrepared={...preparedSnapshot,variant:{structure:{type:'mixed_zones',components:[
- {fam:'s1',variant:{structure:{type:'intervals',reps:5,durationMin:5,recoveryMin:1},intensity:{minKmh:12,maxKmh:12.5}}},
- {fam:'s2',variant:{structure:{type:'intervals',reps:3,durationMin:3,recoveryMin:1},intensity:{minKmh:14,maxKmh:14.4}}}
-],recoveryBetweenBlocksMin:2}}};
-const mixedDraft=adapter.plan(mixedPrepared),mixedBefore=JSON.stringify(mixedDraft);
-const compact=adapter.course(mixedDraft,{},consent,{profile:'manual'});validate(compact);
-assert.equal(compact.sections.length,6);
-assert.equal(compact.sections[0].sectionType,1);assert.equal(compact.sections[0].targetValue,1200);
-assert.equal(compact.sections[1].sectionType,3);assert.equal(compact.sections[1].targetType,4);
-assert.equal(JSON.stringify(compact.sections.filter(s=>s.intervalGroup).map(s=>[s.repeats,s.sets[0].targetValue,s.sets[1].targetType])),JSON.stringify([[3,12,4],[5,300,4],[3,180,4]]));
-assert.equal(compact.sections.at(-1).sectionType,4);assert.equal(compact.sections.at(-1).targetType,4);
-const compactLabels=adapter.labels(mixedDraft,{profile:'manual'},compact.sections);
-assert.equal(compactLabels.length,6);assert.equal(compactLabels.at(-1),'Retour au calme');assert(!compactLabels.some(s=>s&&s.includes('Transition')));
-assert.equal(JSON.stringify(mixedDraft),mixedBefore);
+const mixedPrepared = {
+  ...preparedSnapshot,
+  variant: {
+    structure: {
+      type: 'mixed_zones',
+      components: [
+        {
+          fam: 's1',
+          variant: {
+            structure: {type: 'intervals', reps: 5, durationMin: 5, recoveryMin: 1},
+            intensity: {minKmh: 12, maxKmh: 12.5}
+          }
+        },
+        {
+          fam: 's2',
+          variant: {
+            structure: {type: 'intervals', reps: 3, durationMin: 3, recoveryMin: 1},
+            intensity: {minKmh: 14, maxKmh: 14.4}
+          }
+        }
+      ],
+      recoveryBetweenBlocksMin: 2
+    }
+  }
+};
+const mixedDraft = adapter.plan(mixedPrepared),
+  mixedBefore = JSON.stringify(mixedDraft);
+const compact = adapter.course(mixedDraft, {}, consent, {profile: 'manual'});
+validate(compact);
+assert.equal(compact.sections.length, 6);
+assert.equal(compact.sections[0].sectionType, 1);
+assert.equal(compact.sections[0].targetValue, 1200);
+assert.equal(compact.sections[1].sectionType, 3);
+assert.equal(compact.sections[1].targetType, 4);
+assert.equal(
+  JSON.stringify(
+    compact.sections
+      .filter(s => s.intervalGroup)
+      .map(s => [s.repeats, s.sets[0].targetValue, s.sets[1].targetType])
+  ),
+  JSON.stringify([
+    [3, 12, 4],
+    [5, 300, 4],
+    [3, 180, 4]
+  ])
+);
+assert.equal(compact.sections.at(-1).sectionType, 4);
+assert.equal(compact.sections.at(-1).targetType, 4);
+const compactLabels = adapter.labels(mixedDraft, {profile: 'manual'}, compact.sections);
+assert.equal(compactLabels.length, 6);
+assert.equal(compactLabels.at(-1), 'Retour au calme');
+assert(!compactLabels.some(s => s && s.includes('Transition')));
+assert.equal(JSON.stringify(mixedDraft), mixedBefore);
 // Guided export retains exactly four S1 recoveries, two S2 recoveries and one inter-block recovery.
-const guidedMixed=adapter.course(mixedDraft,{},consent,{profile:'guided'});validate(guidedMixed);
-const guidedCore=expand(guidedMixed).slice(8,-1);
-assert.equal(guidedCore.filter(s=>s.sectionType===3&&s.targetValue===60).length,6);
-assert.equal(guidedCore.filter(s=>s.sectionType===3&&s.targetValue===120).length,1);
-assert.equal(guidedCore.at(-1).sectionType,2);
-assert.equal(guidedMixed.sections.at(-1).targetValue,600);
+const guidedMixed = adapter.course(mixedDraft, {}, consent, {profile: 'guided'});
+validate(guidedMixed);
+const guidedCore = expand(guidedMixed).slice(8, -1);
+assert.equal(guidedCore.filter(s => s.sectionType === 3 && s.targetValue === 60).length, 6);
+assert.equal(guidedCore.filter(s => s.sectionType === 3 && s.targetValue === 120).length, 1);
+assert.equal(guidedCore.at(-1).sectionType, 2);
+assert.equal(guidedMixed.sections.at(-1).targetValue, 600);
 // COROS groups remain capped at twenty, including exact-boundary and multi-group formats.
-for(const reps of [1,20,21,30,45]){
- const draft=adapter.plan({...preparedSnapshot,variant:{structure:{type:'intervals',reps,durationMin:2,recoveryMin:1},intensity:{minKmh:14,maxKmh:14.5}}});
- const sent=adapter.course(draft,{},consent,{profile:'manual'});validate(sent);
- const flat=expand(sent);assert.equal(flat.filter(s=>s.sectionType===2&&s.targetValue===120).length,reps);
- assert.equal(flat.filter(s=>s.sectionType===3).length,reps+4);
- assert(sent.sections.filter(s=>s.intervalGroup).every(s=>s.repeats<=20));
- assert(!flat.some((s,i)=>s.sectionType===3&&flat[i+1]?.sectionType===3));
+for (const reps of [1, 20, 21, 30, 45]) {
+  const draft = adapter.plan({
+    ...preparedSnapshot,
+    variant: {
+      structure: {type: 'intervals', reps, durationMin: 2, recoveryMin: 1},
+      intensity: {minKmh: 14, maxKmh: 14.5}
+    }
+  });
+  const sent = adapter.course(draft, {}, consent, {profile: 'manual'});
+  validate(sent);
+  const flat = expand(sent);
+  assert.equal(flat.filter(s => s.sectionType === 2 && s.targetValue === 120).length, reps);
+  assert.equal(flat.filter(s => s.sectionType === 3).length, reps + 4);
+  assert(sent.sections.filter(s => s.intervalGroup).every(s => s.repeats <= 20));
+  assert(!flat.some((s, i) => s.sectionType === 3 && flat[i + 1]?.sectionType === 3));
 }
-assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections).at(-1),'Retour au calme');
-assert.equal(adapter.labels(active,{profile:'manual'},manualActive.sections)[3],'Activation au S2 ou légèrement plus lent');
-console.log('OK: screenshot-equivalent manual groups, grouped final recoveries, guided inter-block timing, 20-repetition limits, preview alignment and draft immutability.');
+assert.equal(adapter.labels(active, {profile: 'manual'}, manualActive.sections).at(-1), 'Retour au calme');
+assert.equal(
+  adapter.labels(active, {profile: 'manual'}, manualActive.sections)[3],
+  'Activation au S2 ou légèrement plus lent'
+);
+console.log(
+  'OK: screenshot-equivalent manual groups, grouped final recoveries, guided inter-block timing, 20-repetition limits, preview alignment and draft immutability.'
+);
 
 // Short names describe the selected workout rather than the old generic screen heading.
-const named=(sector,structure,intensity={})=>({...base,variant:{sector,structure,intensity}});
-for(const [snapshot,name] of [
- [named('s1',{type:'intervals',reps:5,durationMin:6,recoveryMin:1}),'S1-5x6’'],
- [named('s2',{type:'intervals',reps:6,durationMin:4,recoveryMin:1}),'S2-6x4’'],
- [named('vo2',{type:'intermittent',sets:2,perSet:6,reps:12,workMin:1,recoveryMin:1,recoveryBetweenSetsMin:2}),'VO-2x(6x1’)'],
- [named('s1',{type:'intervals',reps:5,durationMin:6,progression:'increasing'}),'PR-5x6’'],
- [named('s2',{type:'ladder',shape:'progressive',durationsMin:[4,6,8]}),'PR-4’+6’+8’'],
- [mixedPrepared,'MX-S1:5x5’+S2:3x3’'],
- [{...foot,foot:{type:'std',min:50}},'EF-50’'],
- [{...foot,foot:{type:'std',min:45,ld:'strides'}},'EF-45’+LD'],
- [named('spec10k',{type:'intervals',reps:3,distanceM:2000,recoveryMin:2},{race:'10 km',refKmh:14.5}),'AS10-3x2000m'],
- [named('vo2',{type:'intermittent',reps:20,workMin:.5,recoveryMin:.5}),'VO-20x30”'],
- [named('s1',{type:'intervals',reps:4,durationMin:1.5}),'S1-4x1’30”']
-])assert.equal(adapter.shortTitle(snapshot),name);
-const namedDraft=adapter.plan(named('s1',{type:'intervals',reps:5,durationMin:6,recoveryMin:1},{minKmh:12,maxKmh:12.5}));
-assert.equal(namedDraft.name,'S1-5x6’');
-for(const profile of ['manual','guided'])assert.equal(adapter.course(namedDraft,{},consent,{profile}).courseName,'S1-5x6’');
-assert.equal(adapter.shortTitle({...base,variant:{structure:{type:'continuous',durationMin:20}}}),base.title);
-assert.equal(adapter.course(mixedDraft,{},consent,{profile:'manual'}).courseName,'MX-S1:5x5’+S2:3x3’');
-console.log('OK: short S1/S2/VO/PR/MX/EF titles, series, distances, seconds, selected contents and identical names in both COROS profiles.');
+const named = (sector, structure, intensity = {}) => ({...base, variant: {sector, structure, intensity}});
+for (const [snapshot, name] of [
+  [named('s1', {type: 'intervals', reps: 5, durationMin: 6, recoveryMin: 1}), 'S1-5x6’'],
+  [named('s2', {type: 'intervals', reps: 6, durationMin: 4, recoveryMin: 1}), 'S2-6x4’'],
+  [
+    named('vo2', {
+      type: 'intermittent',
+      sets: 2,
+      perSet: 6,
+      reps: 12,
+      workMin: 1,
+      recoveryMin: 1,
+      recoveryBetweenSetsMin: 2
+    }),
+    'VO-2x(6x1’)'
+  ],
+  [named('s1', {type: 'intervals', reps: 5, durationMin: 6, progression: 'increasing'}), 'PR-5x6’'],
+  [named('s2', {type: 'ladder', shape: 'progressive', durationsMin: [4, 6, 8]}), 'PR-4’+6’+8’'],
+  [mixedPrepared, 'MX-S1:5x5’+S2:3x3’'],
+  [{...foot, foot: {type: 'std', min: 50}}, 'EF-50’'],
+  [{...foot, foot: {type: 'std', min: 45, ld: 'strides'}}, 'EF-45’+LD'],
+  [
+    named(
+      'spec10k',
+      {type: 'intervals', reps: 3, distanceM: 2000, recoveryMin: 2},
+      {race: '10 km', refKmh: 14.5}
+    ),
+    'AS10-3x2000m'
+  ],
+  [named('vo2', {type: 'intermittent', reps: 20, workMin: 0.5, recoveryMin: 0.5}), 'VO-20x30”'],
+  [named('s1', {type: 'intervals', reps: 4, durationMin: 1.5}), 'S1-4x1’30”']
+])
+  assert.equal(adapter.shortTitle(snapshot), name);
+const namedDraft = adapter.plan(
+  named('s1', {type: 'intervals', reps: 5, durationMin: 6, recoveryMin: 1}, {minKmh: 12, maxKmh: 12.5})
+);
+assert.equal(namedDraft.name, 'S1-5x6’');
+for (const profile of ['manual', 'guided'])
+  assert.equal(adapter.course(namedDraft, {}, consent, {profile}).courseName, 'S1-5x6’');
+assert.equal(
+  adapter.shortTitle({...base, variant: {structure: {type: 'continuous', durationMin: 20}}}),
+  base.title
+);
+assert.equal(adapter.course(mixedDraft, {}, consent, {profile: 'manual'}).courseName, 'MX-S1:5x5’+S2:3x3’');
+console.log(
+  'OK: short S1/S2/VO/PR/MX/EF titles, series, distances, seconds, selected contents and identical names in both COROS profiles.'
+);

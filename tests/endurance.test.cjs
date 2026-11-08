@@ -1,111 +1,214 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync(require.resolve('../planif-ui.js'),'utf8');
-const listeners={},output={},comparison={},tool={querySelector:s=>s==='[data-ie-output]'?output:s==='[data-ie-comparison]'?comparison:null};
-let chronoVisible=false;
-const target={},chronoOutput={},chronoSpeed={},chronoButton={},chronoTool={querySelector:s=>s==='[data-chrono-output]'?chronoOutput:s==='[data-chrono-speed]'?chronoSpeed:chronoButton};
-const root={addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn),querySelector:s=>s==='[data-endurance-tool]'?tool:chronoVisible&&s==='[data-chrono-tool]'?chronoTool:chronoVisible&&s==='[data-chrono-target]'?target:null};
-let renders=0;
-const context={$:()=>root,readState:()=>({vma:17}),renderApp:()=>renders++};
+const assert = require('node:assert/strict'),
+  fs = require('node:fs'),
+  vm = require('node:vm');
+const source = fs.readFileSync(require.resolve('../planif-ui.js'), 'utf8');
+const listeners = {},
+  output = {},
+  comparison = {},
+  tool = {
+    querySelector: s => (s === '[data-ie-output]' ? output : s === '[data-ie-comparison]' ? comparison : null)
+  };
+let chronoVisible = false;
+const target = {},
+  chronoOutput = {},
+  chronoSpeed = {},
+  chronoButton = {},
+  chronoTool = {
+    querySelector: s =>
+      s === '[data-chrono-output]' ? chronoOutput : s === '[data-chrono-speed]' ? chronoSpeed : chronoButton
+  };
+const root = {
+  addEventListener: (type, fn) => (listeners[type] ??= []).push(fn),
+  querySelector: s =>
+    s === '[data-endurance-tool]'
+      ? tool
+      : chronoVisible && s === '[data-chrono-tool]'
+        ? chronoTool
+        : chronoVisible && s === '[data-chrono-target]'
+          ? target
+          : null
+};
+let renders = 0;
+const context = {$: () => root, readState: () => ({vma: 17}), renderApp: () => renders++};
 vm.createContext(context);
 // planif-html.js provides escapeHtml before planif-ui.js in the browser.
-const {loadHtml}=require('./helpers/runtime.cjs');loadHtml(context);vm.runInContext('var escapeHtml=PlanifHtml.escapeHtml;',context);
-vm.runInContext(source.slice(source.indexOf('const CHRONO_DISTANCES='),source.indexOf('function syncedHrZonesHtml()')),context);
-const run=code=>vm.runInContext(code,context);
-const click=(selector,dataset={})=>listeners.click.forEach(fn=>fn({target:{closest:s=>s===selector?{dataset}:null}}));
-const change=(dataset,value)=>listeners.change.forEach(fn=>fn({target:{dataset,value}}));
-const input=(dataset,value)=>listeners.input.forEach(fn=>fn({target:{matches:()=>false,dataset,value}}));
+const {loadHtml} = require('./helpers/runtime.cjs');
+loadHtml(context);
+vm.runInContext('var escapeHtml=PlanifHtml.escapeHtml;', context);
+vm.runInContext(
+  require('./helpers/source.cjs').between(source, 'CHRONO_DISTANCES', 'syncedHrZonesHtml'),
+  context
+);
+const run = code => vm.runInContext(code, context);
+const click = (selector, dataset = {}) =>
+  listeners.click.forEach(fn => fn({target: {closest: s => (s === selector ? {dataset} : null)}}));
+const change = (dataset, value) => listeners.change.forEach(fn => fn({target: {dataset, value}}));
+const input = (dataset, value) =>
+  listeners.input.forEach(fn => fn({target: {matches: () => false, dataset, value}}));
 run("wheelSaved.endurance['10000']=2460");
 run('updateToolsUi()');
-const first=((10000/2460*3.6/17*100-100)/Math.log(2460/360)).toFixed(2).replace('.',',');
-assert.equal(output.textContent,first,'single-reference formula is preserved');
+const first = (((((10000 / 2460) * 3.6) / 17) * 100 - 100) / Math.log(2460 / 360))
+  .toFixed(2)
+  .replace('.', ',');
+assert.equal(output.textContent, first, 'single-reference formula is preserved');
 assert(run('enduranceToolHtml()').includes('data-ie-add'));
 assert(!run('enduranceToolHtml()').includes('data-ie-comparison'));
-click('[data-ie-add]');assert.equal(run('enduranceState.references[0].active'),true);assert.equal(renders,1);
+click('[data-ie-add]');
+assert.equal(run('enduranceState.references[0].active'), true);
+assert.equal(renders, 1);
 run("wheelSaved.endurance2['5000']=1200");
 run('updateToolsUi()');
-const second=((5000/1200*3.6/17*100-100)/Math.log(1200/360)).toFixed(2).replace('.',',');
+const second = (((((5000 / 1200) * 3.6) / 17) * 100 - 100) / Math.log(1200 / 360))
+  .toFixed(2)
+  .replace('.', ',');
 assert(comparison.innerHTML.includes('10 km · 41’00'));
 assert(comparison.innerHTML.includes('5 km · 20’00'));
-assert(comparison.innerHTML.includes('IE : '+first));assert(comparison.innerHTML.includes('IE : '+second));
+assert(comparison.innerHTML.includes('IE : ' + first));
+assert(comparison.innerHTML.includes('IE : ' + second));
 assert(run('enduranceToolHtml()').includes('data-ie-remove'));
-change({ieExtraDistance:'0'},'10000');run("wheelSaved.endurance2['10000']=2520;updateToolsUi()");
+change({ieExtraDistance: '0'}, '10000');
+run("wheelSaved.endurance2['10000']=2520;updateToolsUi()");
 assert(comparison.innerHTML.includes('10 km · 41’00'));
-assert(comparison.innerHTML.includes('10 km · 42’00'),'same-distance references have independent times');
-assert.equal(run("wheelSaved.endurance['10000']"),2460);
-input({ieVma:''},'18,0');
-assert.notEqual(output.textContent,first);
-assert(comparison.innerHTML.includes('IE : '+output.textContent),'VMA updates both outputs');
-input({ieVma:''},'0');assert.equal(output.textContent,'—');assert.equal((comparison.innerHTML.match(/IE : —/g)||[]).length,2);
-input({ieVma:''},'');assert.equal(output.textContent,first,'blank VMA uses physiological reference');
-change({ieExtraDistance:'0'},'5000');assert.equal(run("wheelSaved.endurance2['5000']"),1200);
+assert(comparison.innerHTML.includes('10 km · 42’00'), 'same-distance references have independent times');
+assert.equal(run("wheelSaved.endurance['10000']"), 2460);
+input({ieVma: ''}, '18,0');
+assert.notEqual(output.textContent, first);
+assert(comparison.innerHTML.includes('IE : ' + output.textContent), 'VMA updates both outputs');
+input({ieVma: ''}, '0');
+assert.equal(output.textContent, '—');
+assert.equal((comparison.innerHTML.match(/IE : —/g) || []).length, 2);
+input({ieVma: ''}, '');
+assert.equal(output.textContent, first, 'blank VMA uses physiological reference');
+change({ieExtraDistance: '0'}, '5000');
+assert.equal(run("wheelSaved.endurance2['5000']"), 1200);
 run("wheelSaved.endurance2['5000']=360;updateToolsUi()");
-assert(comparison.innerHTML.includes('5 km · 6’00'));assert(comparison.innerHTML.includes('IE : —'));
-assert.equal(output.textContent,first,'invalid second time leaves first IE valid');
-click('[data-ie-remove]',{ieRemove:'0'});assert.equal(run('enduranceState.references[0].active'),false);
+assert(comparison.innerHTML.includes('5 km · 6’00'));
+assert(comparison.innerHTML.includes('IE : —'));
+assert.equal(output.textContent, first, 'invalid second time leaves first IE valid');
+click('[data-ie-remove]', {ieRemove: '0'});
+assert.equal(run('enduranceState.references[0].active'), false);
 assert(!run('enduranceToolHtml()').includes('data-ie-comparison'));
-click('[data-ie-add]');assert.equal(run("wheelSaved.endurance2['5000']"),360,'toggle preserves entered times');
+click('[data-ie-add]');
+assert.equal(run("wheelSaved.endurance2['5000']"), 360, 'toggle preserves entered times');
 run("wheelSaved.endurance2['5000']=1200");
-click('[data-ie-add]');click('[data-ie-add]');
+click('[data-ie-add]');
+click('[data-ie-add]');
 run("wheelSaved.endurance3['21097.5']=5400;wheelSaved.endurance4['42195']=12600;updateToolsUi()");
-assert.equal(run('enduranceState.references.filter(r=>r.active).length'),3);
-assert.equal((comparison.innerHTML.match(/IE : /g)||[]).length,4);
-for(const [distance,seconds,label] of [[5000,1200,'5 km'],[10000,2460,'10 km'],[21097.5,5400,'Semi-marathon'],[42195,12600,'Marathon']]){
- const expected=((distance/seconds*3.6/17*100-100)/Math.log(seconds/360)).toFixed(2).replace('.',',');
- assert(comparison.innerHTML.includes(label+' · '));assert(comparison.innerHTML.includes('IE : '+expected));
+assert.equal(run('enduranceState.references.filter(r=>r.active).length'), 3);
+assert.equal((comparison.innerHTML.match(/IE : /g) || []).length, 4);
+for (const [distance, seconds, label] of [
+  [5000, 1200, '5 km'],
+  [10000, 2460, '10 km'],
+  [21097.5, 5400, 'Semi-marathon'],
+  [42195, 12600, 'Marathon']
+]) {
+  const expected = (((((distance / seconds) * 3.6) / 17) * 100 - 100) / Math.log(seconds / 360))
+    .toFixed(2)
+    .replace('.', ',');
+  assert(comparison.innerHTML.includes(label + ' · '));
+  assert(comparison.innerHTML.includes('IE : ' + expected));
 }
-assert(!run('enduranceToolHtml()').includes('data-ie-add'),'no fifth-reference button');
-click('[data-ie-add]');assert.equal(run('enduranceState.references.filter(r=>r.active).length'),3,'four-reference limit');
-click('[data-ie-remove]',{ieRemove:'1'});run('updateToolsUi()');
-assert(!comparison.innerHTML.includes('Semi-marathon'));assert(comparison.innerHTML.includes('Marathon · 3h 30’00'));
+assert(!run('enduranceToolHtml()').includes('data-ie-add'), 'no fifth-reference button');
+click('[data-ie-add]');
+assert.equal(run('enduranceState.references.filter(r=>r.active).length'), 3, 'four-reference limit');
+click('[data-ie-remove]', {ieRemove: '1'});
+run('updateToolsUi()');
+assert(!comparison.innerHTML.includes('Semi-marathon'));
+assert(comparison.innerHTML.includes('Marathon · 3h 30’00'));
 assert(run('enduranceToolHtml()').includes('data-ie-add'));
-assert.equal(run("wheelSaved.endurance4['42195']"),12600,'removing a middle reference preserves the remaining times');
-click('[data-ie-add]');run('updateToolsUi()');assert(comparison.innerHTML.includes('Semi-marathon · 1h 30’00'));
-input({ieVma:''},'0');assert.equal((comparison.innerHTML.match(/IE : —/g)||[]).length,4);
-input({ieVma:''},'17');assert.equal((comparison.innerHTML.match(/IE : —/g)||[]).length,0);
+assert.equal(
+  run("wheelSaved.endurance4['42195']"),
+  12600,
+  'removing a middle reference preserves the remaining times'
+);
+click('[data-ie-add]');
+run('updateToolsUi()');
+assert(comparison.innerHTML.includes('Semi-marathon · 1h 30’00'));
+input({ieVma: ''}, '0');
+assert.equal((comparison.innerHTML.match(/IE : —/g) || []).length, 4);
+input({ieVma: ''}, '17');
+assert.equal((comparison.innerHTML.match(/IE : —/g) || []).length, 0);
 // Native selects update the same stored times without rerendering the focused control.
-function nativeTime(scope,meters,unit,value,event='change',key=meters){
- const box={dataset:{wheelScope:scope,wheelKey:String(key),wheelMeters:String(meters)},querySelectorAll:()=>[]};
- const target={dataset:{wheelUnitInput:unit},value:String(value),matches:s=>s==='[data-wheel-unit-input]',closest:()=>box};
- listeners[event].forEach(fn=>fn({target}));
+function nativeTime(scope, meters, unit, value, event = 'change', key = meters) {
+  const box = {
+    dataset: {wheelScope: scope, wheelKey: String(key), wheelMeters: String(meters)},
+    querySelectorAll: () => []
+  };
+  const target = {
+    dataset: {wheelUnitInput: unit},
+    value: String(value),
+    matches: s => s === '[data-wheel-unit-input]',
+    closest: () => box
+  };
+  listeners[event].forEach(fn => fn({target}));
 }
-const shortPicker=run("wheelPicker('chrono','100',100,'')");
-assert.equal((shortPicker.match(/<select /g)||[]).length,2);
-assert(shortPicker.includes('Centièmes'));assert(!shortPicker.includes('data-wheel-open'));
-nativeTime('chrono',100,'s',24,'input');nativeTime('chrono',100,'c',35);
-assert.equal(run("wheelSaved.chrono['100']"),24.35);
-assert.equal(run("chronoTime(wheelSaved.chrono['100'],true)"),'24″35');
-nativeTime('endurance',10000,'h',1);nativeTime('endurance',10000,'m',2);nativeTime('endurance',10000,'s',3);
-assert.equal(run("wheelSaved.endurance['10000']"),3723);
+const shortPicker = run("wheelPicker('chrono','100',100,'')");
+assert.equal((shortPicker.match(/<select /g) || []).length, 2);
+assert(shortPicker.includes('Centièmes'));
+assert(!shortPicker.includes('data-wheel-open'));
+nativeTime('chrono', 100, 's', 24, 'input');
+nativeTime('chrono', 100, 'c', 35);
+assert.equal(run("wheelSaved.chrono['100']"), 24.35);
+assert.equal(run("chronoTime(wheelSaved.chrono['100'],true)"), '24″35');
+nativeTime('endurance', 10000, 'h', 1);
+nativeTime('endurance', 10000, 'm', 2);
+nativeTime('endurance', 10000, 's', 3);
+assert.equal(run("wheelSaved.endurance['10000']"), 3723);
 assert(run("wheelPicker('endurance','10000',10000,'')").includes('<option value="1" selected>01</option>'));
-nativeTime('endurance2',5000,'m',90);nativeTime('endurance2',5000,'s',15);
-assert.equal(run("wheelSaved.endurance2['5000']"),5415);
+nativeTime('endurance2', 5000, 'm', 90);
+nativeTime('endurance2', 5000, 's', 15);
+assert.equal(run("wheelSaved.endurance2['5000']"), 5415);
 assert(run("wheelPicker('endurance2','5000',5000,'')").includes('<option value="90" selected>90</option>'));
-nativeTime('endurance3',21097.5,'h',2);nativeTime('endurance4',42195,'h',4);
-assert.equal(run("wheelSaved.endurance3['21097.5']"),9000);
-assert.equal(run("wheelSaved.endurance4['42195']"),16200);
-assert.equal(run("wheelSaved.endurance2['5000']"),5415,'other selects keep independent references');
-nativeTime('critical',5000,'m',3,'change',0);nativeTime('critical',5000,'s',30,'change',0);
-assert.equal(run("wheelSaved.critical['0']"),210);
-nativeTime('critical',5000,'s',60,'change',0);assert.equal(run("wheelSaved.critical['0']"),210,'invalid unit value is ignored');
-assert.equal(run('enduranceState.references.filter(r=>r.active).length'),3);
+nativeTime('endurance3', 21097.5, 'h', 2);
+nativeTime('endurance4', 42195, 'h', 4);
+assert.equal(run("wheelSaved.endurance3['21097.5']"), 9000);
+assert.equal(run("wheelSaved.endurance4['42195']"), 16200);
+assert.equal(run("wheelSaved.endurance2['5000']"), 5415, 'other selects keep independent references');
+nativeTime('critical', 5000, 'm', 3, 'change', 0);
+nativeTime('critical', 5000, 's', 30, 'change', 0);
+assert.equal(run("wheelSaved.critical['0']"), 210);
+nativeTime('critical', 5000, 's', 60, 'change', 0);
+assert.equal(run("wheelSaved.critical['0']"), 210, 'invalid unit value is ignored');
+assert.equal(run('enduranceState.references.filter(r=>r.active).length'), 3);
 // A free-distance edit must replace both the displayed units and the timer key.
-chronoVisible=true;
-click('[data-chrono-mode]',{chronoMode:'time'});change({chronoCategory:''},'free');
-input({chronoFree:''},'0,1');
+chronoVisible = true;
+click('[data-chrono-mode]', {chronoMode: 'time'});
+change({chronoCategory: ''}, 'free');
+input({chronoFree: ''}, '0,1');
 assert(target.innerHTML.includes('data-wheel-meters="100"'));
 assert(target.innerHTML.includes('Centièmes'));
-nativeTime('chrono',100,'s',24);nativeTime('chrono',100,'c',35);
-assert.equal(chronoOutput.textContent,'4’04 /km');
-input({chronoFree:''},'10');
+nativeTime('chrono', 100, 's', 24);
+nativeTime('chrono', 100, 'c', 35);
+assert.equal(chronoOutput.textContent, '4’04 /km');
+input({chronoFree: ''}, '10');
 assert(target.innerHTML.includes('data-wheel-meters="10000"'));
-assert(target.innerHTML.includes('Heures'));assert(!target.innerHTML.includes('Centièmes'));
-nativeTime('chrono',10000,'m',40);
-assert.equal(chronoOutput.textContent,'4’00 /km');assert.equal(chronoSpeed.textContent,'15,00 km/h');
-input({chronoFree:''},'0,1');assert(target.innerHTML.includes('<option value="35" selected>35</option>'),'distance changes retain each target time');
-input({chronoFree:''},'');assert(target.innerHTML.includes('distance valide'));assert.equal(chronoOutput.textContent,'—');
-input({chronoFree:''},'abc');assert.equal(chronoOutput.textContent,'—');
-for(const [distance,unit] of [['100','Centièmes'],['400','Minutes'],['5000','Minutes'],['10000','Heures'],['21097.5','Heures'],['42195','Heures']]){
- change({chronoCategory:''},Number(distance)<=2000?'fractions':'official');change({chronoDistance:''},distance);
- assert(run('chronoTargetHtml()').includes(unit));
+assert(target.innerHTML.includes('Heures'));
+assert(!target.innerHTML.includes('Centièmes'));
+nativeTime('chrono', 10000, 'm', 40);
+assert.equal(chronoOutput.textContent, '4’00 /km');
+assert.equal(chronoSpeed.textContent, '15,00 km/h');
+input({chronoFree: ''}, '0,1');
+assert(
+  target.innerHTML.includes('<option value="35" selected>35</option>'),
+  'distance changes retain each target time'
+);
+input({chronoFree: ''}, '');
+assert(target.innerHTML.includes('distance valide'));
+assert.equal(chronoOutput.textContent, '—');
+input({chronoFree: ''}, 'abc');
+assert.equal(chronoOutput.textContent, '—');
+for (const [distance, unit] of [
+  ['100', 'Centièmes'],
+  ['400', 'Minutes'],
+  ['5000', 'Minutes'],
+  ['10000', 'Heures'],
+  ['21097.5', 'Heures'],
+  ['42195', 'Heures']
+]) {
+  change({chronoCategory: ''}, Number(distance) <= 2000 ? 'fractions' : 'official');
+  change({chronoDistance: ''}, distance);
+  assert(run('chronoTargetHtml()').includes(unit));
 }
-console.log('OK: single/four-reference IE; native input/change events; free-distance timer keys/units and pace recalculation; hours, long minutes, hundredths and invalid values.');
+console.log(
+  'OK: single/four-reference IE; native input/change events; free-distance timer keys/units and pace recalculation; hours, long minutes, hundredths and invalid values.'
+);
