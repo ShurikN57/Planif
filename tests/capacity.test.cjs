@@ -175,3 +175,15 @@ test('advice leaves the plan and its targets untouched', () => {
   assert.equal(JSON.stringify(C), before);
   assert.equal(JSON.stringify(st), settings);
 });
+
+test('advice does not suggest an extra run if the new schedule has recovery warnings', () => {
+  for (const {days, code} of [
+    {days: {q1Day: '5'}, code: 'quality_next_to_long_run'},
+    {days: {runs: 4, qualityCount: 2, q1Day: '1', q2Day: '2'}, code: 'qualities_consecutive'}
+  ]) {
+    const st = {...base, avail: Array(7).fill(true), ...days};
+    const candidate = build({...st, runs: st.runs + 1});
+    assert(candidate.weeks.filter(isCharge).some(w => w.warns.some(warn => warn.code === code)));
+    assert.equal(E.capacityAdvice(st, build(st))?.extraRun, false, code);
+  }
+});

@@ -4284,10 +4284,9 @@
       plan.summaryVersion = 2;
       return plan;
     }
-    /* Read-only block review: descriptive bands never change scheduling or safety. */
     /* Weekly capacity of a placed calendar (decision 0008). A charge week the engine left under its
-       target (beyond the weekly tolerance) is already at the most it builds with these days and
-       sessions: its capacity is its built volume. Otherwise the capacity adds what post-placement
+       target (beyond the weekly tolerance) uses the built volume as a conservative estimate.
+       Otherwise the estimate adds what post-placement
        absorption could still give: up to absoluteMax for maxProlonged normal jogs and normalMax for
        the others; jogs on protected days, recovery jogs and active endurance are not extended. */
     function weeklyCapacity(week) {
@@ -4315,6 +4314,12 @@
       w.phase !== 'intro' &&
       w.phase !== 'taper';
     const outingsPlaced = w => w.days.reduce((n, d) => n + (d.items || []).length, 0);
+    const capacityPlacementWarnings = new Set([
+      'no_day_footing_reduce',
+      'no_day_session',
+      'qualities_consecutive',
+      'quality_next_to_long_run'
+    ]);
     // Averages over the same charge weeks; null without placed charge weeks (block plans).
     function capacitySummary(plan) {
       const weeks = (plan?.weeks || []).filter(isChargeWeek);
@@ -4334,7 +4339,12 @@
         return null;
       let extraRun = false;
       const runs = Number(st?.runs);
-      if (st?.mode === 'cal' && Number.isInteger(runs) && runs < 7) {
+      if (
+        st?.mode === 'cal' &&
+        Number.isInteger(runs) &&
+        runs < 7 &&
+        runs < st.avail?.filter(Boolean).length
+      ) {
         const next = {...st, runs: runs + 1};
         if (!inputErrors(next).length) {
           try {
@@ -4347,7 +4357,7 @@
                 w =>
                   outingsPlaced(w) === next.runs &&
                   !(w.foot || []).some(f => f.unplaced) &&
-                  !(w.warns || []).some(x => x.code === 'no_day_footing_reduce')
+                  !(w.warns || []).some(x => capacityPlacementWarnings.has(x.code))
               );
             const after = placed ? capacitySummary(C) : null;
             extraRun = !!after && after.capacity > summary.capacity;
@@ -4358,6 +4368,7 @@
       }
       return {...summary, extraRun};
     }
+    /* Read-only block review: descriptive bands never change scheduling or safety. */
     function reviewBlockLoads(plan, st) {
       const C = recalculatePlanSummary(snapshotPlan(plan), st),
         R = RULES.load.blockReview,

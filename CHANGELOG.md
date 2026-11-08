@@ -4,7 +4,7 @@ Les versions suivent le format `AAAA.MM.JJ.NN`. Depuis novembre 2026, chaque ver
 
 ## 2026.11.08.07 — Capacité hebdomadaire estimée
 
-- « Volume et charge » (Calendrier → Chronologie) indique, quand la cible est hors de portée, le volume hebdomadaire maximal estimé avec les jours et séances actuels, et conseille de réduire la cible ou, si le moteur peut la placer et qu'elle aide, d'ajouter une sortie ([décision 0008](docs/decisions/0008-capacite-hebdomadaire.md)). Plans et cibles inchangés.
+- « Volume et charge » (Calendrier → Chronologie) indique le volume hebdomadaire estimé quand la cible des semaines de charge le dépasse. Une sortie de plus est proposée uniquement si la simulation augmente le volume estimé et respecte les règles de placement et d'espacement ([décision 0008](docs/decisions/0008-capacite-hebdomadaire.md)). Plans et cibles inchangés.
 
 ## 2026.11.08.06 — Code d'interface inutilisé retiré (COD-6)
 

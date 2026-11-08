@@ -186,12 +186,12 @@ test('Volume et charge shows the capacity estimate only when the target is out o
     {
       state: {...outOfReach, avail: [false, true, false, true, false, false, true]},
       expected:
-        'Avec tes jours et tes séances actuels, le volume hebdomadaire est estimé à 4h05 maximum, pour une cible de 5h20. Réduis la cible.'
+        'Sur les semaines de charge, Planif estime le volume atteignable à environ 4h05 par semaine, pour une cible moyenne de 5h20. Réduis la cible.'
     },
     {
       state: {...outOfReach, avail: [false, true, true, true, true, true, true]},
       expected:
-        'Avec tes jours et tes séances actuels, le volume hebdomadaire est estimé à 3h30 maximum, pour une cible de 5h20. Réduis la cible ou ajoute une sortie si ton planning le permet.'
+        'Sur les semaines de charge, Planif estime le volume atteignable à environ 3h30 par semaine, pour une cible moyenne de 5h20. Réduis la cible ou ajoute une sortie si ton planning le permet.'
     }
   ];
   for (const {state, expected} of cases) {
@@ -203,7 +203,13 @@ test('Volume et charge shows the capacity estimate only when the target is out o
     await page.waitForSelector('#scr-cal .calVolume');
     const message = page.locator('#scr-cal [data-volume-capacity]');
     if (expected === null) assert.equal(await message.count(), 0, 'reachable target: no message');
-    else assert.equal((await message.textContent()).trim(), expected);
+    else {
+      assert.equal((await message.textContent()).trim(), expected);
+      assert.deepEqual((await page.locator('#scr-cal .calVolume .kv span').allTextContents()).slice(0, 2), [
+        'Cible moyenne du plan',
+        '5h00'
+      ]);
+    }
     assert.deepEqual(errors, []);
     await context.close();
   }
