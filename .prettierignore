@@ -1,0 +1,7 @@
+# Only JavaScript is formatted. index.html carries a CSP hash of its inline bootstrap script,
+# and JSON data/fixtures are compared byte for byte or hashed.
+*
+!*/
+!*.js
+!*.cjs
+node_modules/

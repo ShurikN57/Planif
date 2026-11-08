@@ -1,12 +1,15 @@
 {
   "name": "planif",
   "private": true,
-  "description": "Planification d'entraînement course à pied et calcul des allures (PWA statique, sans dépendance).",
+  "description": "Planification d'entraînement course à pied et calcul des allures (PWA statique, sans dépendance d'exécution).",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "check": "node scripts/check-syntax.cjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "TZ=Europe/Paris node --test tests/*.test.cjs",
     "test:tz": "node scripts/test-tz.cjs",
     "version:check": "node scripts/bump-version.cjs --check",
@@ -16,5 +19,11 @@
     "audit:block-load": "TZ=Europe/Paris node scripts/audit-block-load.cjs",
     "verify-live": "node scripts/verify-live.cjs",
     "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10"
   }
 }
