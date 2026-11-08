@@ -505,8 +505,13 @@
       }
       const modeButton = e.target.closest('[data-chrono-mode]');
       if (modeButton) {
+        const focused = modeButton.ownerDocument?.activeElement === modeButton;
         chronoState.mode = modeButton.dataset.chronoMode;
         renderApp();
+        if (focused)
+          $('scr-calc')
+            .querySelector('[data-chrono-mode][aria-pressed="true"]')
+            ?.focus({preventScroll: true});
         return;
       }
       if (!e.target.closest('[data-chrono-to-endurance]') || chronoState.mode === 'distance') return;

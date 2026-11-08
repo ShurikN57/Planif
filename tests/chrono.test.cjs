@@ -91,6 +91,11 @@ test('distance mode: distance from pace and duration', () => {
   c.wheel('chronoDuration', 'duration', 100000, 'h', 0);
   c.wheel('chronoDuration', 'duration', 100000, 'm', 2);
   assert.equal(c.output.textContent, '500 m', 'under 1 km the distance is in metres');
+  c.wheel('chronoDuration', 'duration', 100000, 'm', 4);
+  assert.equal(c.output.textContent, '1,00 km', 'exactly 1 km is formatted in kilometres');
+  c.wheel('chronoDuration', 'duration', 100000, 'm', 0);
+  assert.equal(c.output.textContent, '—', 'a zero duration has no estimate');
+  c.wheel('chronoDuration', 'duration', 100000, 'm', 4);
   c.fire('input', {dataset: {chronoPace: ''}, value: 'abc'});
   assert.equal(c.output.textContent, '—');
   assert.equal(c.speed.textContent, '');
