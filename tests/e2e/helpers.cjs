@@ -104,31 +104,43 @@ async function seedPlan(page, {id = 'plan-test', state = STATE} = {}) {
   );
 }
 
-// Calendar day keys of the stored active plan, as the app reads them in this time zone.
-const storedDays = page =>
-  page.evaluate(() => {
-    const E = PlanifEngine.createEngine();
-    const record = E.localizeSavedPlan(JSON.parse(localStorage.getItem('planif-active-plan-v1')));
-    return record.plan.weeks.flatMap(w => w.days.map(d => E.planDateKey(d.date)));
-  });
+// Read the dates from the rendered calendar, without calling the conversion helper under test.
+async function calendarDays(page) {
+  await page.click('[data-tab="cal"]');
+  const weeks = page.locator('#scr-cal button.cwHead[data-week]');
+  await weeks.first().waitFor();
+  const days = [];
+  for (const week of await weeks.all()) {
+    const index = await week.getAttribute('data-week');
+    if ((await week.getAttribute('aria-expanded')) !== 'true') await week.click();
+    const rows = page.locator(`#scr-cal .dayRow[data-move-week="${index}"][data-move-date]`);
+    await rows.first().waitFor();
+    days.push(...(await rows.evaluateAll(elements => elements.map(el => el.dataset.moveDate))));
+  }
+  return days;
+}
 
 async function openApp(browser, url, {timezoneId = 'Europe/Paris', ...options} = {}) {
   const context = await browser.newContext({timezoneId, viewport: {width: 390, height: 844}, ...options});
+  context.setDefaultTimeout(15000);
   const page = await context.newPage(),
     errors = [];
   page.on('pageerror', error => errors.push(error.message));
   // External fonts and Firebase are not needed by these scenarios.
   await context.route(/^https:\/\/(fonts\.|www\.gstatic\.com)/, route => route.abort());
   await page.goto(url);
-  await page.waitForFunction(() => globalThis.PlanifEngine && document.querySelector('[data-tab="set"]'));
+  await ready(page);
   return {context, page, errors};
 }
 
-const ready = page => page.waitForFunction(() => document.querySelector('[data-tab="set"]'));
+const ready = page =>
+  page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('#appShell .screen:not([hidden])')).some(el => el.children.length)
+  );
 
 async function reload(page) {
   await page.reload();
   await ready(page);
 }
 
-module.exports = {chromium, startServer, STATE, seedPlan, storedDays, openApp, reload, root};
+module.exports = {chromium, startServer, STATE, seedPlan, calendarDays, openApp, ready, reload, root};

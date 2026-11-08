@@ -4,7 +4,16 @@ const assert = require('node:assert/strict'),
   os = require('node:os'),
   path = require('node:path'),
   {test, before, after} = require('node:test');
-const {chromium, startServer, STATE, seedPlan, storedDays, openApp, reload} = require('./helpers.cjs');
+const {
+  chromium,
+  startServer,
+  STATE,
+  seedPlan,
+  calendarDays,
+  openApp,
+  ready,
+  reload
+} = require('./helpers.cjs');
 
 let browser, server, url;
 before(async () => {
@@ -37,8 +46,18 @@ test('a plan saved in Paris keeps its days in Los Angeles and Auckland', async (
   await paris.context.close();
   for (const timezoneId of ['America/Los_Angeles', 'Pacific/Auckland']) {
     const {context, page, errors} = await openApp(browser, url, {timezoneId});
-    await page.evaluate(value => localStorage.setItem('planif-active-plan-v1', value), stored);
-    assert.deepEqual(await storedDays(page), days, timezoneId);
+    await page.evaluate(value => {
+      localStorage.setItem('planif-active-plan-v1', value);
+      localStorage.setItem('planif-mode-v1', 'cal');
+      localStorage.setItem('planif-weekly-balance-v2', 'saved');
+      // Exercise the actual saved-plan recovery path with no regeneration.
+      localStorage.setItem(
+        'planif-recovery-state-v1',
+        JSON.stringify({id: JSON.parse(value).id, status: 'restored'})
+      );
+    }, stored);
+    await reload(page);
+    assert.deepEqual(await calendarDays(page), days, timezoneId);
     assert.deepEqual(errors, []);
     await context.close();
   }
@@ -97,7 +116,7 @@ test('a backup exported in Paris is imported on another device, and a trapped fi
       page.click('[data-act="import"]')
     ]);
     await Promise.all([page.waitForEvent('load'), chooser.setFiles(file)]);
-    await page.waitForFunction(() => document.querySelector('[data-tab="set"]'));
+    await ready(page);
     assert.match(confirmText, /Importer cette sauvegarde/);
     const state = await page.evaluate(() => ({
       active: JSON.parse(localStorage.getItem('planif-active-plan-v1')).id,
@@ -107,7 +126,7 @@ test('a backup exported in Paris is imported on another device, and a trapped fi
     assert.equal(state.active, 'plan-paris');
     assert(state.history.includes('plan-la'), 'the local plan is archived');
     assert.equal(state.safety, 1);
-    assert.deepEqual(await storedDays(page), days, 'imported days are unchanged');
+    assert.deepEqual(await calendarDays(page), days, 'imported days are unchanged in the calendar');
 
     const trapped = JSON.parse(fs.readFileSync(file, 'utf8')),
       plan = JSON.parse(trapped.values['planif-active-plan-v1']);
@@ -139,14 +158,15 @@ test('the app reopens offline from the service worker cache', async () => {
   const {context, page, errors} = await openApp(browser, url);
   await seedPlan(page);
   await reload(page);
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  // Let the service worker take control and fill its cache with the offline shell.
-  await reload(page);
-  await page.waitForFunction(async () => (await caches.keys()).some(k => k.startsWith('planif-')));
+  // Wait for control and the installed shell, with a timeout if offline support breaks.
+  await page.waitForFunction(
+    async () =>
+      Boolean(navigator.serviceWorker.controller) && (await caches.keys()).some(k => k.startsWith('planif-'))
+  );
   await context.setOffline(true);
   await reload(page);
   await page.click('[data-tab="cal"]');
-  assert((await page.textContent('#scr-cal')).trim().length > 50, 'calendar renders offline');
+  await page.locator('#scr-cal button.cwHead[data-week]').first().waitFor();
   assert.deepEqual(errors, []);
   await context.close();
 });
