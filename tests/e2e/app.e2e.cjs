@@ -178,3 +178,33 @@ test('the app reopens offline from the service worker cache', async () => {
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Volume et charge shows the capacity estimate only when the target is out of reach', async () => {
+  const outOfReach = {...STATE, vol: 300, runs: 3, qualityCount: 1, q1Day: '1', q2Day: '', slDay: '6'};
+  const cases = [
+    {state: STATE, expected: null},
+    {
+      state: {...outOfReach, avail: [false, true, false, true, false, false, true]},
+      expected:
+        'Avec tes jours et tes séances actuels, le volume hebdomadaire est estimé à 4h05 maximum, pour une cible de 5h20. Réduis la cible.'
+    },
+    {
+      state: {...outOfReach, avail: [false, true, true, true, true, true, true]},
+      expected:
+        'Avec tes jours et tes séances actuels, le volume hebdomadaire est estimé à 3h30 maximum, pour une cible de 5h20. Réduis la cible ou ajoute une sortie si ton planning le permet.'
+    }
+  ];
+  for (const {state, expected} of cases) {
+    const {context, page, errors} = await openApp(browser, url);
+    await seedPlan(page, {state, draft: true});
+    await reload(page);
+    await page.click('[data-tab="cal"]');
+    await page.click('#scr-cal [data-timeline]');
+    await page.waitForSelector('#scr-cal .calVolume');
+    const message = page.locator('#scr-cal [data-volume-capacity]');
+    if (expected === null) assert.equal(await message.count(), 0, 'reachable target: no message');
+    else assert.equal((await message.textContent()).trim(), expected);
+    assert.deepEqual(errors, []);
+    await context.close();
+  }
+});

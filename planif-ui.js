@@ -55,6 +55,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.06')
         programLoadFactor,
         recalculatePlanLoads,
         recalculatePlanSummary,
+        capacityAdvice,
         reviewBlockLoads,
         preparationActivation,
         prepareSession,
@@ -2176,6 +2177,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.06')
         zoneBar,
         escapeHtml,
         renderApp,
+        capacityAdvice,
         fText: (...args) => fText(...args),
         currentTab: () => appTab
       });

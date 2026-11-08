@@ -19,12 +19,25 @@
       programLoadFactor,
       RULES,
       readState,
+      capacityAdvice,
       zoneBar,
       escapeHtml,
       fText,
       renderApp,
       currentTab
     } = deps;
+    // Capacity message (decision 0008); the last result is reused while the inputs and plan are unchanged.
+    let capacityCache = {key: '', html: ''};
+    function capacityHtml(st, C) {
+      const key = JSON.stringify([st, C.weeks.map(w => [w.vol, w.targetVolume ?? w.target])]);
+      if (capacityCache.key === key) return capacityCache.html;
+      const advice = capacityAdvice(st, C);
+      const html = advice
+        ? `<p class="lbl capacityAdvice" data-volume-capacity role="status">Avec tes jours et tes séances actuels, le volume hebdomadaire est estimé à ${fmtDur(Math.floor(advice.capacity / 5) * 5)} maximum, pour une cible de ${fmtDur(Math.round(advice.target / 5) * 5)}. ${advice.extraRun ? 'Réduis la cible ou ajoute une sortie si ton planning le permet.' : 'Réduis la cible.'}</p>`
+        : '';
+      capacityCache = {key, html};
+      return html;
+    }
     function volumeChargeHtml(st, C) {
       let h = '';
       const valid = referenceErrors(st).length === 0;
@@ -33,7 +46,7 @@
           mx = Math.max(...vols),
           avg = vols.reduce((a, x) => a + x, 0) / vols.length;
         h +=
-          `<section class="calVolume" aria-label="Volume et charge"><h3>Volume et charge</h3><div class="kv u-mb7"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div><div class="vbars">` +
+          `<section class="calVolume" aria-label="Volume et charge"><h3>Volume et charge</h3><div class="kv u-mb7"><span>Cible moyenne</span><span class="v">${fmtDur(st.vol)}</span><span>Moyenne réelle</span><span class="v">${fmtDur(avg)}</span></div>${capacityHtml(st, C)}<div class="vbars">` +
           C.weeks
             .map(
               (w, i) =>
