@@ -20,10 +20,12 @@ npm run lint       # ESLint
 npm run check      # syntaxe des scripts et du JSON scientifique
 npm test           # suite complète (fuseau Europe/Paris)
 npm run test:tz    # suite sous plusieurs fuseaux horaires
+npm run test:e2e   # scénarios dans Chromium (Playwright)
+npm run audit      # audits historiques des règles de planification
 npm run serve      # aperçu local sur http://localhost:8080
 ```
 
-Les scripts d'audit (`npm run audit:planning`, `audit:personal-load`, `audit:block-load`) sont à lancer depuis un clone Git complet avant toute modification des empreintes de `tests/fixtures/`.
+Les audits (`npm run audit`) sont à lancer depuis un clone Git complet avant toute modification des empreintes de `tests/fixtures/`.
 
 ## Documentation
 

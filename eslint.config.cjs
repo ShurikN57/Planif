@@ -42,5 +42,10 @@ module.exports = [
     files: ['**/*.cjs'],
     languageOptions: {ecmaVersion: 2022, sourceType: 'commonjs', globals: globals.node},
     rules
+  },
+  {
+    // Browser tests run callbacks inside the page (page.evaluate).
+    files: ['tests/e2e/**/*.cjs'],
+    languageOptions: {globals: {...globals.node, ...globals.browser, ...planifGlobals}}
   }
 ];
