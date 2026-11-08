@@ -1171,6 +1171,54 @@ function buildSafetyPlan(st,pred){
 const DAY=864e5;
 const parseDate=x=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(x||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
 const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+// Saved plans hold calendar days as ISO instants of local midnight in the time zone that
+// wrote them. They are re-expressed as local midnight of the same calendar day in the
+// current time zone before use, so that travel or a device time-zone change never shifts
+// a session by one day. Legacy calendar plans can recover their writer offset from the
+// race day already stored in the plan settings. Without that anchor, only the instant
+// remains: keep local midnight if it matches, otherwise use the nearest UTC midnight.
+const PLAN_DATE_KEYS=['date','start','startDate','endDate'];
+function currentTimeZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(_){return '';}}
+function savedCalendarDay(iso,zone,legacyOffset=null){
+  const t=Date.parse(iso);if(!Number.isFinite(t))return null;
+  if(zone){
+    try{
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(t));
+      const part=type=>parts.find(x=>x.type===type)?.value;
+      const day=`${part('year')}-${part('month')}-${part('day')}`;
+      if(/^\d{4}-\d{2}-\d{2}$/.test(day))return day;
+    }catch(_){/* Unknown zone: fall back to the legacy rule below. */}
+  }
+  // An offset from the race date also works on dates across a seasonal clock change:
+  // after applying it, rounding removes the small difference from the race-day offset.
+  if(legacyOffset!==null)return new Date(Math.round((t+legacyOffset)/DAY)*DAY).toISOString().slice(0,10);
+  const local=new Date(t);
+  if(local.getHours()===0&&local.getMinutes()===0&&local.getSeconds()===0&&local.getMilliseconds()===0)return planDateKey(local);
+  return new Date(Math.round(t/86400000)*86400000).toISOString().slice(0,10);
+}
+function localizeSavedPlan(record,zone=currentTimeZone()){
+  // In memory, plan dates are always expressed in the current zone: dateZone exists only in storage.
+  if(!record||typeof record!=='object'||!record.plan||typeof record.plan!=='object')return record;
+  const {dateZone,...rest}=record;
+  if(zone&&dateZone===zone)return rest;
+  const from=typeof dateZone==='string'?dateZone:'';
+  const raceDay=record.structure?.calRace;
+  const raceDate=record.plan.race?.date;
+  const offset=typeof raceDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raceDay)&&typeof raceDate==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raceDate)
+    ?Date.parse(raceDay+'T00:00:00Z')-Date.parse(raceDate):NaN;
+  const legacyOffset=offset>=-12*3600000&&offset<=14*3600000?offset:null;
+  const plan=JSON.parse(JSON.stringify(record.plan),(key,value)=>{
+    if(!PLAN_DATE_KEYS.includes(key)||typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T/.test(value))return value;
+    const day=savedCalendarDay(value,from,legacyOffset);return day?parseDate(day).toISOString():value;
+  });
+  return {...rest,plan};
+}
+function stampSavedPlans(value,zone=currentTimeZone()){
+  if(!zone)return value;
+  const stamp=r=>r&&typeof r==='object'&&!Array.isArray(r)&&r.plan?{...r,dateZone:zone}:r;
+  return Array.isArray(value)?value.map(stamp):stamp(value);
+}
+const serializeSavedPlans=value=>JSON.stringify(stampSavedPlans(value));
 const dayDiff=(a,b)=>Math.round((b-a)/DAY);
 const wd=d=>(d.getDay()+6)%7; /* 0 = lundi */
 const fmtD=d=>d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
@@ -1708,7 +1756,7 @@ const PURPOSE={
 };
 const sessionPurpose=x=>PURPOSE[x.fam];
 
-return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
+return {RULES,DIST,PROFILES,MEASURED,ZONES,num,clamp,r5,parseTime,parseHM,fmtPace,paceRange,fmtSpd,fmtFootDur,fmtDur,fmtTime,fmtMin,fmtKm,snapshotPlan,planDateKey,preservePastSessions,applyReferenceIntensities,ensurePlanifSessionIds,findPlanifSession,applyPlanifMoves,planifMoveCheck,referenceErrors,inputErrors,maxQualityForRuns,predict,stepFor,profileLabel,suggestProfile,TOL,pickBest,byProgress,fmtPct,SECTOR_INFO,fmtRec,r15,fmtRep,kmh,paceHtml,s2Group,s2Range,lt1Ref,efPctBand,efBand,efBandText,footColor,s1Margin,s1Band,vo2Pct,vo2WorkRange,vo2Band,rangeLookup,rangeMid,recS1Range,recS1,recS2Range,recS2,recVO2Range,recVO2,seriesSplit,cand,s1Dist,s1Time,s1Cont,s1ProgCont,s1ProgFrac,s1Shape,s1Mix,s2Dist,s2Time,s2Mixed,s2Shape,s2Blocs,vo2Int,vo2Dist,vo2Time,vo2Pyr,p10Band,rec10,sgnPct,lab10,fmtM,p10Dist,p10Time,p10Seq,p10Blocs,p10Mix,p10Alternating,makeAlternatingSession,maxFractionMinutes,minFractionMinutes,SESSION_LIBRARY,FAMILY_RULES,CAP_RULE,variantRuleRefs,hash01,candLoad,fractionProgressionPool,rememberFractionDurations,generateSession,recFor,specVariant,specificWorkLimit,specificOptions,marathonOptions,hillStruct,hillsSession,fartlekSession,zoneForSpeed,makeSessionCore,SECTOR_OF,volumeFactor,capFor,capsFor,loadDurationFactor,loadPersonalModel,loadPersonalFactor,programLoadFactor,recalculatePlanLoads,recalculatePlanSummary,reviewBlockLoads,loadPoints,loadFactorForSpeed,densityFactor,loadZone,emptyBd,sumBd,preparationActivation,prepareSession,variantLoad,checkCaps,withLoad,sessionKey,makeSession,mixedSector,mixedKey,mixedCfg,mixedCandidates,mixedComponentLabel,makeMixedSession,FOOT,activeBlockLabel,joggTitle,planFootings,activeEnduranceRange,canUseActiveEndurance,applyActiveEndurance,BLOCKS,SPEC,getBlock,volumes,roundW,buildWeek,buildAssimilationWeek,buildPlan,DAY,parseDate,addDays,currentTimeZone,savedCalendarDay,localizeSavedPlan,stampSavedPlans,serializeSavedPlans,dayDiff,wd,fmtD,fmtDs,PHASE_LAB,PHASE_C,phaseLab,phaseTypes,tiePref,countWeeks,layoutSegments,planPhases,calendarVolumes,raceSpeed,buildTaperWeek,buildIntroWeek,placeWeek,buildCalendar,SHAPE_NAME,REC_TYPE,CUE_TEXT,minLab,presentVariantRaw,SESSION_TITLE,sessionTitle,PURPOSE,sessionPurpose};
 }
 return {...createEngine(),createEngine};
 });

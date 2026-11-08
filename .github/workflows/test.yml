@@ -15,8 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         tz: [Europe/Paris, America/Los_Angeles, Pacific/Auckland]
-    # Only Europe/Paris is blocking until audit lot L3 (timezone-independent dates, issue #3).
-    continue-on-error: ${{ matrix.tz != 'Europe/Paris' }}
+    # All three zones are blocking since timezone-independent saved-plan dates (#3).
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
