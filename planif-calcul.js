@@ -140,23 +140,6 @@
       }
       return wheelSaved[scope][k];
     }
-    // eslint-disable-next-line no-unused-vars -- wheelDisplay is no longer used by the app; kept until a decision (audit COD-6).
-    function wheelDisplay(t, meters) {
-      const n = Math.round(t * 100),
-        h = Math.floor(n / 360000),
-        m = Math.floor((n % 360000) / 6000),
-        sec = Math.floor((n % 6000) / 100),
-        cs = n % 100;
-      return meters <= 200
-        ? String(sec) + (cs ? ',' + String(cs).padStart(2, '0') : '') + ' s'
-        : meters <= 5000
-          ? String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0')
-          : String(h).padStart(2, '0') +
-            ':' +
-            String(m).padStart(2, '0') +
-            ':' +
-            String(sec).padStart(2, '0');
-    }
     function wheelPicker(scope, key, meters, initial) {
       const t = wheelSeconds(scope, key, meters, initial),
         cs = Math.round(t * 100),
@@ -735,10 +718,6 @@
       }
     });
 
-    // eslint-disable-next-line no-unused-vars -- syncedHrZonesHtml is no longer used by the app; kept until a decision (audit COD-6).
-    function syncedHrZonesHtml() {
-      return '';
-    }
     function heartRatePanelHtml() {
       const z = globalThis.PlanifStrava?.heartRateZones?.();
       const rows = z

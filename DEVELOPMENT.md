@@ -37,7 +37,7 @@ Les données scientifiques sont chargées avant l'initialisation de l'interface.
 ### Invariants de planification
 
 - Les séances de qualité entières (préparation, récupérations et retour au calme compris) sont limitées à 35 % chacune et 50 % ensemble, par rapport au volume cible **et** au volume réel de la semaine de charge. Les sorties longues marathon et les semaines de course/affûtage gardent leurs propres règles.
-- Après placement, un footing normal isolé peut absorber le volume manquant, jusqu'à 90 minutes, avec au plus deux footings prolongés. Les Réglages affichent une estimation de capacité pour les séances et jours actuels, pas un maximum universel par nombre de sorties.
+- Après placement, un footing normal isolé peut absorber le volume manquant, jusqu'à 90 minutes ; au plus deux footings par semaine dépassent le maximum normal de 70 minutes (`maxProlonged`), et un footing de jour protégé reste sous 45 minutes. Aucun écran n'affiche d'estimation de capacité maximale : l'aperçu « Compatibilité du volume » des Réglages a été retiré en 2026.10.19.01 et son code supprimé en 2026.11.08.06. Les écarts restent visibles dans les avertissements de chaque semaine et dans l'aperçu « Volume et charge » du calendrier (cible moyenne et moyenne réelle).
 - Un changement qui touche les séances futures préserve le plan existant et l'archive avant recalcul. Les seuils d'organisation restent identifiés comme heuristiques Planif dans les métadonnées des règles.
 - Charge : [décisions 0001 à 0003](docs/decisions/).
 

@@ -631,13 +631,6 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.05')
       const warnText = w => WARN_TEXT[w.code](w.params || {});
       const LD =
         'Lignes droites : 5 à 8 × 10 à 15" (ou 60 à 100 m), récup complète, une fois dans la semaine en fin de footing';
-      // eslint-disable-next-line no-unused-vars -- LD_SUFFIX is no longer used by the app; kept until a decision (audit COD-6).
-      const LD_SUFFIX = {
-        strides: ' + lignes droites',
-        strides_optional: ' + lignes droites (facultatif)',
-        strides_load: ' + lignes droites (selon la charge)',
-        strides_light: ' + lignes droites légères'
-      };
       const BLOCK_LABEL = {
         vma: 'VO₂max / puissance aérobie',
         s1: 'Premier seuil',
@@ -1602,8 +1595,6 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.05')
       /* ===================== Application mobile (v9.0a) : lecture seule des données déjà calculées ===================== */
       const APP_VERSION = globalThis.PlanifVersion;
       const escapeHtml = globalThis.PlanifHtml.escapeHtml;
-      // eslint-disable-next-line no-unused-vars -- TABS is no longer used by the app; kept until a decision (audit COD-6).
-      const TABS = {today: 'Accueil', cal: 'Calendrier', ref: 'Repères', study: 'Études', set: 'Réglages'};
       let appTab = 'today';
       let calendarMoveMessage = '';
       try {
@@ -1825,15 +1816,9 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.05')
         });
         return h;
       }
-      // eslint-disable-next-line no-unused-vars -- refHelpHtml is no longer used by the app; kept until a decision (audit COD-6).
-      function refHelpHtml(title, body) {
-        return `<details class="refHelp"><summary><h2>${title}</h2><span class="refInfoIcon" aria-hidden="true">ⓘ</span><span class="srOnly"> — afficher les explications</span></summary><div class="refHelpBody">${body}</div></details>`;
-      }
       const refEditorOpen = {physio: false, chrono: false};
       let refDraft = null;
       let refPlanPending = false;
-      // eslint-disable-next-line no-unused-vars -- refApplyRequested is no longer used by the app; kept until a decision (audit COD-6).
-      let refApplyRequested = false;
       const REF_PLAN_PENDING_KEY = 'planif-reference-plan-pending-v1';
       function refSnapshot() {
         return Object.fromEntries(GLOBAL_IDS.map(id => [id, isCheck($(id)) ? $(id).checked : $(id).value]));
@@ -2929,72 +2914,6 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.05')
         }
         const qh = $('setQualityHint');
         if (qh) qh.textContent = qualityAdvice(+$('runs').value, +$('qualityCount').value);
-      }
-      // eslint-disable-next-line no-unused-vars -- weeklyBalanceHtml is no longer used by the app; kept until a decision (audit COD-6).
-      function weeklyBalanceHtml() {
-        if (recoveryState || inputErrors(readState()).length || !lastPlan?.weeks) return '';
-        const st = readState(),
-          A = RULES.recovery.adaptiveFootings;
-        const capacities = lastPlan.weeks
-          .filter(w => !w.assim && !w.assimilation && !w.raceWeek && w.phase !== 'intro')
-          .map(w => {
-            const q = w.sessions.reduce((sum, s) => sum + s.total, 0);
-            const types = w.foot.filter(f => !f.unplaced).map(f => (f.contextProtected ? 'rec' : f.type));
-            const normal = types.filter(type => type !== 'rec').length;
-            return (
-              q +
-              w.sl +
-              types.filter(type => type === 'rec').length * A.protectedMax +
-              Math.min(normal, A.maxProlonged) * A.absoluteMax +
-              Math.max(0, normal - A.maxProlonged) * A.normalMax
-            );
-          });
-        const capacity = capacities.length ? Math.floor(Math.max(...capacities) / 5) * 5 : null;
-        const capacityHtml = capacity
-          ? '<p class="lbl" data-volume-capacity>Avec les séances et les jours actuels : jusqu’à environ ' +
-            fmtDur(capacity) +
-            ' par semaine (' +
-            st.runs +
-            ' sorties).' +
-            (st.vol > capacity
-              ? ' Pour atteindre ' + fmtDur(st.vol) + ', ajoute une sortie ou réduis la cible.'
-              : ' Cette estimation varie selon les semaines et les qualités.') +
-            '</p>'
-          : '';
-        const rows = lastPlan.weeks.flatMap((w, i) => {
-          if (w.raceWeek || w.phase === 'intro') return [];
-          const messages = (w.warns || [])
-            .filter(x =>
-              [
-                'weekly_volume_incompatible',
-                'qualities_reduced',
-                'quality_work_reduced',
-                'assimilation_mixed_unavailable',
-                'assimilation_active_unavailable',
-                'volume_short',
-                'protected_footing_shortfall',
-                'no_day_footing_reduce'
-              ].includes(x.code)
-            )
-            .map(warnText);
-          if (!messages.length) return [];
-          return [
-            `S${i + 1} : ${fmtDur(w.vol)} construites pour ${fmtDur(w.targetVolume ?? w.target)} visées. ${[...new Set(messages)].join(' ')}`
-          ];
-        });
-        if (!capacityHtml && !rows.length) return '';
-        return (
-          '<div class="card" role="status"><h2>Compatibilité du volume</h2>' +
-          capacityHtml +
-          rows
-            .slice(0, 3)
-            .map(row => '<p class="lbl">' + row + '</p>')
-            .join('') +
-          (rows.length > 3
-            ? '<p class="lbl">Les autres ajustements sont indiqués dans les semaines concernées.</p>'
-            : '') +
-          '</div>'
-        );
       }
       $('scr-ref').addEventListener(
         'toggle',

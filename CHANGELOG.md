@@ -2,6 +2,11 @@
 
 Les versions suivent le format `AAAA.MM.JJ.NN`. Depuis novembre 2026, chaque version publiée a un tag `v<version>` et une release GitHub. Le détail complet est dans l'historique Git ; les raisons des choix importants sont dans [`docs/decisions/`](docs/decisions/).
 
+## 2026.11.08.06 — Code d'interface inutilisé retiré (COD-6)
+
+- Sept éléments d'interface qui n'étaient plus utilisés sont supprimés, dont l'ancien aperçu « Compatibilité du volume » des Réglages, retiré de l'écran depuis 2026.10.19.01. Rendu inchangé.
+- La limite de deux footings prolongés par semaine a désormais un test du moteur.
+
 ## 2026.11.08.05 — Sécurité et documentation (lot L7)
 
 - La politique de sécurité refuse les styles inline : classes utilitaires et valeurs calculées appliquées par le CSSOM ; rendu identique au pixel près ([décision 0007](docs/decisions/0007-styles-sans-inline.md)).
