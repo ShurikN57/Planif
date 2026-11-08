@@ -3,7 +3,7 @@
   "private": true,
   "description": "Planification d'entraînement course à pied et calcul des allures (PWA statique, sans dépendance d'exécution).",
   "engines": {
-    "node": ">=22"
+    "node": "^22.13.0 || >=24"
   },
   "scripts": {
     "check": "node scripts/check-syntax.cjs",

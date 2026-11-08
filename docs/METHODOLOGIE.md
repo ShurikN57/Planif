@@ -37,7 +37,7 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
    ```
 5. **Pull request** : description courte avec *Pourquoi*, *Quoi*, *Effet sur les plans sauvegardés*, *Empreintes modifiées (oui/non + justification)*, *Comment tester sur téléphone*.
 6. **Relecture** : relire le diff soi-même le lendemain ou faire relire (Claude Code `/code-review` peut aider). Tester sur l'iPhone via l'aperçu si l'UI change.
-7. **Fusion** : *Squash and merge* pour garder un historique de `main` lisible.
+7. **Fusion** : *Squash and merge* par défaut. Pour une PR contenant un formatage mécanique massif dans un commit dédié, conserver exceptionnellement les commits et inscrire le seul commit de formatage dans `.git-blame-ignore-revs`. En local : `git blame --ignore-revs-file .git-blame-ignore-revs <fichier>`.
 8. **Release** : regrouper plusieurs PR fusionnées, puis une PR `chore: release AAAA.MM.JJ.NN` qui monte la version **une fois** avec `npm run version:bump` (cf. `DEVELOPMENT.md`). Après sa fusion, le workflow *Release Planif* crée le tag `vAAAA.MM.JJ.NN` et la release GitHub avec la liste des PR. Une PR qui ne touche que la documentation, les tests ou la CI ne change pas la version.
 9. **Vérification en ligne** : la CI exécute `verify-live.cjs` sur `main` ; ouvrir l'application sur le téléphone et faire « MAJ ».
 
