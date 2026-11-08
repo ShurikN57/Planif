@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-const source=fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');
+// planif-html.js is loaded before this module in the browser.
+const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(path.join(__dirname,'../planif-strava.js'),'utf8');
 const version=require('../planif-version.js');
 assert(html.includes(`./planif-version.js?v=${version}`));
 assert(fs.readFileSync(path.join(__dirname,'../planif-ui.js'),'utf8').includes("stravaScript.src='./planif-strava.js?v='+APP_VERSION"));

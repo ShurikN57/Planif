@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
+// planif-html.js is loaded before this module in the browser.
+const source=require('./helpers/runtime.cjs').htmlSource+'\n'+fs.readFileSync(require('node:path').join(__dirname,'../planif-coros.js'),'utf8');
 const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/coros-workout-tool.json'),'utf8'));
 const ctx={window:{}};vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('/* Transcription')),ctx);const adapter=ctx.window.PlanifCorosAdapter;
 const base={title:'Planif · Premier seuil',description:'Séance de test',kind:'quality',warmupMin:20,cooldownMin:10,easyBand:[9.8,10.7]};

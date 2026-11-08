@@ -3,7 +3,7 @@ window.PlanifStrava=(()=>{
   'use strict';
   const ctx=window.PlanifStravaContext;
   const ORIGIN='https://strava-mobile-2f93f.web.app';
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=globalThis.PlanifHtml.escapeHtml;
   const read=(storage,key,fallback)=>{try{return JSON.parse(storage.getItem(key)||'null')||fallback;}catch{return fallback;}};
   // Firebase Auth conserve et renouvelle la session propre à cette origine (Planif).
   let firebaseAuth=null,auth=null,verified=false,records={},activities={},message='',busy=false,showLogin=false,loadedPlan=null,generation=0,hrZones=null;

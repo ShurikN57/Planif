@@ -7,6 +7,8 @@ const root={addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn),querySel
 let renders=0;
 const context={$:()=>root,readState:()=>({vma:17}),renderApp:()=>renders++};
 vm.createContext(context);
+// planif-html.js provides escapeHtml before planif-ui.js in the browser.
+const {loadHtml}=require('./helpers/runtime.cjs');loadHtml(context);vm.runInContext('var escapeHtml=PlanifHtml.escapeHtml;',context);
 vm.runInContext(source.slice(source.indexOf('const CHRONO_DISTANCES='),source.indexOf('function syncedHrZonesHtml()')),context);
 const run=code=>vm.runInContext(code,context);
 const click=(selector,dataset={})=>listeners.click.forEach(fn=>fn({target:{closest:s=>s===selector?{dataset}:null}}));
