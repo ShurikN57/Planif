@@ -11,9 +11,12 @@ Planification d'entraînement course à pied et calcul des allures, sous forme d
 
 ## Développement
 
-Site statique servi par GitHub Pages depuis `main` : aucun build, aucune dépendance d'exécution. Node.js 22 (voir `.nvmrc`) sert uniquement aux vérifications.
+Site statique servi par GitHub Pages depuis `main` : aucun build, aucune dépendance d'exécution. Node.js 22 (voir `.nvmrc`) sert uniquement aux vérifications ; `npm ci` installe les outils de développement (Prettier, ESLint), jamais chargés par l'application.
 
 ```sh
+npm ci             # outils de développement (une fois)
+npm run format     # formate le JavaScript (Prettier)
+npm run lint       # ESLint
 npm run check      # syntaxe des scripts et du JSON scientifique
 npm test           # suite complète (fuseau Europe/Paris)
 npm run test:tz    # suite sous plusieurs fuseaux horaires

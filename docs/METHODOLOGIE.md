@@ -26,8 +26,10 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
    Petits commits ; le premier commit d'une correction de bug peut être le **test qui échoue**.
 4. **Vérifications locales avant push :**
    ```sh
-   node scripts/check-syntax.cjs
-   TZ=Europe/Paris node --test tests/*.test.cjs
+   npm run format        # Prettier, avant de committer
+   npm run lint
+   npm run check
+   npm run test:tz       # les trois fuseaux
    # si les règles de planification changent :
    TZ=Europe/Paris node scripts/audit-planning-baseline.cjs
    TZ=Europe/Paris node scripts/audit-personal-load.cjs

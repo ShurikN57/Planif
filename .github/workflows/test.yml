@@ -27,9 +27,24 @@ jobs:
         run: node --test tests/*.test.cjs
         env:
           TZ: ${{ matrix.tz }}
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install development tools
+        run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
   verify-live:
     name: Verify live files
-    needs: test
+    needs: [test, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

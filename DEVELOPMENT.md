@@ -34,7 +34,7 @@ TZ=Europe/Paris node --test tests/*.test.cjs
 node scripts/verify-live.cjs
 ```
 
-The same commands are available as `npm run check`, `npm test` and `npm run verify-live` (Node.js 22, see `.nvmrc`; `package.json` declares no dependency). CI runs on every branch push and pull request. The suite runs under `Europe/Paris`, `America/Los_Angeles` and `Pacific/Auckland`, all blocking; `npm run test:tz` reproduces this locally: it runs all three suites even when one fails, prints each result, and exits non-zero when any of them fails. Live-file verification runs only after the tests pass on `main`.
+The same commands are available as `npm run check`, `npm test` and `npm run verify-live` (Node.js 22, see `.nvmrc`). `package.json` declares no runtime dependency; `npm ci` installs the development tools only. JavaScript is formatted with Prettier (`npm run format`; configuration in `.prettierrc.json`, `index.html` and JSON excluded) and linted with ESLint (`npm run lint`: undeclared names, unused code, loose equality). CI runs `npm run lint` and `npm run format:check` in a separate blocking job. Tests that inspect source code use `tests/helpers/source.cjs` (declarations, whole functions, whitespace-insensitive snippets), never exact text positions. CI runs on every branch push and pull request. The suite runs under `Europe/Paris`, `America/Los_Angeles` and `Pacific/Auckland`, all blocking; `npm run test:tz` reproduces this locally: it runs all three suites even when one fails, prints each result, and exits non-zero when any of them fails. Live-file verification runs only after the tests pass on `main`.
 
 ### Local storage
 
