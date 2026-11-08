@@ -126,6 +126,13 @@ async function openApp(browser, url, {timezoneId = 'Europe/Paris', ...options} =
   const page = await context.newPage(),
     errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  // CSP violations (for instance an inline style) are reported as errors too.
+  await page.exposeFunction('__planifCspViolation', text => errors.push('CSP: ' + text));
+  await page.addInitScript(() =>
+    document.addEventListener('securitypolicyviolation', e =>
+      globalThis.__planifCspViolation?.(`${e.violatedDirective} ${e.blockedURI || ''} ${e.sample || ''}`)
+    )
+  );
   // External fonts and Firebase are not needed by these scenarios.
   await context.route(/^https:\/\/(fonts\.|www\.gstatic\.com)/, route => route.abort());
   await page.goto(url);

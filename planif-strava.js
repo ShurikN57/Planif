@@ -183,7 +183,8 @@ window.PlanifStrava = (() => {
   function connect() {
     if (auth) return;
     showLogin = true;
-    message = 'Saisis une seule fois les identifiants de ton compte Flow Strava.';
+    message =
+      'Saisis une seule fois les identifiants de ton compte Flow Strava (le service qui relie Strava), et non ceux de ton compte Strava.';
     redraw();
   }
   async function login(form) {

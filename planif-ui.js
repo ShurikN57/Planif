@@ -1,7 +1,9 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.05')
   .then(function (evidence) {
     (function () {
+      // Computed colours and widths are applied through the CSSOM (no inline style attributes).
+      globalThis.PlanifHtml.observeDataStyles(document);
       const $ = id => document.getElementById(id);
       $('f').addEventListener('submit', e => e.preventDefault());
       const {
@@ -915,11 +917,11 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
       }
       function zoneBar(z, vol, scale) {
         return (
-          `<div class="bar" style="width:${scale}%">` +
+          `<div class="bar" data-css-w="${scale}">` +
           ['z1', 'z2', 'z3', 'z4']
             .map(
               k =>
-                `<i style="width:${(z[k] / vol) * 100}%;background:${ZONES[k].c}" title="${ZONES[k].lab} : ${Math.round(z[k])}'"></i>`
+                `<i data-css-w="${(z[k] / vol) * 100}" data-css-bg="${ZONES[k].c}" title="${ZONES[k].lab} : ${Math.round(z[k])}'"></i>`
             )
             .join('') +
           '</div>'
@@ -939,14 +941,14 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         h +=
           '</div><div class="legend">' +
           Object.values(ZONES)
-            .map(z => `<span style="--c:${z.c}">${z.lab}</span>`)
+            .map(z => `<span data-css-c="${z.c}">${z.lab}</span>`)
             .join('') +
           `</div><p class="note">Moyenne réelle du bloc : ${fmtDur(avg)} par semaine, pour une cible de ${fmtDur(st.vol)}. Budget qualité visé : ${plan.B.budget[0]} à ${plan.B.budget[1]} % du temps. La charge (pts) est un indice interne pour comparer les semaines : minutes × coefficient personnalisé, récupérations courues à 0,20 point/min. Elle est donnée au centre de la plage possible selon les options choisies.</p>`;
         $('overview').innerHTML = h;
       }
       function renderSession(s, role) {
         const c = ZONES[s.zone].c;
-        let h = `<div class="sess" style="--c:${c}"><div class="sess-title"><h4>${role} : ${sessionTitle(s)}</h4><span class="dur">${Math.round(s.work)}' de travail ciblé, ≈ ${fmtDur(s.total)} au total, charge ${ptsRange(s.loadMin, s.loadMax)}</span></div><p class="purpose">${sessionPurpose(s)}${s.rpe ? ` Ressenti attendu : ${s.rpe} ; la fréquence cardiaque sert seulement de contrôle.` : ''}</p><div class="variants">`;
+        let h = `<div class="sess" data-css-c="${c}"><div class="sess-title"><h4>${role} : ${sessionTitle(s)}</h4><span class="dur">${Math.round(s.work)}' de travail ciblé, ≈ ${fmtDur(s.total)} au total, charge ${ptsRange(s.loadMin, s.loadMax)}</span></div><p class="purpose">${sessionPurpose(s)}${s.rpe ? ` Ressenti attendu : ${s.rpe} ; la fréquence cardiaque sert seulement de contrôle.` : ''}</p><div class="variants">`;
         s.variants.forEach((v, i) => {
           h += `<div class="variant"><div class="opt">Option ${i + 1}, ${Math.round(v.work)}' de travail, ${pts(v.load)}</div>${qualityScheduleHtml(v, s, lastSt)}</div>`;
         });
@@ -1032,7 +1034,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
           '</div>';
         h += '<div class="phases">';
         phaseGroups(C).forEach(g => {
-          h += `<div class="wk">S${g.from + 1}${g.to > g.from ? `–S${g.to + 1}` : ''}</div><div class="ph"><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase, d)}</div>`;
+          h += `<div class="wk">S${g.from + 1}${g.to > g.from ? `–S${g.to + 1}` : ''}</div><div class="ph"><i data-css-c="${PHASE_C[g.phase]}"></i>${phaseLab(g.phase, d)}</div>`;
         });
         h += '</div>';
         const cnt = {};
@@ -1059,7 +1061,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         h +=
           '</div><div class="legend">' +
           Object.values(ZONES)
-            .map(z => `<span style="--c:${z.c}">${z.lab}</span>`)
+            .map(z => `<span data-css-c="${z.c}">${z.lab}</span>`)
             .join('') +
           `</div><p class="note">Moyenne réelle : ${fmtDur(avg)} par semaine pour une cible de ${fmtDur(st.vol)} (semaines partielles comprises). Le calendrier choisit les blocs et l'enveloppe de volume ; les séances viennent des mêmes moteurs que le mode Bloc.</p>`;
         return h;
@@ -1161,7 +1163,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         const cls = ['calWeek', w.assimilation ? 'assim' : '', w.raceWeek ? 'raceWk' : ''].join(' ');
         const pos = w.phase !== 'assim' && w.segLen ? ` (${w.segK + 1}/${w.segLen})` : '';
         let h =
-          `<section class="${cls}" aria-label="Semaine ${i + 1}"><div class="calHead"><h3>Semaine ${i + 1}</h3><span class="ph"><i style="--c:${PHASE_C[w.phase]}"></i>${phaseLab(w.phase, d)}${pos}</span>` +
+          `<section class="${cls}" aria-label="Semaine ${i + 1}"><div class="calHead"><h3>Semaine ${i + 1}</h3><span class="ph"><i data-css-c="${PHASE_C[w.phase]}"></i>${phaseLab(w.phase, d)}${pos}</span>` +
           (w.assimilation ? '<span class="tag a">Assimilation</span>' : '') +
           (w.raceWeek ? '<span class="tag r">Semaine de course</span>' : '') +
           `<span class="meta">${fmtDs(w.startDate)} – ${fmtDs(w.endDate)}, volume <b>${fmtDur(w.vol)}</b>, charge <b>${pts(w.load)}</b></span></div>`;
@@ -1178,7 +1180,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
           x.items.forEach((it, ii) => {
             const c = itemShort(it, w),
               sel = calSel && calSel.w === i && calSel.d === di && calSel.i === ii;
-            h += `<button type="button" class="item${it.kind === 'race' ? ' raceIt' : ''}" style="--c:${itemColor(it, w)}" data-w="${i}" data-d="${di}" data-i="${ii}" aria-pressed="${!!sel}"><span class="k">${c.k}</span><span class="s">${c.s}</span>${it.kind === 'foot' || it.kind === 'sl' ? '' : `<span class="t">${paceHtml(c.t)}</span>`}</button>`;
+            h += `<button type="button" class="item${it.kind === 'race' ? ' raceIt' : ''}" data-css-c="${itemColor(it, w)}" data-w="${i}" data-d="${di}" data-i="${ii}" aria-pressed="${!!sel}"><span class="k">${c.k}</span><span class="s">${c.s}</span>${it.kind === 'foot' || it.kind === 'sl' ? '' : `<span class="t">${paceHtml(c.t)}</span>`}</button>`;
           });
           h += '</div>';
         });
@@ -1545,7 +1547,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
           h += `<tr><td><code>${id}</code></td><td colspan="4">${why}</td><td class="num">${id in counts ? counts[id] : '–'}</td></tr>`;
         });
         h +=
-          '</tbody></table></div><div class="actions" style="margin-top:.8rem"><button type="button" class="ghost" id="auditCopy">Copier l\'audit</button></div>';
+          '</tbody></table></div><div class="actions u-mt8"><button type="button" class="ghost" id="auditCopy">Copier l\'audit</button></div>';
         $('auditSec').innerHTML = h;
       }
       function auditText() {
@@ -1618,15 +1620,15 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         const c = itemShort(it, w),
           compact = !!opt.calendar && (it.kind === 'foot' || it.kind === 'sl'),
           cls = `tile${it.kind === 'race' ? ' raceT' : ''}${it.kind === 'foot' ? ' footT' : ''}${compact ? ' calCompact' : ''}`,
-          st = `--c:${itemColor(it, w)}`,
+          st = itemColor(it, w),
           inner = `<span class="tileTop"><span class="k">${c.k}</span>${globalThis.PlanifStrava?.badge(planifSessionInfo(ref)) || ''}</span><span class="tileContent"><span class="s">${c.s}</span>${compact ? '' : `<span class="t">${paceHtml(c.t)}</span>`}</span>`;
         const movable =
           opt.calendar && it.planifId && !['race', 'veille'].includes(it.kind)
             ? ` data-move-session="${escapeHtml(it.planifId)}"`
             : '';
         return ref
-          ? `<button type="button" class="${cls}" style="${st}"${movable} data-open="${ref.q !== undefined ? `${ref.w},q,${ref.q}` : ref.f !== undefined ? `${ref.w},f,${ref.f}` : ref.sl ? `${ref.w},sl,0` : `${ref.w},${ref.d},${ref.i}`}">${opt.calendar ? '' : '<span class="go" aria-hidden="true">›</span>'}${inner}</button>`
-          : `<div class="${cls}" style="${st}">${inner}</div>`;
+          ? `<button type="button" class="${cls}" data-css-c="${st}"${movable} data-open="${ref.q !== undefined ? `${ref.w},q,${ref.q}` : ref.f !== undefined ? `${ref.w},f,${ref.f}` : ref.sl ? `${ref.w},sl,0` : `${ref.w},${ref.d},${ref.i}`}">${opt.calendar ? '' : '<span class="go" aria-hidden="true">›</span>'}${inner}</button>`
+          : `<div class="${cls}" data-css-c="${st}">${inner}</div>`;
       }
       const refOf = (w, x, i) => ({w: w.index, d: w.days.indexOf(x), i});
       /* Illustrations SVG décoratives : parcours fictif, piste et récupération. */
@@ -1747,9 +1749,9 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         if (calOpen === null) calOpen = new Set([curIdx >= 0 ? curIdx : 0]);
         let h = `<div class="card calHero">${homeArt('map')}<div class="lbl">${DIST[d].lab}, ${fmtDs(C.start)} → ${fmtDs(C.race.date)}</div><div class="calHeroTitle"><h2>${C.weeks.length} semaines</h2><button type="button" class="calTimelineBtn" data-timeline="1" aria-expanded="${calendarTimelineOpen}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14M3 10h14M3 16h14"/><circle cx="7" cy="4" r="2" fill="var(--surface-2)"/><circle cx="13" cy="10" r="2" fill="var(--surface-2)"/><circle cx="8" cy="16" r="2" fill="var(--surface-2)"/></svg>${calendarTimelineOpen ? 'Masquer la chronologie' : 'Chronologie'}</button></div>`;
         if (calendarTimelineOpen) {
-          h += '<div class="phaseList" style="margin-top:.7rem">';
+          h += '<div class="phaseList u-mt7">';
           phaseGroups(C).forEach(g => {
-            h += `<b>S${g.from + 1}${g.to > g.from ? `–S${g.to + 1}` : ''}</b><span><i style="--c:${PHASE_C[g.phase]}"></i>${phaseLab(g.phase, d)}</span>`;
+            h += `<b>S${g.from + 1}${g.to > g.from ? `–S${g.to + 1}` : ''}</b><span><i data-css-c="${PHASE_C[g.phase]}"></i>${phaseLab(g.phase, d)}</span>`;
           });
           h += '</div>';
           h += volumeChargeHtml(st, C);
@@ -1761,7 +1763,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
           const open = calOpen.has(i),
             pos = w.phase !== 'assim' && w.segLen ? ` ${w.segK + 1}/${w.segLen}` : '';
           h +=
-            `<div class="cw${i === curIdx ? ' nowW' : ''}${w.assimilation ? ' assimW' : ''}${w.raceWeek ? ' raceW' : ''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${PHASE_C[w.phase]}"></i>` +
+            `<div class="cw${i === curIdx ? ' nowW' : ''}${w.assimilation ? ' assimW' : ''}${w.raceWeek ? ' raceW' : ''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i data-css-c="${PHASE_C[w.phase]}"></i>` +
             `<div><div class="cwTitle"><b>Semaine ${i + 1}</b>${i === curIdx ? '<span class="calNow">En cours</span>' : ''}</div><small>${phaseLab(w.phase, d)}${pos}, ${fmtDs(w.startDate)} – ${fmtDs(w.endDate)}</small></div><div class="v">${fmtDur(w.vol)}<small>${pts(w.load)}</small></div></button>`;
           if (!open) {
             const missing = 6 - dayDiff(w.startDate, w.endDate);
@@ -1777,7 +1779,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
                     x.items[0];
                   const lab = x.date.toLocaleDateString('fr-FR', {weekday: 'narrow'});
                   if (!it) return `<span>${lab}</span>`;
-                  return `<span class="on${it.kind === 'race' ? ' raceS' : ''}" style="--c:${itemColor(it, w)}">${lab}</span>`;
+                  return `<span class="on${it.kind === 'race' ? ' raceS' : ''}" data-css-c="${itemColor(it, w)}">${lab}</span>`;
                 })
                 .join('') +
               '</div>';
@@ -1806,10 +1808,10 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
       /* mode Bloc : pas de dates, les séances de chaque semaine s'ouvrent quand même */
       function appBlockWeeks(C, st) {
         if (calOpen === null) calOpen = new Set([0]);
-        let h = `<div class="card"><div class="lbl">Bloc sans dates</div><h2 style="margin:.2rem 0 0">${blockLabel(C.B)}, ${C.weeks.length} semaines</h2>${blockLoadReviewHtml(C, st)}</div>`;
+        let h = `<div class="card"><div class="lbl">Bloc sans dates</div><h2 class="u-m-title">${blockLabel(C.B)}, ${C.weeks.length} semaines</h2>${blockLoadReviewHtml(C, st)}</div>`;
         C.weeks.forEach((w, i) => {
           const open = calOpen.has(i);
-          h += `<div class="cw${w.assim ? ' assimW' : ''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i style="--c:${w.assim ? PHASE_C.assim : PHASE_C[C.B.id === 'spec' ? 'spec' : C.B.id] || 'var(--line)'}"></i><div><b>Semaine ${i + 1}</b><small>${w.assim ? 'Assimilation' : 'Charge'}</small></div><div class="v">${fmtDur(w.vol)}<small>${pts(w.load)}</small></div></button>`;
+          h += `<div class="cw${w.assim ? ' assimW' : ''}"><button type="button" class="cwHead" data-week="${i}" aria-expanded="${open}"><i data-css-c="${w.assim ? PHASE_C.assim : PHASE_C[C.B.id === 'spec' ? 'spec' : C.B.id] || 'var(--line)'}"></i><div><b>Semaine ${i + 1}</b><small>${w.assim ? 'Assimilation' : 'Charge'}</small></div><div class="v">${fmtDur(w.vol)}<small>${pts(w.load)}</small></div></button>`;
           if (open) {
             h +=
               '<div class="cwBody">' +
@@ -2204,7 +2206,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
             '<div class="card" role="status"><p>Les références sont enregistrées, mais le programme existant est conservé.</p><button type="button" class="cta" data-ref-apply>Appliquer aux séances futures non réalisées</button></div>';
         h += `<div class="card chronoCard panelCard chronoPanel">${panelArt('chrono')}${refEditHtml('Chronos estimés', 'chrono', chronoFieldsHtml())}${pred ? '<div class="kv">' + pred.map(p => `<span class="${p.isRef ? 'predRef predRefLabel' : ''}">${p.lab}${p.isRef ? ' (réf.)' : ''}</span><span class="v${p.isRef ? ' predRef predRefValue' : ''}">${fmtTime(p.t)}, ${paceHtml(kmh(p.v, p.v))}</span>`).join('') + '</div>' : '<p class="lbl">Complète ton chrono de référence pour afficher les estimations.</p>'}</div>`;
 
-        h += `<button type="button" class="libEntry libVisual" data-openlib="1" style="margin-top:.8rem">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
+        h += `<button type="button" class="libEntry libVisual u-mt8" data-openlib="1">${homeArt('track')}<span class="libCopy">Bibliothèque de séances<small>Tous les formats par qualité et par type, calculés avec tes repères</small></span><span class="libArrow" aria-hidden="true">›</span></button>`;
         return h;
       }
       const sim = {
@@ -2343,7 +2345,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
               const rules = Object.entries(RULE_META)
                 .filter(([, m]) => m.findings.includes(f.id))
                 .map(([id]) => id);
-              return `<p><b>${f.id} · ${QUESTIONS[f.questionId].text}</b><br>${f.statement}</p><p><b>Portée :</b> ${f.directness.population} ${f.directness.outcome}</p><p><b>Règles liées :</b> ${rules.length ? rules.map(id => `<code style="overflow-wrap:anywhere">${id}</code>`).join(', ') : 'Question documentée, sans règle correspondante dans le moteur.'}</p>`;
+              return `<p><b>${f.id} · ${QUESTIONS[f.questionId].text}</b><br>${f.statement}</p><p><b>Portée :</b> ${f.directness.population} ${f.directness.outcome}</p><p><b>Règles liées :</b> ${rules.length ? rules.map(id => `<code class="u-wrap">${id}</code>`).join(', ') : 'Question documentée, sans règle correspondante dans le moteur.'}</p>`;
             })
             .join('')
         );
@@ -2356,7 +2358,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         let h =
           '<div class="card panelCard studyIntro">' +
           panelArt('science') +
-          '<div class="big" style="font-size:1.65rem">' +
+          '<div class="big u-fs165">' +
           SOURCES.length +
           ' publications</div><p class="lbl">Références vérifiées utilisées pour documenter ou challenger les règles de Planif. Les choix purement heuristiques restent identifiés comme tels dans l’audit.</p></div>';
         h +=
@@ -2494,7 +2496,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         if (!ref2Open)
           h += `<button type="button" class="addRef" data-act="add-ref2">+ Ajouter un autre chrono de référence</button>`;
         else
-          h += `<div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance', 'ref2Dist')}${timeWheelHtml('ref2Time', $('ref2Dist').value)}</div>`;
+          h += `<div class="u-separator"><div class="settingsTitle"><b>Deuxième chrono</b><button type="button" class="ghost" data-act="remove-ref2">Supprimer</button></div>${fSel('Distance', 'ref2Dist')}${timeWheelHtml('ref2Time', $('ref2Dist').value)}</div>`;
         return h + `<p class="lbl" id="setProfileHint"></p>`;
       }
       function physioFieldsHtml() {
@@ -2507,7 +2509,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         h += `<div class="card"><div class="settingsTitle"><h2>Type de plan</h2></div><div class="optSeg" role="group" aria-label="Mode"><button type="button" data-mode="bloc" aria-pressed="${!cal}">Bloc</button><button type="button" data-mode="cal" aria-pressed="${cal}">Calendrier course</button></div></div>`;
 
         if (cal && activePlan) {
-          h += `<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing ? 'Modification' : 'Verrouillé'}</span></div><div class="big" style="font-size:1.35rem">${escapeHtml(activePlan.title)}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length > 1 ? 's' : ''} dans l’historique</div>${!structureEditing ? '<button type="button" class="cta ghost" data-act="refresh-program">Mettre à jour le programme</button>' : ''}<button type="button" class="cta ghost" data-act="${structureEditing ? 'commit-structure' : 'edit-structure'}">${structureEditing ? 'Valider les changements' : 'Modifier la structure'}</button>${structureEditing ? '<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>' : ''}</div>`;
+          h += `<div class="card panelCard activePlanCard">${panelArt('plan')}<div class="settingsTitle"><h2>Plan actif</h2><span class="lockTag">${structureEditing ? 'Modification' : 'Verrouillé'}</span></div><div class="big u-fs135">${escapeHtml(activePlan.title)}</div><div class="lbl">Sauvegarde automatique · ${planHistory.length} plan${planHistory.length > 1 ? 's' : ''} dans l’historique</div>${!structureEditing ? '<button type="button" class="cta ghost" data-act="refresh-program">Mettre à jour le programme</button>' : ''}<button type="button" class="cta ghost" data-act="${structureEditing ? 'commit-structure' : 'edit-structure'}">${structureEditing ? 'Valider les changements' : 'Modifier la structure'}</button>${structureEditing ? '<button type="button" class="cta ghost" data-act="cancel-structure">Annuler</button>' : ''}</div>`;
         }
 
         if (!recoveryState && cal && (!activePlan || structureEditing)) {
@@ -2525,7 +2527,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         h += PlanifCoros.settingsHtml();
         h += globalThis.PlanifStrava?.settingsHtml() || '';
 
-        h += `<div class="card toolsCard"><h2>Outils</h2><div class="lbl" style="margin-bottom:.7rem">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="plans">Mes plans</button><button type="button" class="cta ghost" data-act="export">Exporter mes données</button><button type="button" class="cta ghost" data-act="import">Importer une sauvegarde</button><p class="lbl" id="backupStatus" role="status"></p><p class="lbl" id="storageStatus"></p><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
+        h += `<div class="card toolsCard"><h2>Outils</h2><div class="lbl u-mb7">Version ${APP_VERSION}</div><button type="button" class="cta ghost" data-act="theme">${themeButtonText()}</button><button type="button" class="cta updateBtn" data-act="update">MAJ</button><p class="lbl" id="updateStatus"></p><button type="button" class="cta ghost" data-act="copy">Copier le plan</button><button type="button" class="cta ghost" data-act="plans">Mes plans</button><button type="button" class="cta ghost" data-act="export">Exporter mes données</button><button type="button" class="cta ghost" data-act="import">Importer une sauvegarde</button><p class="lbl" id="backupStatus" role="status"></p><p class="lbl" id="storageStatus"></p><button type="button" class="cta ghost" data-act="audit">Audit des règles</button><button type="button" class="cta ghost" data-goto="expert">Vue experte</button></div>`;
         return h;
       }
       function savedPlanEntries() {
@@ -3569,7 +3571,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
             .join('') +
           '</div>';
         h += `<div class="optSeg three" role="group" aria-label="Période du bloc">${['Début', 'Milieu', 'Fin'].map((l, i) => `<button type="button" data-lvol="${i}" aria-pressed="${i === libVol}">${l} de bloc<small>Volume adapté au format</small></button>`).join('')}</div>`;
-        h += `<div class="card"><p class="lbl" style="margin:0">${libFormatCount(libSector)} formats distincts dans cette catégorie. Le volume de chaque format évolue selon la période choisie, ses bornes et tes repères ; il n’existe pas de durée commune imposée.</p>${info('Bibliothèque', ['La progression et la pertinence par phase sont des choix Planif. Certains formats fixes restent identiques entre les périodes.', 'La charge estimée combine le travail, l’intensité, les récupérations courues, la préparation et le retour au calme. Deux charges proches ne garantissent pas le même stimulus ni la même fatigue.', 'Un format est compté une seule fois, même si son nombre de répétitions varie entre début, milieu et fin.', '« Dans ton plan » signale un format retenu dans le plan affiché ; la pertinence par phase vient des poids de la bibliothèque.'])}</div>`;
+        h += `<div class="card"><p class="lbl u-m0">${libFormatCount(libSector)} formats distincts dans cette catégorie. Le volume de chaque format évolue selon la période choisie, ses bornes et tes repères ; il n’existe pas de durée commune imposée.</p>${info('Bibliothèque', ['La progression et la pertinence par phase sont des choix Planif. Certains formats fixes restent identiques entre les périodes.', 'La charge estimée combine le travail, l’intensité, les récupérations courues, la préparation et le retour au calme. Deux charges proches ne garantissent pas le même stimulus ni la même fatigue.', 'Un format est compté une seule fois, même si son nombre de répétitions varie entre début, milieu et fin.', '« Dans ton plan » signale un format retenu dans le plan affiché ; la pertinence par phase vient des poids de la bibliothèque.'])}</div>`;
         const pk = planKeys(),
           all = libCandidates(libSector, Ws[libVol]);
         (libFam === 'all' ? fams : [libFam]).forEach(f => {
@@ -3583,7 +3585,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
               ch = vChips(c),
               inPlan = c.key in pk;
             h +=
-              `<button type="button" class="tile libT" style="--c:${libColor(libSector)}" data-lib="${libSector}|${encodeURIComponent(c.key)}"><span class="go" aria-hidden="true">›</span>` +
+              `<button type="button" class="tile libT" data-css-c="${libColor(libSector)}" data-lib="${libSector}|${encodeURIComponent(c.key)}"><span class="go" aria-hidden="true">›</span>` +
               `<span class="s">${main}</span><span class="t">${paceHtml(ch[0] || '')}</span><span class="t">${rec ? rec.charAt(0).toUpperCase() + rec.slice(1) + ', ' : ''}travail ${fmtRep(c.work)} · charge ${pts(libCandidateLoad(libSector, c, st))}</span>${inPlan ? `<span class="inPlan">Dans ton plan, semaine ${pk[c.key]}</span>` : ''}</button>`;
           });
         });
@@ -3659,7 +3661,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
         const pw = RULES.library.phaseWeights[o.fam],
           secLab = LIB_SECTORS.find(x => x.id === sec).lab;
         const rpe = SECTOR_INFO[sec] ? SECTOR_INFO[sec].rpe : null;
-        let h = `<div class="sHead" style="--c:${libColor(sec)}"><div class="sHeadTitle"><h2>${secLab}</h2>${sessionInfoHeaderHtml('Pourquoi ce format', `<p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe ? `<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>` : ''}${pw ? `<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n, i) => `${n} ${Math.round(pw[i] * 100)} %`).join(', ')}.</p>` : ''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p>`)}</div><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
+        let h = `<div class="sHead" data-css-c="${libColor(sec)}"><div class="sHeadTitle"><h2>${secLab}</h2>${sessionInfoHeaderHtml('Pourquoi ce format', `<p>${PURPOSE[LIB_PURPOSE[sec]]}</p>${rpe ? `<p>Ressenti attendu : ${rpe}. La fréquence cardiaque sert seulement de contrôle.</p>` : ''}${pw ? `<p>Pertinence dans un bloc : ${PHASE_NAMES.map((n, i) => `${n} ${Math.round(pw[i] * 100)} %`).join(', ')}.</p>` : ''}<p>Charge estimée : ${pts(ld.load)}.</p><p>Format de la bibliothèque : le plan ne le propose qu'au moment du bloc où il est pertinent.</p>`)}</div><div class="lbl">Bibliothèque, ${FAM_LAB[o.fam].toLowerCase()}</div></div>`;
         h += qualityScheduleHtml(c, prep, st);
         return h;
       }
@@ -3885,7 +3887,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
               ? w.slLoad
               : (it.s?.load ?? it.f?.load ?? it.load);
         const head = (t, info = '') =>
-          `<div class="sHead" style="--c:${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div>${Number.isFinite(load) ? `<div class="sessionCharge">Charge estimée : ${pts(load)}</div>` : ''}</div>`;
+          `<div class="sHead" data-css-c="${col}"><div class="sHeadTitle"><h2>${t}</h2>${info}</div><div class="lbl">${when}, ${ph}</div>${Number.isFinite(load) ? `<div class="sessionCharge">Charge estimée : ${pts(load)}</div>` : ''}</div>`;
         if (it.kind === 'q') {
           const s = it.s,
             v = s.variants[appOpt] || s.variants[0];
@@ -3908,7 +3910,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
               sessionTitle(r2),
               sessionInfoHeaderHtml('Charge de la course', `<p>Charge estimée : ${pts(r2.load)}.</p>`)
             ) +
-            `<div class="card"><div class="lbl">${r2.goal ? 'Objectif' : 'Estimation'}</div><div class="big">${fmtTime(r2.targetTime)}</div><div class="kv" style="margin-top:.7rem"><span>Allure</span><span class="v">${paceHtml(kmh(r2.targetPace, r2.targetPace))}</span><span>Échauffement</span><span class="v">${r2.wu}'</span><span>Retour au calme</span><span class="v">${r2.cd}'</span></div></div>`
+            `<div class="card"><div class="lbl">${r2.goal ? 'Objectif' : 'Estimation'}</div><div class="big">${fmtTime(r2.targetTime)}</div><div class="kv u-mt7"><span>Allure</span><span class="v">${paceHtml(kmh(r2.targetPace, r2.targetPace))}</span><span>Échauffement</span><span class="v">${r2.wu}'</span><span>Retour au calme</span><span class="v">${r2.cd}'</span></div></div>`
           );
         }
         if (it.kind === 'sl')
@@ -3917,7 +3919,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
               'Sortie longue',
               sessionInfoHeaderHtml('Charge', `<p>Charge estimée : ${pts(w.slLoad)}.</p>`)
             ) +
-            `<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv" style="margin-top:.7rem"><span>En EF</span><span class="v">${fmtDur(w.sl - w.slS1)}</span>${w.slS1 ? `<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>` : w.slEA ? `<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr ? Math.round(st.lt1Hr) + ' bpm' : 'LT1'}</span>` : ''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${paceHtml(efBandText('std', st))}</span>${w.slS1 ? `<span>Allure S1</span><span class="v">${paceHtml(kmh(st.s1lo, st.s1hi))}</span>` : ''}</div></div>`
+            `<div class="card"><div class="big">${fmtDur(w.sl)}</div><div class="kv u-mt7"><span>En EF</span><span class="v">${fmtDur(w.sl - w.slS1)}</span>${w.slS1 ? `<span>Fin au premier seuil</span><span class="v">${w.slS1}'</span>` : w.slEA ? `<span>Endurance active</span><span class="v">${Math.round(w.slEA.range[0])} à ${Math.round(w.slEA.range[1])}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr ? Math.round(st.lt1Hr) + ' bpm' : 'LT1'}</span>` : ''}<span class="wideLabel">Allure EF</span><span class="v wideVal">${paceHtml(efBandText('std', st))}</span>${w.slS1 ? `<span>Allure S1</span><span class="v">${paceHtml(kmh(st.s1lo, st.s1hi))}</span>` : ''}</div></div>`
           );
         if (it.kind === 'veille')
           return (
@@ -3941,13 +3943,13 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
                   `<p>Le bloc d’endurance active reste sous le premier seuil, avec un début et une fin faciles.</p><p>Charge estimée : ${pts(f.load)}.</p>`
                 )
               ) +
-              `<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${paceHtml(efBandText('active', st))}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr ? Math.round(st.lt1Hr) + ' bpm' : 'LT1'}</span></div></div>`
+              `<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv u-mt7"><span>Début facile</span><span class="v">${f.wu}'</span><span>Bloc actif</span><span class="v">${activeRangeText(f)}</span><span class="wideLabel">Intensité du bloc</span><span class="v wideVal">${paceHtml(efBandText('active', st))}</span><span>Fin facile</span><span class="v">${f.cd}'</span><span>Plafond FC</span><span class="v">${st.lt1Hr ? Math.round(st.lt1Hr) + ' bpm' : 'LT1'}</span></div></div>`
             );
           const lab = joggTitle(f);
           const info = `<details class="footInfo"><summary aria-label="Pourquoi ce footing" title="Pourquoi ce footing">ⓘ</summary><div class="footInfoBody"><p>Jogg’ facile au ressenti : adapte l’effort à ta fatigue et au terrain, sans dépasser le premier seuil. La durée tient compte du volume hebdomadaire et des séances voisines.</p><p>Charge estimée : ${pts(f.load)}.</p></div></details>`;
           return (
             head(lab, info) +
-            `<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv" style="margin-top:.7rem"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${paceHtml(efBandText(f.type, st))}</span></div>${f.ld ? `<p class="lbl" style="margin-top:.6rem">En fin de footing : ${LD.split(' : ')[1]}.</p>` : ''}${f.shortHills ? `<p class="lbl" style="margin-top:.6rem">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>` : ''}</div>`
+            `<div class="card"><div class="big">${fmtFootDur(f.min)}</div><div class="kv u-mt7"><span class="wideLabel">Zone proposée</span><span class="v wideVal">${paceHtml(efBandText(f.type, st))}</span></div>${f.ld ? `<p class="lbl u-mt6">En fin de footing : ${LD.split(' : ')[1]}.</p>` : ''}${f.shortHills ? `<p class="lbl u-mt6">En fin de footing : ${f.shortHills.reps[0]} à ${f.shortHills.reps[1]} × ${f.shortHills.seconds[0]} à ${f.shortHills.seconds[1]}" en côte (${f.shortHills.gradePct[0]}–${f.shortHills.gradePct[1]} %), récupération complète. Non compté comme qualité.</p>` : ''}</div>`
           );
         }
         return '';
@@ -4316,6 +4318,6 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.04')
     document.body.dataset.ui = 'app';
     const host = document.getElementById('appShell') || document.body;
     host.innerHTML =
-      '<div class="card" style="margin:1rem"><h2>Chargement interrompu</h2><p>Vérifie ta connexion Internet puis réessaie. Les plans enregistrés sur cet appareil sont conservés.</p><button type="button" id="planifRetry">Réessayer</button></div>';
+      '<div class="card u-m1"><h2>Chargement interrompu</h2><p>Vérifie ta connexion Internet puis réessaie. Les plans enregistrés sur cet appareil sont conservés.</p><button type="button" id="planifRetry">Réessayer</button></div>';
     document.getElementById('planifRetry').addEventListener('click', () => location.reload());
   });

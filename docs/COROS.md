@@ -65,7 +65,7 @@ Les retours bruts, jetons et identifiants internes ne sont pas affichés. Le mes
 
 - Client OAuth public enregistré à la demande, sans secret embarqué ; PKCE S256 et `state` aléatoire.
 - Transaction de connexion limitée à quinze minutes ; nettoyage des paramètres de retour dans l’adresse.
-- Jetons dans `sessionStorage` uniquement. Identifiant public de client, transaction temporaire et suivi des envois dans des clés locales dédiées.
+- Jetons dans `localStorage` pour conserver la connexion, exclus de l'export Planif. Identifiant public de client, transaction temporaire et suivi des envois dans des clés locales dédiées.
 - Échanges COROS exclus du cache PWA.
 - Sur iPhone, si le retour arrive dans Safari sans transaction correspondante, relancer la connexion depuis Planif ouvert dans Safari.
 - « Déconnecter de Planif » efface l’accès local ; la révocation de l’autorisation se fait dans le compte COROS.

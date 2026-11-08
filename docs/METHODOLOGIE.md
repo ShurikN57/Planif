@@ -53,7 +53,7 @@ Issue  →  Branche  →  Commits  →  PR (CI)  →  Relecture  →  Fusion  �
 - Donner **une issue ou un lot précis** par session (« corrige TZ-1 et TZ-2 selon l'audit »), avec les critères de réussite.
 - Demander explicitement : branche dédiée, tests ajoutés, suite complète verte, et résumé de l'effet sur les plans sauvegardés.
 - Ne pas laisser Claude modifier une empreinte (`tests/fixtures/*.json`) sans le script d'audit correspondant et une explication.
-- Un fichier `CLAUDE.md` à la racine peut rappeler ces règles (commandes de test, interdiction de pousser sur `main`, règles de préservation des plans) pour qu'elles soient appliquées à chaque session.
+- Le fichier [`CLAUDE.md`](../CLAUDE.md) à la racine rappelle ces règles (commandes de test, interdiction de pousser sur `main`, règles de préservation des plans) pour qu'elles soient appliquées à chaque session.
 
 ## 5. Définition de « terminé »
 
@@ -62,6 +62,6 @@ Une correction est terminée quand :
 - [ ] le test qui reproduit le problème existe et passe ;
 - [ ] `check-syntax` et la suite complète passent (et la matrice `TZ` une fois le lot L3 fait) ;
 - [ ] les empreintes sont inchangées, ou leur changement est expliqué et audité ;
-- [ ] la documentation ou le CHANGELOG est à jour ;
+- [ ] la documentation et le `CHANGELOG.md` sont à jour ; un choix structurant (règle de planification, format de données, sécurité, architecture) a sa décision dans `docs/decisions/` ;
 - [ ] la PR est fusionnée, la version publiée et vérifiée en ligne ;
 - [ ] l'issue est fermée avec le lien vers la PR.
