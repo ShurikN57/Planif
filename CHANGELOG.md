@@ -2,6 +2,10 @@
 
 Les versions suivent le format `AAAA.MM.JJ.NN`. Depuis novembre 2026, chaque version publiée a un tag `v<version>` et une release GitHub. Le détail complet est dans l'historique Git ; les raisons des choix importants sont dans [`docs/decisions/`](docs/decisions/).
 
+## 2026.11.08.07 — Capacité hebdomadaire estimée
+
+- « Volume et charge » (Calendrier → Chronologie) indique le volume hebdomadaire estimé quand la cible des semaines de charge le dépasse. Une sortie de plus est proposée uniquement si la simulation augmente le volume estimé et respecte les règles de placement et d'espacement ([décision 0008](docs/decisions/0008-capacite-hebdomadaire.md)). Plans et cibles inchangés.
+
 ## 2026.11.08.06 — Code d'interface inutilisé retiré (COD-6)
 
 - Sept éléments d'interface qui n'étaient plus utilisés sont supprimés, dont l'ancien aperçu « Compatibilité du volume » des Réglages, retiré de l'écran depuis 2026.10.19.01. Rendu inchangé.

@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.06')
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.07')
   .then(function (evidence) {
     (function () {
       // Computed colours and widths are applied through the CSSOM (no inline style attributes).
@@ -55,6 +55,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.06')
         programLoadFactor,
         recalculatePlanLoads,
         recalculatePlanSummary,
+        capacityAdvice,
         reviewBlockLoads,
         preparationActivation,
         prepareSession,
@@ -2176,6 +2177,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.06')
         zoneBar,
         escapeHtml,
         renderApp,
+        capacityAdvice,
         fText: (...args) => fText(...args),
         currentTab: () => appTab
       });
