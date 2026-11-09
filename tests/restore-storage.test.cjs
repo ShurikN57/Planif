@@ -6,7 +6,8 @@ const assert = require('node:assert/strict'),
 const {loadRuntime, uiSource: html} = require('./helpers/runtime.cjs');
 const {between, functionSource} = require('./helpers/source.cjs');
 const engine = require('../planif-engine.js');
-const {STATE} = require('./e2e/helpers.cjs');
+// Not the browser helpers: unit-test jobs do not install Playwright.
+const {STATE} = require('./helpers/calendar-state.cjs');
 
 const plan = (id, extra = {}) => {
   const C = engine.buildCalendar(STATE, engine.predict(STATE));
