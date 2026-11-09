@@ -1,5 +1,5 @@
 /* Interface and local plan persistence; calculations are provided by PlanifEngine. */
-globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
+globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.09.01')
   .then(function (evidence) {
     (function () {
       // Computed colours and widths are applied through the CSSOM (no inline style attributes).
@@ -411,7 +411,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
         }
         syncQualityPrereqs();
       }
-      /* Until 2026.11.08.08 each restoration left a full copy of the active plan and of the whole
+      /* Until 2026.11.09.01 each restoration left a full copy of the active plan and of the whole
          history under planif-before-restore-<timestamp>; a few of them filled the browser storage.
          A plan found only in such a copy is first added to the history; a copy is removed once all
          its plans are in the active plan or the history. Copies are kept if that cannot be saved. */
@@ -2630,7 +2630,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
         if (!validSavedPlan(record)) throw Error('Ce plan ne peut pas être restauré.');
         // The replaced active plan is archived in the history by the same writes; on any storage
         // failure the previous values are put back and memory is unchanged. No extra full copy is
-        // written: such copies accumulated and filled the storage (until 2026.11.08.08).
+        // written: such copies accumulated and filled the storage (until 2026.11.09.01).
         const before = {};
         for (const key of [STORE.active, STORE.history, STORE.mode, RECOVERY_STATE])
           before[key] = localStorage.getItem(key);
