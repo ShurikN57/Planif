@@ -2,6 +2,10 @@
 
 Les versions suivent le format `AAAA.MM.JJ.NN`. Depuis novembre 2026, chaque version publiée a un tag `v<version>` et une release GitHub. Le détail complet est dans l'historique Git ; les raisons des choix importants sont dans [`docs/decisions/`](docs/decisions/).
 
+## 2026.11.09.01 — Restauration des plans sur iPhone
+
+- « Restaurer ce plan » échouait avec « The quota has been exceeded. » : chaque restauration laissait une copie complète du plan et de tout l'historique, jamais supprimée, jusqu'à remplir le stockage. La restauration n'écrit plus de copie (le plan remplacé reste archivé) ; les anciennes copies sont compactées au démarrage sans perdre de plan ; un stockage plein donne un message clair ([décision 0009](docs/decisions/0009-copies-de-securite-bornees.md)).
+
 ## 2026.11.08.08 — Chrono : mode Distance et affichage des heures
 
 - Chrono : chaque bouton porte le nom de la valeur calculée (« Temps » donne le temps estimé, « Allure » l'allure nécessaire) et un troisième mode « Distance » calcule la distance parcourue à partir d'une allure et d'une durée.

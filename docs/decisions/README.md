@@ -12,6 +12,7 @@ Chaque fichier explique une décision importante : son contexte, ce qui a été 
 | [0006](0006-decoupage-interface.md) | Découpage de l'interface : onglet Calcul et CSS, pas la persistance | 2026.11.08.04 | Acceptée |
 | [0007](0007-styles-sans-inline.md) | Politique de sécurité sans styles inline | 2026.11.08.05 | Acceptée |
 | [0008](0008-capacite-hebdomadaire.md) | Estimation de la capacité hebdomadaire dans « Volume et charge » | 2026.11.08.07 | Acceptée |
+| [0009](0009-copies-de-securite-bornees.md) | Copies de sécurité bornées : la restauration n'en écrit plus | 2026.11.09.01 | Acceptée |
 
 ## Modèle
 

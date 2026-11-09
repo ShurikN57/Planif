@@ -89,7 +89,7 @@ Les plans et préférences sont conservés dans `localStorage`. Les jetons COROS
 | `planif-plan-history-v1` | Plans archivés, avec `dateZone` | oui |
 | `planif-mode-v1`, `planif-weekly-balance-v2` | Mode, marqueur de migration | oui |
 | `planif-theme`, `planif-speed-unit`, `calc-allures-ui`, `calc-allures-tab`, `calc-allures-calview`, `planif-coros-profile-v1` | Préférences | oui |
-| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-restore-*`, `planif-before-import-latest` | Copies de sécurité et état de récupération | non |
+| `planif-recovery-before-2026101706`, `planif-recovery-state-v1`, `planif-before-import-latest` (anciennes `planif-before-restore-*` compactées au démarrage, [décision 0009](docs/decisions/0009-copies-de-securite-bornees.md)) | Copies de sécurité et état de récupération | non |
 | `planif-reference-plan-pending-v1` | Application de repères en attente | non (effacée à l'import) |
 | `planif-coros-v1`, `planif-coros-capabilities-v1`, `planif-strava-auth-v1`, `planif-strava-records-v1:*` | Données d'appareil et de compte | non |
 | `calc-allures-v7` | Ancienne source de migration | non |

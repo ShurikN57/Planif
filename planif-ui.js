@@ -320,7 +320,12 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
         if (!localStorage.getItem(RECOVERY_BACKUP)) {
           const backup = {savedAt: new Date().toISOString(), values: {}};
           for (const key of Object.values(STORE)) backup.values[key] = localStorage.getItem(key);
-          localStorage.setItem(RECOVERY_BACKUP, JSON.stringify(backup));
+          try {
+            localStorage.setItem(RECOVERY_BACKUP, JSON.stringify(backup));
+          } catch (error) {
+            // A full storage must not stop the app from starting; the stored data are untouched.
+            console.warn('Planif : copie de récupération non enregistrée.', error?.name || 'Erreur');
+          }
         }
         const savedRecovery = getJson(RECOVERY_STATE);
         recoveryState =
@@ -406,6 +411,57 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
         }
         syncQualityPrereqs();
       }
+      /* Until 2026.11.08.08 each restoration left a full copy of the active plan and of the whole
+         history under planif-before-restore-<timestamp>; a few of them filled the browser storage.
+         A plan found only in such a copy is first added to the history; a copy is removed once all
+         its plans are in the active plan or the history. Copies are kept if that cannot be saved. */
+      const RESTORE_COPY_PREFIX = 'planif-before-restore-';
+      function compactRestoreCopies() {
+        if (typeof localStorage.key !== 'function' || typeof localStorage.removeItem !== 'function') return;
+        const keys = [];
+        for (let i = 0; i < (localStorage.length || 0); i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(RESTORE_COPY_PREFIX)) keys.push(key);
+        }
+        if (!keys.length) return;
+        const known = new Set([activePlan?.id, ...planHistory.map(p => p?.id)].filter(Boolean));
+        const recovered = [];
+        for (const key of keys.sort()) {
+          const values = getJson(key, {})?.values || {},
+            plans = [];
+          try {
+            plans.push(JSON.parse(values[STORE.active] || 'null'));
+          } catch (_) {
+            /* unreadable value: nothing to recover from it */
+          }
+          try {
+            const history = JSON.parse(values[STORE.history] || '[]');
+            if (Array.isArray(history)) plans.push(...history);
+          } catch (_) {
+            /* unreadable value: nothing to recover from it */
+          }
+          for (const plan of plans)
+            if (validSavedPlan(plan) && !known.has(plan.id)) {
+              known.add(plan.id);
+              recovered.push({
+                ...localizeSavedPlan(plan),
+                archivedAt: plan.archivedAt || new Date().toISOString(),
+                archiveReason: plan.archiveReason || 'retrouvé dans une ancienne copie de sécurité'
+              });
+            }
+        }
+        if (recovered.length) {
+          const history = [...planHistory, ...recovered];
+          try {
+            localStorage.setItem(STORE.history, serializeSavedPlans(history));
+          } catch (error) {
+            console.warn('Planif : anciennes copies de restauration conservées.', error?.name || 'Erreur');
+            return;
+          }
+          planHistory = history;
+        }
+        for (const key of keys) localStorage.removeItem(key);
+      }
       function load() {
         protectPlanRecovery();
         const legacy = getJson(KEY, null);
@@ -428,6 +484,7 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
         activePlan = localizeSavedPlan(getJson(STORE.active, null));
         refPlanPending = refPendingLoad();
         planHistory = (getJson(STORE.history, []) || []).map(record => localizeSavedPlan(record));
+        compactRestoreCopies();
         const migrationKey = 'planif-weekly-balance-v2';
         if (validSavedPlan(activePlan) && !localStorage.getItem(migrationKey)) {
           const archived = {
@@ -2571,12 +2628,12 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
       }
       function restoreSavedPlanRecord(record) {
         if (!validSavedPlan(record)) throw Error('Ce plan ne peut pas être restauré.');
-        // A complete backup is written before replacing any key; memory changes only after storage succeeds.
+        // The replaced active plan is archived in the history by the same writes; on any storage
+        // failure the previous values are put back and memory is unchanged. No extra full copy is
+        // written: such copies accumulated and filled the storage (until 2026.11.08.08).
         const before = {};
         for (const key of [STORE.active, STORE.history, STORE.mode, RECOVERY_STATE])
           before[key] = localStorage.getItem(key);
-        const backupKey = 'planif-before-restore-' + Date.now();
-        localStorage.setItem(backupKey, JSON.stringify({savedAt: new Date().toISOString(), values: before}));
         const restored = snapshotPlan(record);
         delete restored.archivedAt;
         delete restored.archiveReason;
@@ -2603,7 +2660,9 @@ globalThis.PlanifEvidence.load('./planif-studies.json?v=2026.11.08.08')
             }
           }
           throw Error(
-            'Restauration interrompue : impossible d’enregistrer le plan. La copie de sécurité est conservée.'
+            error?.name === 'QuotaExceededError' || /quota/i.test(error?.message || '')
+              ? 'Restauration interrompue : le stockage de Planif sur cet appareil est plein. Ton plan actuel est conservé. Exporte tes données (Réglages → Outils) puis réessaie.'
+              : 'Restauration interrompue : impossible d’enregistrer le plan. Ton plan actuel est conservé.'
           );
         }
         activePlan = restored;
