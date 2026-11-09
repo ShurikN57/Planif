@@ -262,3 +262,55 @@ test('Chrono names each button after its result, computes a distance and shows n
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('a plan can be restored from Mes plans after old restore copies filled the storage', async () => {
+  const {context, page, errors} = await openApp(browser, url);
+  await seedPlan(page, {id: 'plan-current'});
+  // An archived plan to restore, then old full copies until the browser storage refuses more.
+  const filled = await page.evaluate(() => {
+    const active = localStorage.getItem('planif-active-plan-v1'),
+      archived = {
+        ...JSON.parse(active),
+        id: 'plan-archived',
+        title: 'Ancien plan à restaurer',
+        archivedAt: '2026-10-01T10:00:00.000Z'
+      };
+    localStorage.setItem('planif-plan-history-v1', JSON.stringify([archived]));
+    const copy = JSON.stringify({
+      values: {'planif-active-plan-v1': active, 'planif-plan-history-v1': JSON.stringify([archived])}
+    });
+    let copies = 0;
+    try {
+      for (; copies < 200; copies++) localStorage.setItem('planif-before-restore-17000000' + copies, copy);
+    } catch (_) {
+      /* storage full, as on the iPhone */
+    }
+    return copies;
+  });
+  assert(filled > 3, `${filled} copies before the storage was full`);
+  await reload(page);
+  assert.equal(
+    await page.evaluate(
+      () => Object.keys(localStorage).filter(k => k.startsWith('planif-before-restore-')).length
+    ),
+    0,
+    'old copies are compacted at start-up'
+  );
+  await page.click('[data-tab="set"]');
+  await page.click('[data-act="plans"]');
+  const archive = page
+    .locator('#savedPlansDialog .card', {hasText: 'Ancien plan à restaurer'})
+    .locator('[data-plans-view]');
+  await archive.click();
+  page.once('dialog', dialog => dialog.accept());
+  await page.click('#savedPlansDialog [data-plans-restore]');
+  await page.waitForFunction(
+    () => JSON.parse(localStorage.getItem('planif-active-plan-v1') || '{}').id === 'plan-archived'
+  );
+  const history = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('planif-plan-history-v1')).map(p => p.id)
+  );
+  assert(history.includes('plan-current'), 'the replaced plan is archived');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

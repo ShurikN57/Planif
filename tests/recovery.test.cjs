@@ -162,7 +162,8 @@ assert(!result.archivedAt);
 assert.equal(JSON.stringify(result.plan), JSON.stringify(archive.plan));
 assert.equal(ctx.getHistory()[0].id, 'original-plan');
 assert.equal(ctx.state().status, 'restored');
-assert([...data.keys()].some(k => k.startsWith('planif-before-restore-')));
+// The replaced plan is archived in the history; no extra full copy accumulates (2026.11.08.09).
+assert(![...data.keys()].some(k => k.startsWith('planif-before-restore-')));
 const storedBefore = Object.fromEntries(
   [ctx.keys.active, ctx.keys.history, ctx.keys.mode, 'planif-recovery-state-v1'].map(k => [k, data.get(k)])
 );
